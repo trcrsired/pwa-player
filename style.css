@@ -28,6 +28,9 @@ html, body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   transition: opacity 0.3s ease;
   opacity: 1;
+  width: 90vw;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 #controls.hidden {
@@ -42,7 +45,7 @@ button, .picker-button {
   padding: 4px 6px;       /* Smaller padding */
   border-radius: 4px;
   cursor: pointer;
-  font-size: 10px;        /* Smaller icon/text size */
+  font-size: 20px;        /* Smaller icon/text size */
   line-height: 1;
   user-select: none;
 }
