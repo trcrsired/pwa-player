@@ -51,6 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     catch (err) {
         console.warn("File picker cancelled or failed:", err);
+        if (video.src && video.currentTime > 0) {
+            stopBtn.onclick(); // Only stop if something's playing
+        }
     }
   };
   volumeSlider.oninput = () => {
