@@ -1,9 +1,23 @@
+async function requestPermission(handle, mode = "read") {
+  const descriptor = {
+    handle: handle,
+    mode: mode // "read" or "readwrite"
+  };
+
+  // Query current permission state
+  const status = await handle.queryPermission(descriptor);
+  if (status === "granted") return true;
+
+  // Request permission if not already granted
+  const result = await handle.requestPermission(descriptor);
+  return result === "granted";
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.getElementById("player");
   const playBtn = document.getElementById("playBtn");
   const stopBtn = document.getElementById("stopBtn");
-  const fileInput = document.getElementById("fileInput");
+  const pickerBtn = document.getElementById("pickerBtn");
   const volumeSlider = document.getElementById("volumeSlider");
   const timeDisplay = document.getElementById("timeDisplay");
   const progressBar = document.getElementById("progressBar");
@@ -21,17 +35,24 @@ document.addEventListener("DOMContentLoaded", () => {
     playBtn.textContent = "▶️";
   };
 
-  fileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      video.src = url;
-      video.play();
-      playBtn.textContent = "⏸️";
-      document.title = `▶️ ${file.name}`;
+  pickerBtn.onclick = async (e) => {
+    try {
+        const [handle] = await window.showOpenFilePicker();
+
+        const permission = await handle.requestPermission({ mode: "read" });
+        if (permission === "granted") {
+            const file = await handle.getFile();
+            const url = URL.createObjectURL(file);
+            video.src = url;
+            video.play();
+            playBtn.textContent = "⏸️";
+            document.title = `▶️ ${file.name}`;
+        }
+    }
+    catch (err) {
+        console.warn("File picker cancelled or failed:", err);
     }
   };
-
   volumeSlider.oninput = () => {
     video.volume = volumeSlider.value;
   };
