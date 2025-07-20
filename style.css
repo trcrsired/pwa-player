@@ -74,3 +74,21 @@ button:hover, .picker-button:hover {
   font-size: 14px;
   user-select: none;
 }
+
+@media (max-width: 600px) {
+  button, .picker-button {
+    font-size: 16px;
+    padding: 10px 14px;
+    border-radius: 6px;
+  }
+
+  #controls {
+    padding: 10px 16px;
+    gap: 12px;
+    font-size: 17px;
+  }
+
+  #volumeSlider {
+    width: 100px;
+  }
+}
