@@ -4,6 +4,7 @@ if ("serviceWorker" in navigator) {
     .catch((err) => console.error("Service Worker failed:", err));
 }
 
+
 async function requestPermission(handle, mode = "read") {
   const descriptor = {
     handle: handle,
@@ -17,6 +18,30 @@ async function requestPermission(handle, mode = "read") {
   // Request permission if not already granted
   const result = await handle.requestPermission(descriptor);
   return result === "granted";
+}
+
+if ("launchQueue" in window) {
+  launchQueue.setConsumer(async (launchParams) => {
+    if (!launchParams.files || launchParams.files.length === 0) {
+      document.title = "📂";
+      return;
+    }
+
+    const video = document.getElementById("player");
+    const playBtn = document.getElementById("playBtn");
+
+    for (const handle of launchParams.files) {
+      const permission = await handle.requestPermission({ mode: "read" });
+      if (permission === "granted") {
+        const file = await handle.getFile();
+        const url = URL.createObjectURL(file);
+        video.src = url;
+        video.play();
+        playBtn.textContent = "⏸️";
+        document.title = `▶️ ${file.name}`;
+      }
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
