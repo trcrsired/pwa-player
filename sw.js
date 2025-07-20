@@ -7,6 +7,8 @@ self.addEventListener("install", (event) => {
         "/style.css",  // Styles
         "/player.js",  // JS logic
         "/manifest.json",
+        "/icons/icon.png",
+        "/work.js"
         // You could add default video or fallback assets too
       ]);
     })

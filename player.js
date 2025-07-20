@@ -1,3 +1,9 @@
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js")
+    .then(() => console.log("✅ Service Worker registered"))
+    .catch((err) => console.error("Service Worker failed:", err));
+}
+
 async function requestPermission(handle, mode = "read") {
   const descriptor = {
     handle: handle,

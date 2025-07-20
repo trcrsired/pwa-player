@@ -16,6 +16,7 @@
   "file_handlers": [
     {
       "action": "/open",
+      "start_in": "music",
       "accept": {
         "video/*": [".mp4", ".webm", ".mkv"],
         "audio/*": [".mp3", ".wav", ".flac"]
