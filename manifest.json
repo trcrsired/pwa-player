@@ -2,8 +2,8 @@
   "name": "PWA Player",
   "short_name": "PWA Player",
   "start_url": ".",
-  "background_color": "#00000000",
-  "theme_color": "#00000000",
+  "background_color": "blue",
+  "theme_color": "blue",
   "description": "A Progressive Web APP Media Player",
   "display": "standalone",
   "icons": [

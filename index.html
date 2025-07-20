@@ -2,12 +2,31 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
+        <meta name="theme-color" content="#ffffff">
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-        <title>Document</title>
+        <title>PWA Player</title>
         <link rel="manifest" href="manifest.json">
+        <link rel="stylesheet" href="style.css">
     </head>
     <body>
-        <h1>hello pwa</h1>
+        <div id="playerContainer">
+        <video id="player" autoplay style="width:100vw; height:100vh; object-fit:contain; background:#000;"></video>
+
+        <div id="controls">
+        <button id="playBtn">▶️</button>
+        <button id="stopBtn">⏹️</button>
+        <label class="picker-button">
+            📁
+            <input type="file" id="fileInput" hidden />
+        </label>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1" />
+        <span id="timeDisplay">00:00 / 00:00</span>
+        <button id="fullscreenBtn">⛶</button>
+        <input type="range" id="progressBar" value="0" step="0.1" />
+        </div>
+        <!--/input type="file" id="fileInput" accept="video/*" style="position:fixed;top:10px;left:10px;z-index:1000;" /-->
+        <script src="player.js"></script>
+        </div>
     </body>
 </html>
