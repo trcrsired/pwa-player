@@ -132,7 +132,14 @@ document.addEventListener("keydown", (e) => {
         video.currentTime = Math.max(0, video.currentTime - 5);
       }
       break;
-
+      case "KeyF":
+        const container = document.getElementById("playerContainer");
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          container.requestFullscreen();
+        }
+      break;
     // optional: Esc to exit fullscreen
     case "Escape":
       if (document.fullscreenElement) {
@@ -190,11 +197,45 @@ document.addEventListener("mousemove", (e) => {
   showControlsTemporarily();
 });
 
-document.addEventListener("touchstart", (e) => {
+let skipInterval = null;
+
+document.getElementById("player").addEventListener("touchstart", (e) => {
+  const video = e.target;
+  const rect = video.getBoundingClientRect();
   const touch = e.touches[0];
-  if (touch) {
-    window.mouseX = touch.clientX;
-    window.mouseY = touch.clientY;
+
+  if (!touch || !video || video.readyState < 3 || !video.src) return;
+
+  const x = touch.clientX - rect.left;
+  const width = rect.width;
+
+  if (x < width * 0.25) {
+    // Left 25%: Start rewinding repeatedly
+    skipInterval = setInterval(() => {
+      video.currentTime = Math.max(0, video.currentTime - 30); // Rewind 30s per tick
+    }, 300);
+  } else if (x > width * 0.75) {
+    // Right 25%: Start skipping forward repeatedly
+    skipInterval = setInterval(() => {
+      video.currentTime = Math.min(video.duration, video.currentTime + 30); // Skip 30s per tick
+    }, 300);
+  } else {
+    // Center: Toggle play/pause once
+    video.paused ? video.play() : video.pause();
+    document.getElementById("playBtn").textContent = video.paused ? "▶️" : "⏸️";
   }
-  showControlsTemporarily();
+});
+
+document.getElementById("player").addEventListener("touchend", () => {
+  if (skipInterval) {
+    clearInterval(skipInterval);
+    skipInterval = null;
+  }
+});
+
+document.getElementById("player").addEventListener("touchcancel", () => {
+  if (skipInterval) {
+    clearInterval(skipInterval);
+    skipInterval = null;
+  }
 });
