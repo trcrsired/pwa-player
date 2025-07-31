@@ -88,7 +88,7 @@ async function kv_set(key, value)
   {
     kv_sync = await kv_async.init();
   }
-  return await kv_sync.set(key, value, { overwrite: true });
+  return await kv_sync.set(key, value);
 }
 
 function nop(){}
@@ -148,6 +148,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const controls = document.getElementById("controls");
   const volumeToggleBtn = document.getElementById("volumeToggle");
+  const burgerBtn = document.getElementById('burgerBtn');
+  const configOptions = document.getElementById('configOptions');
 
   async function play_source(sourceobject)
   {
@@ -204,7 +206,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   pickerBtn.onclick = async (e) => {
     try {
-        const [handle] = await window.showOpenFilePicker();
+        const [handle] = await window.showOpenFilePicker(
+          {
+            startIn: 'videos'
+          }
+        );
         play_source(handle).catch(nop);
     }
     catch (err) {
@@ -376,5 +382,12 @@ document.addEventListener("keydown", (e) => {
     }
   });
 
+  burgerBtn.addEventListener('click', () => {
+    if (configOptions.classList.contains('hidden')) {
+      configOptions.classList.remove('hidden');
+    } else {
+      configOptions.classList.add('hidden');
+    }
+  });
 });
 

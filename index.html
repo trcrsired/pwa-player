@@ -13,6 +13,12 @@
     <body>
         <div id="playerContainer">
         <video id="player" autoplay style="width:100vw; height:100vh; object-fit:contain; background:#000;"></video>
+        <!-- Config Menu Panel -->
+        <div id="configMenu" class="hidden">
+            <div class="config-item" id="playlistBtn">📂 Playlist</div>
+            <div class="config-item" id="settingsBtn">⚙️ Settings</div>
+            <div class="config-item" id="aboutBtn">ℹ️ About</div>
+        </div>
         <div id="controls" class="hidden">
 
             <!-- Row 1: Playback & Timeline -->
@@ -34,6 +40,7 @@
                 <div class="control-group left-controls">
                     <button id="pickerBtn" title="Pick a File">📁</button>
                     <button id="webBtn" title="Open Web View">🌍</button>
+                    <button id="burgerBtn" title="Open Settings">☰</button>
                 </div>
 
                 <div class="control-group right-controls">
@@ -42,6 +49,13 @@
                 </div>
             </div>
 
+            <div class="control-row config-row hidden" id="configOptions">
+                <div class="control-group full-width">
+                    <button class="config-item" id="playlistBtn" title="Playlist">📂 Playlist</button>
+                    <button class="config-item" id="settingsBtn" title="Settings">⚙️ Settings</button>
+                    <button class="config-item" id="aboutBtn" title="About">ℹ️ About</button>
+                </div>
+            </div>
             <input type="range" id="progressBar" min="0" max="100" value="0" title="Seek Timeline" />
         </div>
 

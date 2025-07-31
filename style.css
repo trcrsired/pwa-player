@@ -91,7 +91,7 @@ html, body {
 button,
 .picker-button {
   background: var(--color-ui-bg);
-  color: var(--color-ui-fg);
+  color: white;
   border: none;
   padding: var(--button-padding);
   border-radius: var(--button-radius);
@@ -148,6 +148,75 @@ button:hover,
 #timeDisplay {
   color: var(--color-text); /* assuming this is white or light grey */
 }
+
+#configMenu {
+  position: absolute;
+  bottom: 100px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent dark */
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 999;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#configMenu.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+}
+
+.config-item {
+  color: white;
+  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.config-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.config-row {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.config-row.hidden {
+  display: none; /* Fully removes it from layout */
+}
+
+.full-width {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.config-item {
+  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.config-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
 /* Mobile Tuning */
 @media (max-width: 600px) {
   :root {
