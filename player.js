@@ -242,7 +242,7 @@ const player = document.getElementById("player");
 
 function isPointerInside(elem, x, y) {
   const rect = elem.getBoundingClientRect();
-  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  return y >= rect.top;
 }
 
 player.addEventListener("pointermove", (e) => {
