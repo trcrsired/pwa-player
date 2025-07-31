@@ -233,3 +233,45 @@ button:hover,
     width: 96vw;
   }
 }
+
+#playlistOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(10, 10, 10, 0.95);
+  color: white;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
+  transition: opacity 0.3s ease;
+}
+
+#playlistOverlay.hidden {
+  display: none;
+}
+
+.playlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.playlist-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+#playlistItems {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#playlistItems li {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}

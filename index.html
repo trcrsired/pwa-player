@@ -12,57 +12,60 @@
     </head>
     <body>
         <div id="playerContainer">
-        <video id="player" autoplay style="width:100vw; height:100vh; object-fit:contain; background:#000;"></video>
-        <!-- Config Menu Panel -->
-        <div id="configMenu" class="hidden">
-            <div class="config-item" id="playlistBtn">📂 Playlist</div>
-            <div class="config-item" id="settingsBtn">⚙️ Settings</div>
-            <div class="config-item" id="aboutBtn">ℹ️ About</div>
+            <video id="player" autoplay style="width:100vw; height:100vh; object-fit:contain; background:#000;"></video>
+                <!-- Config Menu Panel -->
+            <div id="controls" class="hidden">
+
+                <!-- Row 1: Playback & Timeline -->
+                <div class="control-row">
+                    <div class="control-group left-controls">
+                        <button id="playBtn" title="Play">▶️</button>
+                        <button id="stopBtn" title="Stop">⏹️</button>
+                    </div>
+
+                    <div class="control-group right-controls">
+                        <button id="volumeToggle" title="Toggle Volume">🔊</button>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="100" title="Adjust Volume" />
+                        <button id="fullscreenBtn" title="Toggle Fullscreen">⛶</button>
+                    </div>
+                </div>
+
+                <!-- Row 2: File & Web -->
+                <div class="control-row">
+                    <div class="control-group left-controls">
+                        <button id="pickerBtn" title="Pick a File">📁</button>
+                        <button id="webBtn" title="Open Web View">🌍</button>
+                        <button id="burgerBtn" title="Open Settings">☰</button>
+                    </div>
+
+                    <div class="control-group right-controls">
+                        <button id="rotationBtn" title="Rotate View">🔁</button>
+                        <span id="timeDisplay" title="Current Time / Total Duration">00:00 / 00:00</span>
+                    </div>
+                </div>
+
+                <div class="control-row config-row hidden" id="configOptions">
+                    <div class="control-group full-width">
+                        <button class="config-item" id="playlistBtn" title="Playlist">📂 Playlist</button>
+                        <button class="config-item" id="settingsBtn" title="Settings">⚙️ Settings</button>
+                        <button class="config-item" id="aboutBtn" title="About">ℹ️ About</button>
+                    </div>
+                </div>
+                <input type="range" id="progressBar" min="0" max="100" value="0" title="Seek Timeline" />
+            </div>
+
         </div>
-        <div id="controls" class="hidden">
-
-            <!-- Row 1: Playback & Timeline -->
-            <div class="control-row">
-                <div class="control-group left-controls">
-                    <button id="playBtn" title="Play">▶️</button>
-                    <button id="stopBtn" title="Stop">⏹️</button>
-                </div>
-
-                <div class="control-group right-controls">
-                    <button id="volumeToggle" title="Toggle Volume">🔊</button>
-                    <input type="range" id="volumeSlider" min="0" max="100" value="100" title="Adjust Volume" />
-                    <button id="fullscreenBtn" title="Toggle Fullscreen">⛶</button>
-                </div>
+        <div id="playlistOverlay" class="hidden">
+            <div class="playlist-header">
+                <h2>🎵 Playlist</h2>
+                <button id="closePlaylistBtn" title="Close">✖️</button>
             </div>
-
-            <!-- Row 2: File & Web -->
-            <div class="control-row">
-                <div class="control-group left-controls">
-                    <button id="pickerBtn" title="Pick a File">📁</button>
-                    <button id="webBtn" title="Open Web View">🌍</button>
-                    <button id="burgerBtn" title="Open Settings">☰</button>
-                </div>
-
-                <div class="control-group right-controls">
-                    <button id="rotationBtn" title="Rotate View">🔁</button>
-                    <span id="timeDisplay" title="Current Time / Total Duration">00:00 / 00:00</span>
-                </div>
+            <div class="playlist-content">
+                <!-- Dynamically populated list -->
+                <ul id="playlistItems"></ul>
+                <button id="addTrackBtn">➕ Add Track</button>
             </div>
-
-            <div class="control-row config-row hidden" id="configOptions">
-                <div class="control-group full-width">
-                    <button class="config-item" id="playlistBtn" title="Playlist">📂 Playlist</button>
-                    <button class="config-item" id="settingsBtn" title="Settings">⚙️ Settings</button>
-                    <button class="config-item" id="aboutBtn" title="About">ℹ️ About</button>
-                </div>
-            </div>
-            <input type="range" id="progressBar" min="0" max="100" value="0" title="Seek Timeline" />
         </div>
-
-
-
-        <!--/input type="file" id="fileInput" accept="video/*" style="position:fixed;top:10px;left:10px;z-index:1000;" /-->
         <script src="player.js"></script>
-        </div>
     </body>
 </html>

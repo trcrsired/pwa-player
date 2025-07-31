@@ -389,5 +389,39 @@ document.addEventListener("keydown", (e) => {
       configOptions.classList.add('hidden');
     }
   });
+
+
+  const playlistBtn = document.getElementById('playlistBtn');
+  const playlistOverlay = document.getElementById('playlistOverlay');
+  const closePlaylistBtn = document.getElementById('closePlaylistBtn');
+  const playlistItems = document.getElementById('playlistItems');
+  const addTrackBtn = document.getElementById('addTrackBtn');
+
+  playlistBtn.addEventListener('click', () => {
+    console.log("here playlist");
+    playlistOverlay.classList.remove('hidden');
+  });
+
+  closePlaylistBtn.addEventListener('click', () => {
+    playlistOverlay.classList.add('hidden');
+  });
+
+
+  let playlist = [];
+
+  function renderPlaylist() {
+    playlistItems.innerHTML = '';
+    playlist.forEach((track, index) => {
+      const li = document.createElement('li');
+      li.textContent = track.name || `Track ${index + 1}`;
+      playlistItems.appendChild(li);
+    });
+  }
+
+  addTrackBtn.addEventListener('click', () => {
+    const newTrack = { name: `New Track ${playlist.length + 1}` };
+    playlist.push(newTrack);
+    renderPlaylist();
+  });
 });
 
