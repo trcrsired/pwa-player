@@ -67,7 +67,6 @@ class SimpleKVStore {
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")
-    .then(() => console.log("✅ Service Worker registered"))
     .catch((err) => console.error("Service Worker failed:", err));
 }
 
@@ -94,6 +93,43 @@ async function kv_set(key, value)
 
 function nop(){}
 
+function wipe(target) {
+  if (Array.isArray(target)) {
+    target.length = 0;
+  } else if (typeof target === 'object' && target !== null) {
+    Object.keys(target).forEach(key => delete target[key]);
+  }
+}
+
+async function getMediaMetadataFromSource(sourceobject) {
+  let blobURL = null;
+  let mediasource = {}
+  if (sourceobject instanceof FileSystemFileHandle) {
+    const permission = await sourceobject.requestPermission({ mode: "read" });
+    if (permission !== "granted") return null;
+
+    const file = await sourceobject.getFile();
+    blobURL = URL.createObjectURL(file);
+    mediasource.title = file.name;
+  } else if (sourceobject instanceof File || sourceobject instanceof Blob || sourceobject instanceof MediaSource) {
+    blobURL = URL.createObjectURL(sourceobject);
+    mediasource.title = sourceobject.name || null;
+  } else if (typeof sourceobject === "string") {
+    blobURL = sourceobject;
+    fileName = sourceobject.split("/").pop()?.split("?")[0] || null;
+    mediasource.title = fileName;
+  } else {
+    console.warn("Unsupported sourceobject type:", sourceobject);
+    return null;
+  }
+
+  return [
+  sourceobject,
+  blobURL,
+  mediasource,
+  ];
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.getElementById("player");
   const playBtn = document.getElementById("playBtn");
@@ -110,38 +146,22 @@ document.addEventListener("DOMContentLoaded", () => {
   async function play_source(sourceobject)
   {
     try {
-      let blobURL = null;
-      let lastplayed_val = null;
-
-      // Check if we got a FileSystemFileHandle
-      if (sourceobject instanceof FileSystemFileHandle) {
-        const permission = await sourceobject.requestPermission({ mode: "read" });
-        if (permission !== "granted") return;
-
-        const file = await sourceobject.getFile();
-        lastplayed_val = file;
-        blobURL = URL.createObjectURL(file);
-
-        // You *can't* store FileSystemFileHandle directly in localStorage
-        // Consider using IndexedDB if you want persistence
-      } else if (sourceobject instanceof Blob || sourceobject instanceof File || sourceobject instanceof MediaSource) {
-        lastplayed_val = sourceobject;
-        blobURL = URL.createObjectURL(sourceobject);
-      } else if (typeof sourceobject === "string") {
-        lastplayed_val = sourceobject;
-        blobURL = sourceobject; // For remote URLs
-      } else {
-        console.warn("Unsupported sourceobject type:", sourceobject);
+      const result = await getMediaMetadataFromSource(sourceobject);
+      if (!result)
+      {
         return;
       }
-
+      const sourceobj = result[0];
+      const blobURL = result[1];
+      const mediametadata = result[2];
       video.src = blobURL;
       controls.classList.remove("hidden");
       video.play();
       playBtn.textContent = "⏸️";
-
       // Save it into the indexedDB
-      kv_set("lastplayed", lastplayed_val).then(nop).catch(nop);
+      kv_set("lastplayed", sourceobject).then(nop).catch(nop);
+      navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
+      document.title = `PWA Player ▶️ ${mediametadata.title}`;
     }
     catch(err)
     {
@@ -171,6 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
     video.removeAttribute("src");
     video.load();
     playBtn.textContent = "▶️";
+    navigator.mediaSession.metadata = new MediaMetadata({});
+    document.title = `PWA Player`;
   };
 
 
