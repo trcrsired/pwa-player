@@ -4,7 +4,6 @@ if ("serviceWorker" in navigator) {
     .catch((err) => console.error("Service Worker failed:", err));
 }
 
-
 async function requestPermission(handle, mode = "read") {
   const descriptor = {
     handle: handle,
@@ -203,53 +202,48 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-
-    document.addEventListener("click", (e) => {
-    const video = document.getElementById("player");
-    const controls = document.getElementById("controls");
-    if (!controls.contains(e.target)) {
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+    if (!controls.contains(target)) {
+        const video = document.getElementById("player");
         togglePlay(video);
     }
-    });
+  });
+
   function formatTime(seconds) {
     const min = Math.floor(seconds / 60).toString().padStart(2, "0");
     const sec = Math.floor(seconds % 60).toString().padStart(2, "0");
     return `${min}:${sec}`;
   }
-});
 
-// Toggle play/pause logic
-function togglePlay(video) {
-  if (video.readyState < 3 || !video.src) return;
-  video.paused ? video.play() : video.pause();
-  document.getElementById("playBtn").textContent = video.paused ? "▶️" : "⏸️";
-}
-
-let hideTimeout;
-
-function showControlsTemporarily() {
-  controls.classList.remove("hidden");
-  clearTimeout(hideTimeout);
-  hideTimeout = setTimeout(() => {
-    if (!isPointerInside(controls)) {
-      controls.classList.add("hidden");
-    }
-  }, 1000); // Hide after 1 seconds
-}
-
-const controls = document.getElementById("controls");
-const player = document.getElementById("player");
-
-function isPointerInside(elem, x, y) {
-  const rect = elem.getBoundingClientRect();
-  return y >= rect.top;
-}
-
-player.addEventListener("pointermove", (e) => {
-  const x = e.clientX;
-  const y = e.clientY;
-
-  if (isPointerInside(controls, x, y)) {
-    showControlsTemporarily();
+  // Toggle play/pause logic
+  function togglePlay(video) {
+    if (video.readyState < 3 || !video.src) return;
+    video.paused ? video.play() : video.pause();
+    document.getElementById("playBtn").textContent = video.paused ? "▶️" : "⏸️";
   }
+
+  let hideTimeout;
+
+  function showControlsTemporarily() {
+    controls.classList.remove("hidden");
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      controls.classList.add("hidden");
+    }, 2000); // Hide after 2 seconds
+  }
+
+
+  player.addEventListener("pointermove", (e) => {
+    if (controls.contains(e.target)) {
+      controls.classList.remove("hidden");
+      clearTimeout(hideTimeout);
+    }
+    else
+    {
+      showControlsTemporarily();
+    }
+  });
+
 });
+

@@ -12,9 +12,10 @@ html, body {
   background: #000;
 }
 
+
 #controls {
   position: absolute;
-  bottom: 60px;
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
   background: #fff;
@@ -31,6 +32,14 @@ html, body {
   width: 90vw;
   justify-content: center;
   flex-wrap: wrap;
+}
+#progressBar {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  z-index: 999;
 }
 
 #controls.hidden {
@@ -58,14 +67,6 @@ button:hover, .picker-button:hover {
   width: 80px;
 }
 
-#progressBar {
-  position: absolute;
-  bottom: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  z-index: 999;
-}
 
 #fullscreenBtn {
   background: #e0e0e0;
