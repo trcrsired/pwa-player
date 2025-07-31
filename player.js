@@ -100,13 +100,19 @@ function wipe(target) {
     Object.keys(target).forEach(key => delete target[key]);
   }
 }
+async function verifyPermission(fileHandle, mode = "read") {
+  const opts = { mode };
+  if ((await fileHandle.queryPermission(opts)) === "granted") {
+    return true;
+  }
+  return (await fileHandle.requestPermission(opts)) === "granted";
+}
 
 async function getMediaMetadataFromSource(sourceobject) {
   let blobURL = null;
   let mediasource = {}
   if (sourceobject instanceof FileSystemFileHandle) {
-    const permission = await sourceobject.requestPermission({ mode: "read" });
-    if (permission !== "granted") return null;
+    if (! await verifyPermission(sourceobject)) return null;
 
     const file = await sourceobject.getFile();
     blobURL = URL.createObjectURL(file);
