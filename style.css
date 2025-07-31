@@ -22,7 +22,7 @@
   --controls-z: 1000;
   --progress-z: 999;
 
-  --controls-ui-bg: rgba(255, 255, 255, 0.2);
+  --controls-ui-bg: rgba(255, 255, 255, 0);
 }
 
 /* Layout Reset */
