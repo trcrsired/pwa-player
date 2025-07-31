@@ -105,6 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const rotationBtn = document.getElementById("rotationBtn");
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const controls = document.getElementById("controls");
+  const toggleBtn = document.getElementById("volumeToggle");
+  const volumePanel = document.getElementById("volumePanel");
 
   async function play_source(sourceobject)
   {
@@ -201,9 +203,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
   };
-  volumeSlider.oninput = () => {
-    video.volume = volumeSlider.value;
-  };
+  volumeSlider.addEventListener("input", () => {
+    const percent = parseInt(volumeSlider.value, 10); // raw percent
+    const normalized = Math.min(1, Math.max(0, percent / 100));
+    player.volume = normalized;
+
+    const label = document.getElementById("volumeLabel");
+    if (label) label.textContent = percent;
+  });
+
+  // Toggle visibility on button click
+  toggleBtn.addEventListener("click", () => {
+    volumePanel.classList.toggle("hidden");
+  });
 
   rotationBtn.addEventListener("click", () => {
     const orientation = screen?.orientation;
@@ -315,12 +327,14 @@ document.addEventListener("keydown", (e) => {
     clearTimeout(hideTimeout);
     hideTimeout = setTimeout(() => {
       controls.classList.add("hidden");
+      volumePanel.classList.add("hidden");
     }, 2000); // Hide after 2 seconds
   }
 
 
   player.addEventListener("pointermove", (e) => {
-    if (controls.contains(e.target)) {
+    const target = e.target;
+    if (controls.contains(target) || volumePanel.contains(target)) {
       controls.classList.remove("hidden");
       clearTimeout(hideTimeout);
     }

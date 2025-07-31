@@ -13,48 +13,45 @@
     <body>
         <div id="playerContainer">
         <video id="player" autoplay style="width:100vw; height:100vh; object-fit:contain; background:#000;"></video>
-
         <div id="controls" class="hidden">
-        <!-- Playback Controls -->
-        <button id="playBtn" title="Play or resume the video">▶️</button>
-        <button id="stopBtn" title="Stop and reset the video">⏹️</button>
 
-        <!-- File and Source Management -->
-        <button id="pickerBtn" title="Pick a local video file">📁</button>
-        <button id="webBtn" title="Open a web video URL">🌍</button>
+            <!-- Row 1: Playback & Timeline -->
+            <div class="control-row">
+                <div class="control-group left-controls">
+                    <button id="playBtn" title="Play">▶️</button>
+                    <button id="stopBtn" title="Stop">⏹️</button>
+                </div>
 
-        <!-- Volume Control -->
-        <input
-        type="range"
-        id="volumeSlider"
-        min="0"
-        max="1"
-        step="0.01"
-        value="1"
-        title="Adjust the volume"
-        />
+                <div class="control-group right-controls">
+                    <div class="control-group volume-flyout">
+                        <button id="volumeToggle" title="Toggle Volume">🔊</button>
+                        <div id="volumePanel" class="hidden">
+                            <span id="volumeLabel" title="Current Volume">100</span>
+                            <input type="range" id="volumeSlider" min="0" max="100" value="100" title="Adjust Volume" />
+                        </div>
+                    </div>
+                    <button id="fullscreenBtn" title="Toggle Fullscreen">⛶</button>
+                </div>
+            </div>
 
-        <!-- Orientation Control -->
-        <button
-        id="rotationBtn"
-        title="Rotate screen orientation (may not be supported on your device)"
-        >🔁</button>
+            <!-- Row 2: File & Web -->
+            <div class="control-row">
+                <div class="control-group left-controls">
+                    <button id="pickerBtn" title="Pick a File">📁</button>
+                    <button id="webBtn" title="Open Web View">🌍</button>
+                </div>
 
-        <!-- Time Display -->
-        <span id="timeDisplay" title="Current time / Total duration">00:00 / 00:00</span>
+                <div class="control-group right-controls">
+                    <button id="rotationBtn" title="Rotate View">🔁</button>
+                    <span id="timeDisplay" title="Current Time / Total Duration">00:00 / 00:00</span>
+                </div>
+            </div>
 
-        <!-- Fullscreen Toggle -->
-        <button id="fullscreenBtn" title="Toggle fullscreen mode">⛶</button>
-
-        <!-- Progress Scrubber -->
-        <input
-        type="range"
-        id="progressBar"
-        value="0"
-        step="0.1"
-        title="Seek or scrub through the video"
-        />
+            <input type="range" id="progressBar" min="0" max="100" value="0" title="Seek Timeline" />
         </div>
+
+
+
         <!--/input type="file" id="fileInput" accept="video/*" style="position:fixed;top:10px;left:10px;z-index:1000;" /-->
         <script src="player.js"></script>
         </div>

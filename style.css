@@ -1,45 +1,64 @@
+:root {
+  --color-bg: #000;
+  --color-ui-bg: rgba(255,255,255,0);
+  --color-ui-fg: #222;
+  --color-hover: #d0d0d0;
+  --color-text: #fff;
+
+  --button-font-size: 24px;
+  --button-padding: 10px 18px;
+  --button-radius: 6px;
+
+  --control-gap: 16px;
+  --group-gap: 12px;
+  --row-gap: 14px;
+
+  --volume-width: 100px;
+  --progress-width: 80%;
+
+  --controls-padding: 14px 20px;
+  --controls-radius: 10px;
+  --controls-width: 92vw;
+  --controls-z: 1000;
+  --progress-z: 999;
+
+  --controls-ui-bg: rgba(255, 255, 255, 0.2);
+}
+
+/* Layout Reset */
 html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background-color: #000;
+  background-color: var(--color-bg);
 }
 
+/* Video Player Styling */
 #player {
   width: 100vw;
   height: 100vh;
   object-fit: contain;
-  background: #000;
+  background-color: var(--color-bg);
 }
 
-
+/* Controls Container */
 #controls {
   position: absolute;
-  bottom: 0px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
-  background: #fff;
-  padding: 6px 12px;
-  border-radius: 8px;
+  background-color: var(--controls-ui-bg);
+  padding: var(--controls-padding);
+  border-radius: var(--controls-radius);
   display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 15px;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  transition: opacity 0.3s ease;
-  opacity: 1;
-  width: 90vw;
+  flex-direction: column;
+  gap: var(--row-gap);
   justify-content: center;
-  flex-wrap: wrap;
-}
-#progressBar {
-  position: absolute;
-  top: -28px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  z-index: 999;
+  align-items: center;
+  width: var(--controls-width);
+  z-index: var(--controls-z);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.3s ease;
 }
 
 #controls.hidden {
@@ -47,52 +66,127 @@ html, body {
   pointer-events: none;
 }
 
-button, .picker-button {
-  background: #e0e0e0;
-  color: #222;
+/* Control Rows */
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.left-controls,
+.right-controls {
+  display: flex;
+  gap: var(--group-gap);
+}
+
+/* Control Groups */
+.control-group {
+  display: flex;
+  gap: var(--group-gap);
+  align-items: center;
+}
+
+/* Buttons */
+button,
+.picker-button {
+  background: var(--color-ui-bg);
+  color: var(--color-ui-fg);
   border: none;
-  padding: 4px 6px;       /* Smaller padding */
-  border-radius: 4px;
+  padding: var(--button-padding);
+  border-radius: var(--button-radius);
+  font-size: var(--button-font-size);
   cursor: pointer;
-  font-size: 20px;        /* Smaller icon/text size */
   line-height: 1;
   user-select: none;
 }
 
-button:hover, .picker-button:hover {
-  background: #d0d0d0;
+button:hover,
+.picker-button:hover {
+  background: var(--color-hover);
 }
 
-#volumeSlider {
-  width: 80px;
-}
-
-
-#fullscreenBtn {
-  background: #e0e0e0;
-  color: #222;
+/* Rotation buttons styling */
+#rotationBtn {
+  background: var(--color-ui-bg);
+  color: var(--color-ui-fg);
   border: none;
-  padding: 4px 6px;
-  border-radius: 4px;
+  padding: var(--button-padding);
+  border-radius: var(--button-radius);
+  font-size: var(--button-font-size);
   cursor: pointer;
-  font-size: 14px;
   user-select: none;
 }
 
+/* Fullscreen buttons styling */
+#fullscreenBtn {
+  background: var(--color-ui-bg);
+  color: white;
+  border: none;
+  padding: var(--button-padding);
+  border-radius: var(--button-radius);
+  font-size: var(--button-font-size);
+  cursor: pointer;
+  user-select: none;
+}
+
+#rotationBtn:hover,
+#fullscreenBtn:hover {
+  background: var(--color-hover);
+}
+
+/* Progress Bar */
+#progressBar {
+  width: var(--progress-width);
+  z-index: var(--progress-z);
+}
+/* Volume Slider */
+#volumeSlider {
+  width: var(--volume-width);
+}
+
+#timeDisplay {
+  color: var(--color-text); /* assuming this is white or light grey */
+}
+.volume-flyout {
+  position: relative;
+}
+
+#volumePanel {
+  position: absolute;
+  top: calc(100% - 50px); /* replaces bottom */
+  bottom: auto;
+  left: 0;
+  transform: rotate(-90deg);
+  transform-origin: top left;
+  overflow: visible;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(6px);
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.3s ease;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#volumePanel.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+/* Mobile Tuning */
 @media (max-width: 600px) {
-  button, .picker-button {
-    font-size: 16px;
-    padding: 10px 14px;
-    border-radius: 6px;
+  :root {
+    --button-font-size: 20px;
+    --button-padding: 12px 16px;
+    --group-gap: 10px;
+    --volume-width: 120px;
+    --progress-width: 90%;
   }
 
   #controls {
-    padding: 10px 16px;
-    gap: 12px;
-    font-size: 17px;
-  }
-
-  #volumeSlider {
-    width: 100px;
+    padding: 16px;
+    gap: 18px;
+    width: 96vw;
   }
 }
