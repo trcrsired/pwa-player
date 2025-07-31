@@ -1,47 +1,98 @@
+class SimpleKVStore {
+  constructor(dbName = "KVStore", storeName = "kv", version = 1) {
+    this.dbName = dbName;
+    this.storeName = storeName;
+    this.version = version;
+    this.db = null;
+  }
+
+  async init() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, this.version);
+
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          db.createObjectStore(this.storeName);
+        }
+      };
+
+      request.onsuccess = (e) => {
+        this.db = e.target.result;
+        resolve(this);
+      };
+
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  async set(key, value) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(this.storeName, "readwrite");
+      tx.objectStore(this.storeName).put(value, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  async get(key) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(this.storeName, "readonly");
+      const request = tx.objectStore(this.storeName).get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  async delete(key) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(this.storeName, "readwrite");
+      tx.objectStore(this.storeName).delete(key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  async keys() {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(this.storeName, "readonly");
+      const store = tx.objectStore(this.storeName);
+      const request = store.getAllKeys();
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+};
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")
     .then(() => console.log("✅ Service Worker registered"))
     .catch((err) => console.error("Service Worker failed:", err));
 }
 
-async function requestPermission(handle, mode = "read") {
-  const descriptor = {
-    handle: handle,
-    mode: mode // "read" or "readwrite"
-  };
+let kv_async = new SimpleKVStore("pwaplayerdb", "videos")
+let kv_sync;
 
-  // Query current permission state
-  const status = await handle.queryPermission(descriptor);
-  if (status === "granted") return true;
-
-  // Request permission if not already granted
-  const result = await handle.requestPermission(descriptor);
-  return result === "granted";
+async function kv_get(key)
+{
+  if (!kv_sync)
+  {
+    kv_sync = await kv_async.init();
+  }
+  return await kv_sync.get(key);
 }
 
-if ("launchQueue" in window) {
-  launchQueue.setConsumer(async (launchParams) => {
-    if (!launchParams.files || launchParams.files.length === 0) {
-      document.title = "📂";
-      return;
-    }
-
-    const video = document.getElementById("player");
-    const playBtn = document.getElementById("playBtn");
-
-    for (const handle of launchParams.files) {
-      const permission = await handle.requestPermission({ mode: "read" });
-      if (permission === "granted") {
-        const file = await handle.getFile();
-        const url = URL.createObjectURL(file);
-        video.src = url;
-        video.play();
-        playBtn.textContent = "⏸️";
-        document.title = `▶️ ${file.name}`;
-      }
-    }
-  });
+async function kv_set(key, value)
+{
+  if (!kv_sync)
+  {
+    kv_sync = await kv_async.init();
+  }
+  return await kv_sync.set(key, value, { overwrite: true });
 }
+
+function nop(){}
 
 document.addEventListener("DOMContentLoaded", () => {
   const video = document.getElementById("player");
@@ -55,9 +106,57 @@ document.addEventListener("DOMContentLoaded", () => {
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const controls = document.getElementById("controls");
 
-  playBtn.onclick = () => {
+  async function play_source(sourceobject)
+  {
+    console.log("sourceobject=",sourceobject);
+    try {
+      let blobURL = null;
+      let lastplayed_val = null;
+
+      // Check if we got a FileSystemFileHandle
+      if (sourceobject instanceof FileSystemFileHandle) {
+        const permission = await sourceobject.requestPermission({ mode: "read" });
+        if (permission !== "granted") return;
+
+        const file = await sourceobject.getFile();
+        lastplayed_val = file;
+        blobURL = URL.createObjectURL(file);
+
+        // You *can't* store FileSystemFileHandle directly in localStorage
+        // Consider using IndexedDB if you want persistence
+      } else if (sourceobject instanceof Blob || sourceobject instanceof File || sourceobject instanceof MediaSource) {
+        lastplayed_val = sourceobject;
+        blobURL = URL.createObjectURL(sourceobject);
+      } else if (typeof sourceobject === "string") {
+        lastplayed_val = sourceobject;
+        blobURL = sourceobject; // For remote URLs
+      } else {
+        console.warn("Unsupported sourceobject type:", sourceobject);
+        return;
+      }
+
+      video.src = blobURL;
+      controls.classList.remove("hidden");
+      video.play();
+      playBtn.textContent = "⏸️";
+
+      // Save it into the indexedDB
+      kv_set("lastplayed", lastplayed_val).then(nop).catch(nop);
+    }
+    catch(err)
+    {
+
+    }
+  }
+  playBtn.onclick = async () => {
     if (!video.src)
     {
+      const lastplayed = await kv_get("lastplayed");
+      if (lastplayed)
+      {
+        play_source(lastplayed).catch(nop);
+        return;
+      }
       pickerBtn.click();
       return;
     }
@@ -69,32 +168,18 @@ document.addEventListener("DOMContentLoaded", () => {
   stopBtn.onclick = () => {
     video.pause();
     video.currentTime = 0;
-    video.src = null;
+    video.removeAttribute("src");
+    video.load();
     playBtn.textContent = "▶️";
   };
 
-  function play_url(url)
-  {
-    controls.classList.toggle('hidden');
-    video.src = url;
-    video.play();
-    playBtn.textContent = "⏸️";
-  }
 
   pickerBtn.onclick = async (e) => {
     try {
         const [handle] = await window.showOpenFilePicker();
-
-        const permission = await handle.requestPermission({ mode: "read" });
-        if (permission === "granted") {
-          const file = await handle.getFile();
-          controls.classList.toggle('hidden');
-          play_url(URL.createObjectURL(file));
-          document.title = `▶️ ${file.name}`;
-        }
+        play_source(handle).catch(nop);
     }
     catch (err) {
-        console.warn("File picker cancelled or failed:", err);
         if (video.src && video.currentTime > 0) {
             stopBtn.onclick(); // Only stop if something's playing
         }
@@ -106,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (url)
       {
-        play_url(url);
+        play_source(url).catch(nop);
       }
     }
     catch (err) {
