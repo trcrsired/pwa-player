@@ -391,37 +391,71 @@ document.addEventListener("keydown", (e) => {
   });
 
 
-  const playlistBtn = document.getElementById('playlistBtn');
-  const playlistOverlay = document.getElementById('playlistOverlay');
-  const closePlaylistBtn = document.getElementById('closePlaylistBtn');
-  const playlistItems = document.getElementById('playlistItems');
-  const addTrackBtn = document.getElementById('addTrackBtn');
+// 🎵 Playlist Elements
+const playlistBtn = document.getElementById('playlistBtn');
+const playlistOverlay = document.getElementById('playlistOverlay');
+const closePlaylistBtn = document.getElementById('closePlaylistBtn');
+const playlistItems = document.getElementById('playlistItems');
+const addTrackBtn = document.getElementById('addTrackBtn');
 
-  playlistBtn.addEventListener('click', () => {
-    console.log("here playlist");
-    playlistOverlay.classList.remove('hidden');
+// 🗂️ Storage Elements
+const storageBtn = document.getElementById('storageBtn');
+const storageOverlay = document.getElementById('storageOverlay');
+const closeStorageBtn = document.getElementById('closestorageBtn');
+const storageItems = document.getElementById('storageItems');
+const addImportBtn = document.getElementById('addTrackBtn'); // same ID reused
+
+// 🎵 Playlist Logic
+playlistBtn.addEventListener('click', () => {
+  playlistOverlay.classList.remove('hidden');
+});
+
+closePlaylistBtn.addEventListener('click', () => {
+  playlistOverlay.classList.add('hidden');
+});
+
+let playlist = [];
+
+function renderPlaylist() {
+  playlistItems.innerHTML = '';
+  playlist.forEach((track, index) => {
+    const li = document.createElement('li');
+    li.textContent = track.name || `Track ${index + 1}`;
+    playlistItems.appendChild(li);
   });
+}
 
-  closePlaylistBtn.addEventListener('click', () => {
-    playlistOverlay.classList.add('hidden');
+addTrackBtn.addEventListener('click', () => {
+  const newTrack = { name: `New Track ${playlist.length + 1}` };
+  playlist.push(newTrack);
+  renderPlaylist();
+});
+
+// 🗂️ Storage Logic
+storageBtn.addEventListener('click', () => {
+  storageOverlay.classList.remove('hidden');
+});
+
+closeStorageBtn.addEventListener('click', () => {
+  storageOverlay.classList.add('hidden');
+});
+
+let storageImports = [];
+
+function renderStorage() {
+  storageItems.innerHTML = '';
+  storageImports.forEach((dir, index) => {
+    const li = document.createElement('li');
+    li.textContent = dir.name || `Import ${index + 1}`;
+    storageItems.appendChild(li);
   });
+}
 
+addImportBtn.addEventListener('click', () => {
+  const newImport = { name: `Imported Directory ${storageImports.length + 1}` };
+  storageImports.push(newImport);
+  renderStorage();
+});
 
-  let playlist = [];
-
-  function renderPlaylist() {
-    playlistItems.innerHTML = '';
-    playlist.forEach((track, index) => {
-      const li = document.createElement('li');
-      li.textContent = track.name || `Track ${index + 1}`;
-      playlistItems.appendChild(li);
-    });
-  }
-
-  addTrackBtn.addEventListener('click', () => {
-    const newTrack = { name: `New Track ${playlist.length + 1}` };
-    playlist.push(newTrack);
-    renderPlaylist();
-  });
 });
 

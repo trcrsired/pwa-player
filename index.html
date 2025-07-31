@@ -46,26 +46,41 @@
 
                 <div class="control-row config-row hidden" id="configOptions">
                     <div class="control-group full-width">
-                        <button class="config-item" id="playlistBtn" title="Playlist">📂 Playlist</button>
+                        <button class="config-item" id="playlistBtn" title="Playlist">🎵 Playlist</button>
+                        <button class="config-item" id="storageBtn" title="Storage">🗂️ Storage</button>
                         <button class="config-item" id="settingsBtn" title="Settings">⚙️ Settings</button>
-                        <button class="config-item" id="aboutBtn" title="About">ℹ️ About</button>
+                        <!--button class="config-item" id="aboutBtn" title="About">ℹ️ About</button-->
                     </div>
                 </div>
                 <input type="range" id="progressBar" min="0" max="100" value="0" title="Seek Timeline" />
             </div>
 
         </div>
-        <div id="playlistOverlay" class="hidden">
-            <div class="playlist-header">
-                <h2>🎵 Playlist</h2>
-                <button id="closePlaylistBtn" title="Close">✖️</button>
-            </div>
-            <div class="playlist-content">
-                <!-- Dynamically populated list -->
-                <ul id="playlistItems"></ul>
-                <button id="addTrackBtn">➕ Add Track</button>
-            </div>
+        <div id="playlistOverlay" class="overlay-panel hidden">
+        <div class="overlay-header">
+            <h2>🎵 Playlist</h2>
+            <button id="closePlaylistBtn">✖️</button>
         </div>
+        <div class="overlay-content">
+            <ul id="playlistItems" class="overlay-list"></ul>
+        </div>
+        </div>
+
+        <div id="storageOverlay" class="overlay-panel hidden">
+        <div class="overlay-header">
+            <h2>🗂️ Storage</h2>
+            <button id="closestorageBtn">✖️</button>
+        </div>
+        <div class="overlay-content">
+            <p class="storage-description">
+            To ensure reliable access in PWA environments, files from imported directories will be <strong>copied into private storage</strong>. This avoids sandboxing issues and ensures persistent availability across sessions.
+            </p>
+            <ul id="storageItems" class="overlay-list"></ul>
+            <button id="addTrackBtn">➕ Add Directories Import</button>
+        </div>
+        </div>
+
+
         <script src="player.js"></script>
     </body>
 </html>

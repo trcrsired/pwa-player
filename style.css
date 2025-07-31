@@ -234,7 +234,8 @@ button:hover,
   }
 }
 
-#playlistOverlay {
+/* Shared overlay panel styles */
+.overlay-panel {
   position: fixed;
   top: 0;
   left: 0;
@@ -250,28 +251,39 @@ button:hover,
   transition: opacity 0.3s ease;
 }
 
-#playlistOverlay.hidden {
+.overlay-panel.hidden {
   display: none;
 }
 
-.playlist-header {
+/* Header layout for overlays */
+.overlay-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.playlist-content {
+/* Scrollable content area */
+.overlay-content {
   flex: 1;
   overflow-y: auto;
 }
 
-#playlistItems {
+/* Description block for storage overlay */
+.storage-description {
+  font-size: 0.95rem;
+  color: #ccc;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+/* List styling for playlist and storage items */
+.overlay-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-#playlistItems li {
+.overlay-list li {
   padding: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
