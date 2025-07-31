@@ -19,7 +19,7 @@
       "start_in": "music",
       "accept": {
         "video/*": [".mp4", ".webm", ".mkv"],
-        "audio/*": [".mp3", ".wav", ".flac"]
+        "audio/*": [".mp3", ".webm", ".wav", ".flac"]
       }
     }
   ]

@@ -53,9 +53,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const timeDisplay = document.getElementById("timeDisplay");
   const progressBar = document.getElementById("progressBar");
   const fullscreenBtn = document.getElementById("fullscreenBtn");
+  const controls = document.getElementById("controls");
 
   playBtn.onclick = () => {
-    if (video.readyState < 3 || !video.src) return;
+    if (!video.src)
+    {
+      pickerBtn.click();
+      return;
+    }
+    if (video.readyState < 3) return;
     video.paused ? video.play() : video.pause();
     playBtn.textContent = video.paused ? "▶️" : "⏸️";
   };
@@ -63,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   stopBtn.onclick = () => {
     video.pause();
     video.currentTime = 0;
+    video.src = null;
     playBtn.textContent = "▶️";
   };
 
@@ -72,12 +79,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const permission = await handle.requestPermission({ mode: "read" });
         if (permission === "granted") {
-            const file = await handle.getFile();
-            const url = URL.createObjectURL(file);
-            video.src = url;
-            video.play();
-            playBtn.textContent = "⏸️";
-            document.title = `▶️ ${file.name}`;
+          controls.classList.toggle('hidden');
+
+          const file = await handle.getFile();
+          const url = URL.createObjectURL(file);
+          video.src = url;
+          video.play();
+          playBtn.textContent = "⏸️";
+          document.title = `▶️ ${file.name}`;
         }
     }
     catch (err) {
@@ -92,21 +101,31 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   video.addEventListener("timeupdate", () => {
-    const current = formatTime(video.currentTime);
-    const total = formatTime(video.duration);
+    const duration = video.duration;
+    if (!video.src || Number.isNaN(duration))
+    {
+      timeDisplay.textContent = "00:00 / 00:00";
+      progressBar.max = 0;
+      progressBar.value = 0;
+      return;
+    }
+    const currentTime = video.currentTime;
+    const current = formatTime(currentTime);
+    const total = formatTime(duration);
     timeDisplay.textContent = `${current} / ${total}`;
-    progressBar.max = video.duration;
-    progressBar.value = video.currentTime;
+    progressBar.max = duration;
+    progressBar.value = currentTime;
   });
 
-fullscreenBtn.onclick = () => {
-  const container = document.getElementById("playerContainer");
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  } else {
-    container.requestFullscreen();
-  }
-};
+  fullscreenBtn.onclick = () => {
+    const container = document.getElementById("playerContainer");
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      container.requestFullscreen();
+      controls.classList.toggle('hidden');
+    }
+  };
 
   progressBar.oninput = () => {
     video.currentTime = progressBar.value;
@@ -180,7 +199,7 @@ function showControlsTemporarily() {
     if (!isPointerInside(controls)) {
       controls.classList.add("hidden");
     }
-  }, 3000); // Hide after 3 seconds
+  }, 1000); // Hide after 1 seconds
 }
 
 function isPointerInside(elem) {
@@ -194,7 +213,10 @@ function isPointerInside(elem) {
 document.addEventListener("mousemove", (e) => {
   window.mouseX = e.clientX;
   window.mouseY = e.clientY;
-  showControlsTemporarily();
+  if (isPointerInside(controls))
+  {
+    showControlsTemporarily();
+  }
 });
 
 let skipInterval = null;

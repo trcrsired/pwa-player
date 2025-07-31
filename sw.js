@@ -1,3 +1,5 @@
+const version = 3;
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open("pwa-player-cache").then((cache) => {
@@ -7,8 +9,7 @@ self.addEventListener("install", (event) => {
         "/style.css",  // Styles
         "/player.js",  // JS logic
         "/manifest.json",
-        "/icons/icon.png",
-        "/work.js"
+        "/icons/icon.png"
         // You could add default video or fallback assets too
       ]);
     })

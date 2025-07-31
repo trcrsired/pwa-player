@@ -35,7 +35,7 @@ html, body {
 
 #controls.hidden {
   opacity: 0;
-  pointer-events: none; /* disable interaction when hidden */
+  pointer-events: none;
 }
 
 button, .picker-button {
