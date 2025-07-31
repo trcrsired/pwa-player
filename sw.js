@@ -4,7 +4,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open("pwa-player-cache").then((cache) => {
       return cache.addAll([
-        "/",           // Root page
         "/index.html", // Entry file
         "/style.css",  // Styles
         "/player.js",  // JS logic
