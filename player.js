@@ -73,24 +73,44 @@ document.addEventListener("DOMContentLoaded", () => {
     playBtn.textContent = "▶️";
   };
 
+  function play_url(url)
+  {
+    controls.classList.toggle('hidden');
+    video.src = url;
+    video.play();
+    playBtn.textContent = "⏸️";
+  }
+
   pickerBtn.onclick = async (e) => {
     try {
         const [handle] = await window.showOpenFilePicker();
 
         const permission = await handle.requestPermission({ mode: "read" });
         if (permission === "granted") {
-          controls.classList.toggle('hidden');
-
           const file = await handle.getFile();
-          const url = URL.createObjectURL(file);
-          video.src = url;
-          video.play();
-          playBtn.textContent = "⏸️";
+          controls.classList.toggle('hidden');
+          play_url(URL.createObjectURL(file));
           document.title = `▶️ ${file.name}`;
         }
     }
     catch (err) {
         console.warn("File picker cancelled or failed:", err);
+        if (video.src && video.currentTime > 0) {
+            stopBtn.onclick(); // Only stop if something's playing
+        }
+    }
+  };
+  webBtn.onclick = () => {
+    try {
+      const url = prompt("Enter video URL:");
+
+      if (url)
+      {
+        play_url(url);
+      }
+    }
+    catch (err) {
+        console.warn("web picker cancelled or failed:", err);
         if (video.src && video.currentTime > 0) {
             stopBtn.onclick(); // Only stop if something's playing
         }
