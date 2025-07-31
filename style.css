@@ -148,32 +148,6 @@ button:hover,
 #timeDisplay {
   color: var(--color-text); /* assuming this is white or light grey */
 }
-.volume-flyout {
-  position: relative;
-}
-
-#volumePanel {
-  position: absolute;
-  top: calc(100% - 50px); /* replaces bottom */
-  bottom: auto;
-  left: 0;
-  transform: rotate(-90deg);
-  transform-origin: top left;
-  overflow: visible;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(6px);
-  padding: 8px 12px;
-  border-radius: 6px;
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
-  transition: opacity 0.3s ease;
-  opacity: 1;
-  pointer-events: auto;
-}
-
-#volumePanel.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
 /* Mobile Tuning */
 @media (max-width: 600px) {
   :root {

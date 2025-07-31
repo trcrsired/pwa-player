@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="theme-color" content="#ffffff">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
         <title>PWA Player</title>
         <link rel="icon" href="icons/icon.webp" />
@@ -23,13 +23,8 @@
                 </div>
 
                 <div class="control-group right-controls">
-                    <div class="control-group volume-flyout">
-                        <button id="volumeToggle" title="Toggle Volume">🔊</button>
-                        <div id="volumePanel" class="hidden">
-                            <span id="volumeLabel" title="Current Volume">100</span>
-                            <input type="range" id="volumeSlider" min="0" max="100" value="100" title="Adjust Volume" />
-                        </div>
-                    </div>
+                    <button id="volumeToggle" title="Toggle Volume">🔊</button>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="100" title="Adjust Volume" />
                     <button id="fullscreenBtn" title="Toggle Fullscreen">⛶</button>
                 </div>
             </div>

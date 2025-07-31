@@ -105,12 +105,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const rotationBtn = document.getElementById("rotationBtn");
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const controls = document.getElementById("controls");
-  const toggleBtn = document.getElementById("volumeToggle");
-  const volumePanel = document.getElementById("volumePanel");
+  const volumeToggleBtn = document.getElementById("volumeToggle");
 
   async function play_source(sourceobject)
   {
-    console.log("sourceobject=",sourceobject);
     try {
       let blobURL = null;
       let lastplayed_val = null;
@@ -206,15 +204,23 @@ document.addEventListener("DOMContentLoaded", () => {
   volumeSlider.addEventListener("input", () => {
     const percent = parseInt(volumeSlider.value, 10); // raw percent
     const normalized = Math.min(1, Math.max(0, percent / 100));
-    player.volume = normalized;
 
-    const label = document.getElementById("volumeLabel");
-    if (label) label.textContent = percent;
+    if (volumeToggleBtn.textContent.trim() === "🔊") {
+      player.volume = normalized;
+    }
   });
 
   // Toggle visibility on button click
-  toggleBtn.addEventListener("click", () => {
-    volumePanel.classList.toggle("hidden");
+  volumeToggleBtn.addEventListener("click", () => {
+    if (volumeToggleBtn.textContent.trim() === "🔊") {
+      video.volume = 0;
+      volumeToggleBtn.textContent = "🔇";
+    } else {
+      const percent = parseInt(volumeSlider.value, 10); // raw percent
+      const normalized = Math.min(1, Math.max(0, percent / 100));
+      player.volume = normalized;
+      volumeToggleBtn.textContent = "🔊";
+    }
   });
 
   rotationBtn.addEventListener("click", () => {
@@ -299,14 +305,6 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-  document.addEventListener("click", (e) => {
-    const target = e.target;
-    if (!controls.contains(target)) {
-        const video = document.getElementById("player");
-        togglePlay(video);
-    }
-  });
-
   function formatTime(seconds) {
     const min = Math.floor(seconds / 60).toString().padStart(2, "0");
     const sec = Math.floor(seconds % 60).toString().padStart(2, "0");
@@ -327,14 +325,20 @@ document.addEventListener("keydown", (e) => {
     clearTimeout(hideTimeout);
     hideTimeout = setTimeout(() => {
       controls.classList.add("hidden");
-      volumePanel.classList.add("hidden");
-    }, 2000); // Hide after 2 seconds
+    }, 3000); // Hide after 3 seconds
   }
-
-
+/*
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+    if (!(controls.contains(target)|| volumePanel.contains(target))) {
+        const video = document.getElementById("player");
+        togglePlay(video);
+    }
+  });
+*/
   player.addEventListener("pointermove", (e) => {
     const target = e.target;
-    if (controls.contains(target) || volumePanel.contains(target)) {
+    if (controls.contains(target)) {
       controls.classList.remove("hidden");
       clearTimeout(hideTimeout);
     }
