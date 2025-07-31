@@ -52,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const volumeSlider = document.getElementById("volumeSlider");
   const timeDisplay = document.getElementById("timeDisplay");
   const progressBar = document.getElementById("progressBar");
+  const rotationBtn = document.getElementById("rotationBtn");
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const controls = document.getElementById("controls");
 
@@ -120,6 +121,22 @@ document.addEventListener("DOMContentLoaded", () => {
     video.volume = volumeSlider.value;
   };
 
+  rotationBtn.addEventListener("click", () => {
+    const orientation = screen?.orientation;
+    if (!orientation || !orientation.lock) return;
+
+    const current = orientation.type;
+
+    if (current.startsWith("portrait")) {
+      orientation.lock("landscape").catch((err) => {
+        console.warn("Rotation failed:", err);
+      });
+    } else if (current.startsWith("landscape")) {
+      orientation.lock("portrait").catch((err) => {
+      });
+    }
+  });
+
   video.addEventListener("timeupdate", () => {
     const duration = video.duration;
     if (!video.src || Number.isNaN(duration))
@@ -137,7 +154,8 @@ document.addEventListener("DOMContentLoaded", () => {
     progressBar.value = currentTime;
   });
 
-  fullscreenBtn.onclick = () => {
+  function fullscreencallback()
+  {
     const container = document.getElementById("playerContainer");
     if (document.fullscreenElement) {
       document.exitFullscreen();
@@ -145,7 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
       container.requestFullscreen();
       controls.classList.toggle('hidden');
     }
-  };
+  }
+
+  fullscreenBtn.onclick = fullscreencallback;
 
   progressBar.oninput = () => {
     video.currentTime = progressBar.value;
@@ -172,12 +192,7 @@ document.addEventListener("keydown", (e) => {
       }
       break;
       case "KeyF":
-        const container = document.getElementById("playerContainer");
-        if (document.fullscreenElement) {
-          document.exitFullscreen();
-        } else {
-          container.requestFullscreen();
-        }
+        fullscreencallback();
       break;
     // optional: Esc to exit fullscreen
     case "Escape":
@@ -222,62 +237,19 @@ function showControlsTemporarily() {
   }, 1000); // Hide after 1 seconds
 }
 
-function isPointerInside(elem) {
+const controls = document.getElementById("controls");
+const player = document.getElementById("player");
+
+function isPointerInside(elem, x, y) {
   const rect = elem.getBoundingClientRect();
-  const x = window.mouseX ?? -1;
-  const y = window.mouseY ?? -1;
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
-// Track pointer location globally
-document.addEventListener("mousemove", (e) => {
-  window.mouseX = e.clientX;
-  window.mouseY = e.clientY;
-  if (isPointerInside(controls))
-  {
+player.addEventListener("pointermove", (e) => {
+  const x = e.clientX;
+  const y = e.clientY;
+
+  if (isPointerInside(controls, x, y)) {
     showControlsTemporarily();
-  }
-});
-
-let skipInterval = null;
-
-document.getElementById("player").addEventListener("touchstart", (e) => {
-  const video = e.target;
-  const rect = video.getBoundingClientRect();
-  const touch = e.touches[0];
-
-  if (!touch || !video || video.readyState < 3 || !video.src) return;
-
-  const x = touch.clientX - rect.left;
-  const width = rect.width;
-
-  if (x < width * 0.25) {
-    // Left 25%: Start rewinding repeatedly
-    skipInterval = setInterval(() => {
-      video.currentTime = Math.max(0, video.currentTime - 30); // Rewind 30s per tick
-    }, 300);
-  } else if (x > width * 0.75) {
-    // Right 25%: Start skipping forward repeatedly
-    skipInterval = setInterval(() => {
-      video.currentTime = Math.min(video.duration, video.currentTime + 30); // Skip 30s per tick
-    }, 300);
-  } else {
-    // Center: Toggle play/pause once
-    video.paused ? video.play() : video.pause();
-    document.getElementById("playBtn").textContent = video.paused ? "▶️" : "⏸️";
-  }
-});
-
-document.getElementById("player").addEventListener("touchend", () => {
-  if (skipInterval) {
-    clearInterval(skipInterval);
-    skipInterval = null;
-  }
-});
-
-document.getElementById("player").addEventListener("touchcancel", () => {
-  if (skipInterval) {
-    clearInterval(skipInterval);
-    skipInterval = null;
   }
 });

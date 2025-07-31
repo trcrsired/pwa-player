@@ -15,14 +15,45 @@
         <video id="player" autoplay style="width:100vw; height:100vh; object-fit:contain; background:#000;"></video>
 
         <div id="controls">
-        <button id="playBtn">▶️</button>
-        <button id="stopBtn">⏹️</button>
-        <button id="pickerBtn">📁</button>
-        <button id="webBtn">🌍</button>
-        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1" />
-        <span id="timeDisplay">00:00 / 00:00</span>
-        <button id="fullscreenBtn">⛶</button>
-        <input type="range" id="progressBar" value="0" step="0.1" />
+        <!-- Playback Controls -->
+        <button id="playBtn" title="Play or resume the video">▶️</button>
+        <button id="stopBtn" title="Stop and reset the video">⏹️</button>
+
+        <!-- File and Source Management -->
+        <button id="pickerBtn" title="Pick a local video file">📁</button>
+        <button id="webBtn" title="Open a web video URL">🌍</button>
+
+        <!-- Volume Control -->
+        <input
+        type="range"
+        id="volumeSlider"
+        min="0"
+        max="1"
+        step="0.01"
+        value="1"
+        title="Adjust the volume"
+        />
+
+        <!-- Orientation Control -->
+        <button
+        id="rotationBtn"
+        title="Rotate screen orientation (may not be supported on your device)"
+        >🔁</button>
+
+        <!-- Time Display -->
+        <span id="timeDisplay" title="Current time / Total duration">00:00 / 00:00</span>
+
+        <!-- Fullscreen Toggle -->
+        <button id="fullscreenBtn" title="Toggle fullscreen mode">⛶</button>
+
+        <!-- Progress Scrubber -->
+        <input
+        type="range"
+        id="progressBar"
+        value="0"
+        step="0.1"
+        title="Seek or scrub through the video"
+        />
         </div>
         <!--/input type="file" id="fileInput" accept="video/*" style="position:fixed;top:10px;left:10px;z-index:1000;" /-->
         <script src="player.js"></script>
