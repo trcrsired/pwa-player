@@ -73,13 +73,43 @@
         </div>
         <div class="overlay-content">
             <p class="storage-description">
-            To ensure reliable access in PWA environments, files from imported directories will be <strong>copied into private storage</strong>. This avoids sandboxing issues and ensures persistent availability across sessions.
+            To ensure reliable access in PWA environments, files from imported directories will be <strong>copied into private storage</strong>. For simplicity and consistency, we only support <strong><code>.webm</code> files</strong>. This avoids sandboxing issues and ensures persistent availability across sessions.
             </p>
+            <button id="addTrackBtn">➕ Add Directory Import</button>
+            <button id="clearImports">✖️ Clear Imports</button>
             <ul id="storageItems" class="overlay-list"></ul>
-            <button id="addTrackBtn">➕ Add Directories Import</button>
         </div>
         </div>
 
+        <div id="folderOverlay" class="overlay-panel hidden">
+        <div class="overlay-header">
+            <h2>📁 Folder Manager</h2>
+            <button id="closeFolderBtn" title="Close">✖️</button>
+        </div>
+        <div class="overlay-content">
+            <p class="folder-description">
+            Select files to add to your playlist or delete from private storage.
+            </p>
+            <div id="folderActions">
+            <button id="renameDirectoryBtn">✏️ Rename Directory</button>
+            <button id="deleteDirectoryBtn">🗑️ Delete Directory</button>
+            <hr />
+            <button id="addSelectedToPlaylist">➕ Add Selected to Playlist</button>
+            <button id="deleteSelectedFiles">🗑️ Delete Selected Files</button>
+            </div>
+            </div>
+            <ul id="folderFileList" class="overlay-list"></ul>
+        </div>
+        </div>
+        <div id="playlistSelectorOverlay" class="overlay-panel modal hidden">
+        <div class="overlay-header">
+            <h3>🎵 Select Playlist</h3>
+            <button id="closePlaylistSelectorBtn">✖️</button>
+        </div>
+        <div class="overlay-content">
+            <ul id="playlistList" class="overlay-list"></ul>
+        </div>
+        </div>
 
         <script src="player.js"></script>
     </body>

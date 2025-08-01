@@ -431,30 +431,212 @@ addTrackBtn.addEventListener('click', () => {
   renderPlaylist();
 });
 
+const folderOverlay = document.getElementById('folderOverlay');
+const folderFileList = document.getElementById('folderFileList');
+const closeFolderBtn = document.getElementById('closeFolderBtn');
+
+let currentFolderHandle = null;
+let selectedFiles = new Set();
+
+// Close overlay
+closeFolderBtn.addEventListener('click', () => {
+  folderOverlay.classList.add('hidden');
+  selectedFiles.clear();
+  folderFileList.innerHTML = '';
+});
+
+// Main function to open folder and render file list
+async function enterImportDir(dirHandle, label = '') {
+  currentFolderHandle = dirHandle;
+  selectedFiles.clear();
+  folderFileList.innerHTML = '';
+  folderOverlay.classList.remove('hidden');
+
+  async function walk(handle, path = '') {
+    for await (const [name, entry] of handle.entries()) {
+      const fullPath = path ? `${path}/${name}` : name;
+
+      if (entry.kind === 'file' && name.toLowerCase().endsWith('.webm')) {
+        const li = document.createElement('li');
+        li.classList.add('file-entry');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            selectedFiles.add(fullPath);
+          } else {
+            selectedFiles.delete(fullPath);
+          }
+        });
+
+        li.appendChild(checkbox);
+        li.appendChild(document.createTextNode(` ${fullPath}`));
+        folderFileList.appendChild(li);
+      } else if (entry.kind === 'directory') {
+        const subDir = await handle.getDirectoryHandle(name);
+        await walk(subDir, fullPath);
+      }
+    }
+  }
+
+  await walk(dirHandle);
+}
+
+
+async function renderStorage() {
+  storageItems.innerHTML = '';
+
+  try {
+    const privateRoot = await navigator.storage.getDirectory();
+    const importsDir = await privateRoot.getDirectoryHandle('imports', { create: true });
+
+    for await (const [name, handle] of importsDir.entries()) {
+      if (handle.kind === 'directory') {
+        const li = document.createElement('li');
+        li.textContent = name;
+        li.classList.add('storage-folder-item');
+        li.title = 'Click to open folder manager';
+
+        li.addEventListener('click', () => {
+          enterImportDir(handle, name);
+        });
+
+        storageItems.appendChild(li);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to render storage imports:', err);
+    const li = document.createElement('li');
+    li.textContent = '⚠️ Unable to access private storage.';
+    storageItems.appendChild(li);
+  }
+}
+
 // 🗂️ Storage Logic
 storageBtn.addEventListener('click', () => {
   storageOverlay.classList.remove('hidden');
+  renderStorage();
 });
 
 closeStorageBtn.addEventListener('click', () => {
   storageOverlay.classList.add('hidden');
 });
 
-let storageImports = [];
-
-function renderStorage() {
-  storageItems.innerHTML = '';
-  storageImports.forEach((dir, index) => {
-    const li = document.createElement('li');
-    li.textContent = dir.name || `Import ${index + 1}`;
-    storageItems.appendChild(li);
-  });
+async function dirExists(name, parentHandle) {
+  try {
+    await parentHandle.getDirectoryHandle(name, { create: false });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-addImportBtn.addEventListener('click', () => {
-  const newImport = { name: `Imported Directory ${storageImports.length + 1}` };
-  storageImports.push(newImport);
-  renderStorage();
+async function promptForUniqueName(baseName, importsDirHandle) {
+  let attempts = 0;
+
+  while (attempts != 3) {
+    const name = prompt(`Directory "${baseName}" already exists.\nEnter a new name (no slashes):`, baseName);
+    if (name === null) return null; // Cancelled
+
+    const trimmed = name.trim();
+    if (!trimmed || trimmed.includes('/')) {
+      alert('Invalid name. Directory names must not be empty or contain slashes.');
+      return null;
+    }
+
+    if (trimmed === baseName) {
+      ++attempts;
+      alert(`"${baseName}" already exists. Please choose a different name.`);
+      continue;
+    }
+
+    if (!(await dirExists(trimmed, importsDirHandle))) {
+      return trimmed;
+    }
+
+    ++attempts;
+    alert(`"${trimmed}" already exists. Try again.`);
+  }
+
+  alert('Too many attempts. Import cancelled.');
+  return null;
+}
+
+async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle) {
+  for await (const [name, handle] of sourceHandle.entries()) {
+    if (handle.kind === 'file') {
+      if (!name.toLowerCase().endsWith('.webm')) continue;
+
+      const file = await handle.getFile();
+      const targetFileHandle = await targetHandle.getFileHandle(name, { create: true });
+      const writable = await targetFileHandle.createWritable();
+      await writable.write(await file.arrayBuffer());
+      await writable.close();
+    } else if (handle.kind === 'directory') {
+      const newDirHandle = await targetHandle.getDirectoryHandle(name, { create: true });
+      await copyDirectoryToPrivateStorage(handle, newDirHandle); // recursive
+    }
+  }
+}
+
+addImportBtn.addEventListener('click', async () => {
+  try {
+    const sourceDir = await window.showDirectoryPicker({
+        startIn: 'music'
+      });
+    const permission = await verifyPermission(sourceDir);
+    if (!permission) return;
+
+    const privateRoot = await navigator.storage.getDirectory();
+    const importsDir = await privateRoot.getDirectoryHandle('imports', { create: true });
+
+    let targetName = sourceDir.name;
+    if (await dirExists(targetName, importsDir)) {
+      targetName = await promptForUniqueName(targetName, importsDir);
+      if (!targetName) return; // Cancelled or invalid
+    }
+
+    const targetDir = await importsDir.getDirectoryHandle(targetName, { create: true });
+    await copyDirectoryToPrivateStorage(sourceDir, targetDir);
+
+    renderStorage();
+  } catch (err) {
+  }
+});
+
+document.getElementById('clearImports').addEventListener('click', async () => {
+  const confirmed = confirm(
+    '⚠️ This will permanently delete all imported directories and the entire "imports" folder.\n\nAre you sure you want to proceed?'
+  );
+  if (!confirmed) return;
+
+  try {
+    const rootDir = await navigator.storage.getDirectory();
+
+    // Check if 'imports' exists
+    let importsExists = false;
+    for await (const [name, handle] of rootDir.entries()) {
+      if (name === 'imports' && handle.kind === 'directory') {
+        importsExists = true;
+        break;
+      }
+    }
+
+    if (!importsExists) {
+      alert('No "imports" folder found. Nothing to clear.');
+      return;
+    }
+
+    // Remove 'imports' folder recursively
+    await rootDir.removeEntry('imports', { recursive: true });
+
+    alert('✅ All imported directories and the "imports" folder have been removed.');
+    renderStorage(); // Refresh UI
+  } catch (err) {
+    console.error('❌ Failed to clear imports folder:', err);
+    alert('❌ Failed to clear imports. See console for details.');
+  }
 });
 
 });
