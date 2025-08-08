@@ -639,5 +639,15 @@ document.getElementById('clearImports').addEventListener('click', async () => {
   }
 });
 
+if ('launchQueue' in window) {
+  launchQueue.setConsumer(async (launchParams) => {
+    for (const fileHandle of launchParams.files) {
+      const file = await fileHandle.getFile();
+      play_source(file);
+      return;
+      // Route to appropriate player logic
+    }
+  });
+}
 });
 
