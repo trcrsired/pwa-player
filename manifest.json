@@ -1,9 +1,10 @@
 {
+  "id": "/",
   "name": "PWA Player",
   "short_name": "PWA Player",
-  "start_url": ".",
-  "background_color": "blue",
-  "theme_color": "blue",
+  "start_url": "/?source=pwa",
+  "background_color": "black",
+  "theme_color": "black",
   "description": "A Progressive Web APP Media Player",
   "display": "standalone",
   "icons": [
