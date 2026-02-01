@@ -1,10 +1,10 @@
-const CACHE_NAME = "pwa-player-cache-v13";
+const CACHE_NAME = "pwa-player-cache-v14";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
-        "/index.html", // Entry file
+        "/", // Entry file
         "/style.css",  // Styles
         "/player.js",  // JS logic
         "/manifest.json",

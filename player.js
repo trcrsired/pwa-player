@@ -176,6 +176,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
   }
+
+  const player = video;
+  const container = document.getElementById("playerContainer");
+
+  ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+      window.addEventListener(eventName, e => e.preventDefault());
+  });
+
+  window.addEventListener("dragover", () => {
+      container.style.outline = "3px dashed #4caf50";
+  });
+
+  window.addEventListener("dragleave", () => {
+      container.style.outline = "none";
+  });
+
+  window.addEventListener("drop", e => {
+      container.style.outline = "none";
+
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+
+      if (
+          !file.type.startsWith("video/") &&
+          !file.type.startsWith("audio/")
+      ) {
+          alert("Please drop a video or audio file");
+          return;
+      }
+
+      play_source(file);
+  });
+
   playBtn.onclick = async () => {
     if (!video.src)
     {
@@ -522,6 +555,7 @@ storageBtn.addEventListener('click', () => {
 closeStorageBtn.addEventListener('click', () => {
   storageOverlay.classList.add('hidden');
 });
+
 
 async function dirExists(name, parentHandle) {
   try {
