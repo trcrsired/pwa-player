@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-player-cache-v15";
+const CACHE_NAME = "pwa-player-cache-v15.2";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -6,7 +6,11 @@ self.addEventListener("install", (event) => {
       return cache.addAll([
         "/", // Entry file
         "/style.css",  // Styles
+        "/settings.css",  // Settings Styles
+        "/indexeddb.js",  // JS logic
         "/player.js",  // JS logic
+        "/storage.js",  // JS logic
+        "/sw-register.js",
         "/manifest.json",
         "/icons/icon.webp"
         // You could add default video or fallback assets too

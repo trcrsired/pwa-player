@@ -6,10 +6,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     	<meta name="msvalidate.01" content="0EBF88DA5B81674DD7E39378483EC964" />
-	<title>PWA Player</title>
-        <link rel="icon" href="icons/icon.webp" />
-        <link rel="manifest" href="manifest.json">
-        <link rel="stylesheet" href="style.css">
+    	<title>PWA Player</title>
+        <link rel="icon" href="/icons/icon.webp" />
+        <link rel="manifest" href="/manifest.json">
+        <link rel="stylesheet" href="/style.css">
+        <link rel="stylesheet" href="/settings.css">
     </head>
     <body>
         <div id="playerContainer">
@@ -57,61 +58,26 @@
             </div>
 
         </div>
-        <div id="playlistOverlay" class="overlay-panel hidden">
-        <div class="overlay-header">
-            <h2>🎵 Playlist</h2>
-            <button id="closePlaylistBtn">✖️</button>
-        </div>
-        <div class="overlay-content">
-            <ul id="playlistItems" class="overlay-list"></ul>
-        </div>
+
+        <div id="storageView" class="hidden">
+            <header class="topbar">
+                <button id="backBtn" class="back-btn">←</button>
+                <h1 class="title">Storage Manager</h1>
+            </header>
+
+            <main class="content">
+                <section class="actions">
+                    <button id="addImportBtn" class="btn primary">Import Directory</button>
+                    <button id="clearImports" class="btn danger">Clear All Imports</button>
+                </section>
+
+                <ul id="storageList" class="list"></ul>
+            </main>
         </div>
 
-        <div id="storageOverlay" class="overlay-panel hidden">
-        <div class="overlay-header">
-            <h2>🗂️ Storage</h2>
-            <button id="closestorageBtn">✖️</button>
-        </div>
-        <div class="overlay-content">
-            <p class="storage-description">
-            To ensure reliable access in PWA environments, files from imported directories will be <strong>copied into private storage</strong>. For simplicity and consistency, we only support <strong><code>.webm</code> files</strong>. This avoids sandboxing issues and ensures persistent availability across sessions.
-            </p>
-            <button id="addTrackBtn">➕ Add Directory Import</button>
-            <button id="clearImports">✖️ Clear Imports</button>
-            <ul id="storageItems" class="overlay-list"></ul>
-        </div>
-        </div>
-
-        <div id="folderOverlay" class="overlay-panel hidden">
-        <div class="overlay-header">
-            <h2>📁 Folder Manager</h2>
-            <button id="closeFolderBtn" title="Close">✖️</button>
-        </div>
-        <div class="overlay-content">
-            <p class="folder-description">
-            Select files to add to your playlist or delete from private storage.
-            </p>
-            <div id="folderActions">
-            <button id="renameDirectoryBtn">✏️ Rename Directory</button>
-            <button id="deleteDirectoryBtn">🗑️ Delete Directory</button>
-            <hr />
-            <button id="addSelectedToPlaylist">➕ Add Selected to Playlist</button>
-            <button id="deleteSelectedFiles">🗑️ Delete Selected Files</button>
-            </div>
-            </div>
-            <ul id="folderFileList" class="overlay-list"></ul>
-        </div>
-        </div>
-        <div id="playlistSelectorOverlay" class="overlay-panel modal hidden">
-        <div class="overlay-header">
-            <h3>🎵 Select Playlist</h3>
-            <button id="closePlaylistSelectorBtn">✖️</button>
-        </div>
-        <div class="overlay-content">
-            <ul id="playlistList" class="overlay-list"></ul>
-        </div>
-        </div>
-
+        <script src="indexeddb.js"></script>
         <script src="player.js"></script>
+        <script src="storage.js"></script>
+        <script src="sw-register.js"></script>
     </body>
 </html>
