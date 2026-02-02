@@ -45,7 +45,6 @@ async function promptForUniqueName(baseName, importsDirHandle) {
 async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle) {
     for await (const [name, handle] of sourceHandle.entries()) {
         if (handle.kind === 'file') {
-            if (!name.toLowerCase().endsWith('.webm')) continue;
 
             const file = await handle.getFile();
             const targetFileHandle = await targetHandle.getFileHandle(name, { create: true });
@@ -65,7 +64,6 @@ async function collectWebmPointers(dirHandle, basePath) {
 
     for await (const [name, handle] of dirHandle.entries()) {
         if (handle.kind === "file") {
-            if (!name.toLowerCase().endsWith(".webm")) continue;
 
             // Store only pointer info: name + logical path
             result.push({
