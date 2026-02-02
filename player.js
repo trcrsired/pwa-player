@@ -103,6 +103,16 @@ async function play_source(sourceobject, playlist) {
 
     navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
     document.title = `PWA Player ▶️ ${mediametadata.title}`;
+
+    // Build entry for Now Playing UI
+    const entry = {
+        name: mediametadata.title,
+        artist: mediametadata.artist || "",
+        path: sourceobject
+    };
+
+    // Update Now Playing UI
+    updateNowPlayingInfo(entry);
   }
   catch (err) {
     console.warn(err);
@@ -195,7 +205,7 @@ pickerBtn.onclick = async (e) => {
 };
 webBtn.onclick = () => {
   try {
-    const url = prompt("Enter video URL:");
+    const url = prompt("Enter web URL:");
 
     if (url)
     {

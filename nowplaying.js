@@ -32,7 +32,6 @@ async function nowPlaying_playIndex(index) {
     });
 
     nowPlayingIndex = index;
-    updateNowPlayingInfo(entry);
     renderNowPlayingQueue();
 }
 
@@ -170,16 +169,19 @@ async function restoreLastPlayback() {
 function updateNowPlayingInfo(entry) {
     const titleEl = document.querySelector("#nowPlayingInfo .track-title");
     const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
+    const urlEl = document.querySelector("#nowPlayingInfo .track-url");
 
     if (!entry) {
         titleEl.textContent = "No track playing";
         artistEl.textContent = "";
+        urlEl.textContent = "";
         return;
     }
 
     // Basic metadata
     titleEl.textContent = entry.name || "Unknown Title";
     artistEl.textContent = entry.artist || "";
+    urlEl.textContent = entry.path || "";
 }
 
 function renderNowPlayingQueue() {
@@ -257,7 +259,6 @@ document.getElementById("npPlayModeBtn").addEventListener("click", clickPlayMode
 loadPlayMode();
 
 function showNowPlayingView() {
-    updateNowPlayingInfo(nowPlayingQueue[nowPlayingIndex]);
     renderNowPlayingQueue();
 
     switchView("nowPlayingView");
