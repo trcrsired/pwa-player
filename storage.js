@@ -80,6 +80,11 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result 
         try {
             if (handle.kind === "file") {
                 // SAF read (may fail on Android)
+                // Chromium Recent BUG on Android? for handle.getFile() silent fails.
+                // GrapheneOS
+                // No longer working on Microsoft Edge and Vadadium. Why?
+                // Same issue happens for snaeplayer
+                // https://github.com/minht11/local-music-pwa/issues/76
                 const file = await handle.getFile();
 
                 let writable = null;
