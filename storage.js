@@ -45,12 +45,7 @@ async function promptForUniqueName(baseName, importsDirHandle) {
 async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result = { count: 0, errors: [] }) {
     for await (const [name, handle] of sourceHandle.entries()) {
 
-        // Skip hidden files such as .DS_Store, .git, .thumbnails, etc.
-        if (name.startsWith(".")) {
-            result.errors.push(`Skipped hidden entry: ${name}`);
-            continue;
-        }
-
+        // Do NOT skip hidden files; let the file system decide what is valid.
         try {
             if (handle.kind === "file") {
 
@@ -68,7 +63,7 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result 
                     // Write the file content
                     await writable.write(file);
 
-                    // Count successful file imports (pre-increment)
+                    // Count successful file imports
                     ++result.count;
 
                 } finally {
@@ -77,7 +72,6 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result 
                         await writable.close();
                     }
                 }
-
             } else if (handle.kind === "directory") {
 
                 let newDirHandle = null;
@@ -86,7 +80,7 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result 
                     // Create or open the target directory
                     newDirHandle = await targetHandle.getDirectoryHandle(name, { create: true });
                 } catch (err) {
-                    // Directory creation failed — record and skip
+                    // Directory creation failed — record and skip this directory
                     result.errors.push(`Failed to create directory '${name}': ${err.message}`);
                     continue;
                 }
