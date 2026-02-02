@@ -25,7 +25,7 @@ async function promptForUniqueName(baseName, importsDirHandle) {
         }
 
         if (trimmed === baseName) {
-            attempts++;
+            ++attempts;
             alert(`"${baseName}" already exists. Please choose a different name.`);
             continue;
         }
@@ -34,7 +34,7 @@ async function promptForUniqueName(baseName, importsDirHandle) {
             return trimmed;
         }
 
-        attempts++;
+        ++attempts;
         alert(`"${trimmed}" already exists. Try again.`);
     }
 
@@ -43,18 +43,34 @@ async function promptForUniqueName(baseName, importsDirHandle) {
 }
 
 async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle) {
-    for await (const [name, handle] of sourceHandle.entries()) {
-        if (handle.kind === 'file') {
-
-            const file = await handle.getFile();
-            const targetFileHandle = await targetHandle.getFileHandle(name, { create: true });
-            const writable = await targetFileHandle.createWritable();
-            await writable.write(await file.arrayBuffer());
-            await writable.close();
-        } else if (handle.kind === 'directory') {
-            const newDirHandle = await targetHandle.getDirectoryHandle(name, { create: true });
-            await copyDirectoryToPrivateStorage(handle, newDirHandle);
+    try
+    {
+        for await (const [name, handle] of sourceHandle.entries()) {
+            if (handle.kind === 'file') {
+                const file = await handle.getFile();
+                const targetFileHandle = await targetHandle.getFileHandle(name, { create: true });
+                let writable = null;
+                try
+                {
+                    writable = await targetFileHandle.createWritable();
+                    await writable.write(file);
+                }
+                finally
+                {
+                    if (writable)
+                    {
+                        await writable.close();
+                    }
+                }
+            } else if (handle.kind === 'directory') {
+                const newDirHandle = await targetHandle.getDirectoryHandle(name, { create: true });
+                await copyDirectoryToPrivateStorage(handle, newDirHandle);
+            }
         }
+    }
+    catch(err)
+    {
+        alert(err);
     }
 }
 
@@ -182,7 +198,7 @@ document.getElementById('addImportBtn').addEventListener('click', async () => {
 
         renderStorage();
     } catch (err) {
-        console.error(err);
+        console.warn(err);
     }
 });
 

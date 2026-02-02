@@ -44,60 +44,6 @@ async function getMediaMetadataFromSource(sourceobject) {
   ];
 }
 
-// Playback modes
-const PLAY_MODES = ["once", "repeat", "repeat-one", "shuffle"];
-
-// Default mode is Shuffle
-let playMode = "shuffle";
-
-// Update button text
-function updatePlayModeButton() {
-    const btn = document.getElementById("playModeBtn");
-
-    switch (playMode) {
-        case "once":
-            btn.textContent = "➡️";
-            break;
-        case "repeat":
-            btn.textContent = "🔁";
-            break;
-        case "repeat-one":
-            btn.textContent = "🔂1";
-            break;
-        case "shuffle":
-            btn.textContent = "🔀";
-            break;
-    }
-    document.getElementById("npPlayModeBtn").textContent = btn.textContent;
-}
-
-async function loadPlayMode() {
-    const saved = await kv_get("playMode");
-    if (saved && PLAY_MODES.includes(saved)) {
-        playMode = saved;
-    } else {
-        playMode = "shuffle"; // default
-    }
-    updatePlayModeButton();
-    return playMode;
-}
-
-// Cycle playback mode
-
-function clickPlayModeBtn()
-{
-    const index = PLAY_MODES.indexOf(playMode);
-    playMode = PLAY_MODES[(index + 1) % PLAY_MODES.length];
-    kv_set("playMode", playMode);
-
-    updatePlayModeButton();
-}
-
-document.getElementById("playModeBtn").addEventListener("click", clickPlayModeBtn);
-document.getElementById("npPlayModeBtn").addEventListener("click", clickPlayModeBtn);
-
-loadPlayMode();
-
 const video = document.getElementById("player");
 const playBtn = document.getElementById("playBtn");
 const npPlayBtn = document.getElementById("npPlayBtn");
@@ -462,25 +408,6 @@ document.addEventListener("keydown", (e) => {
       }
     });
   }
-
-video.addEventListener("ended", () => {
-    switch (playMode) {
-        case "once":
-            // Do nothing
-            break;
-
-        case "repeat-one":
-            video.currentTime = 0;
-            video.play();
-            break;
-
-        case "repeat":
-        case "shuffle":
-            // Placeholder: will call playNext() later
-            playNext();
-            break;
-    }
-});
 
 document.getElementById('storageBtn').addEventListener('click', () => {
   document.getElementById("storageView").classList.remove("hidden");

@@ -2,6 +2,12 @@ let nowPlayingQueue = [];
 let shuffledQueue = [];
 let nowPlayingIndex = 0;
 
+// Playback modes
+const PLAY_MODES = ["once", "repeat", "repeat-one", "shuffle"];
+
+// Default mode is Shuffle
+let playMode = "shuffle";
+
 function shuffleArray(arr) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; --i) {
@@ -202,7 +208,53 @@ function renderNowPlayingQueue() {
     });
 }
 
-renderNowPlayingQueue()
+// Update button text
+function updatePlayModeButton() {
+    const btn = document.getElementById("playModeBtn");
+
+    switch (playMode) {
+        case "once":
+            btn.textContent = "➡️";
+            break;
+        case "repeat":
+            btn.textContent = "🔁";
+            break;
+        case "repeat-one":
+            btn.textContent = "🔂1";
+            break;
+        case "shuffle":
+            btn.textContent = "🔀";
+            break;
+    }
+    document.getElementById("npPlayModeBtn").textContent = btn.textContent;
+}
+
+async function loadPlayMode() {
+    const saved = await kv_get("playMode");
+    if (saved && PLAY_MODES.includes(saved)) {
+        playMode = saved;
+    } else {
+        playMode = "shuffle"; // default
+    }
+    updatePlayModeButton();
+    return playMode;
+}
+
+// Cycle playback mode
+
+function clickPlayModeBtn()
+{
+    const index = PLAY_MODES.indexOf(playMode);
+    playMode = PLAY_MODES[(index + 1) % PLAY_MODES.length];
+    kv_set("playMode", playMode);
+
+    updatePlayModeButton();
+}
+
+document.getElementById("playModeBtn").addEventListener("click", clickPlayModeBtn);
+document.getElementById("npPlayModeBtn").addEventListener("click", clickPlayModeBtn);
+
+loadPlayMode();
 
 function showNowPlayingView() {
     updateNowPlayingInfo(nowPlayingQueue[nowPlayingIndex]);
@@ -210,3 +262,22 @@ function showNowPlayingView() {
 
     switchView("nowPlayingView");
 }
+
+document.getElementById("player").addEventListener("ended", () => {
+    switch (playMode) {
+        case "once":
+            // Do nothing
+            break;
+
+        case "repeat-one":
+            video.currentTime = 0;
+            video.play();
+            break;
+
+        case "repeat":
+        case "shuffle":
+            // Placeholder: will call playNext() later
+            playNext();
+            break;
+    }
+});
