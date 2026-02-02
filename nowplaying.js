@@ -282,3 +282,9 @@ document.getElementById("player").addEventListener("ended", () => {
             break;
     }
 });
+
+
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('previoustrack', playPrevious);
+  navigator.mediaSession.setActionHandler('nexttrack', playNext);
+}
