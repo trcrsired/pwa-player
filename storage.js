@@ -42,36 +42,70 @@ async function promptForUniqueName(baseName, importsDirHandle) {
     return null;
 }
 
-async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle) {
-    try
-    {
-        for await (const [name, handle] of sourceHandle.entries()) {
-            if (handle.kind === 'file') {
+async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result = { count: 0, errors: [] }) {
+    for await (const [name, handle] of sourceHandle.entries()) {
+
+        // Skip hidden files such as .DS_Store, .git, .thumbnails, etc.
+        if (name.startsWith(".")) {
+            result.errors.push(`Skipped hidden entry: ${name}`);
+            continue;
+        }
+
+        try {
+            if (handle.kind === "file") {
+
+                // Attempt to read the source file
                 const file = await handle.getFile();
-                const targetFileHandle = await targetHandle.getFileHandle(name, { create: true });
+
                 let writable = null;
-                try
-                {
+                try {
+                    // Create or open the target file
+                    const targetFileHandle = await targetHandle.getFileHandle(name, { create: true });
+
+                    // Create a writable stream
                     writable = await targetFileHandle.createWritable();
+
+                    // Write the file content
                     await writable.write(file);
-                }
-                finally
-                {
-                    if (writable)
-                    {
+
+                    // Count successful file imports (pre-increment)
+                    ++result.count;
+
+                } finally {
+                    // Ensure the writable stream is closed if it was created
+                    if (writable) {
                         await writable.close();
                     }
                 }
-            } else if (handle.kind === 'directory') {
-                const newDirHandle = await targetHandle.getDirectoryHandle(name, { create: true });
-                await copyDirectoryToPrivateStorage(handle, newDirHandle);
+
+            } else if (handle.kind === "directory") {
+
+                let newDirHandle = null;
+
+                try {
+                    // Create or open the target directory
+                    newDirHandle = await targetHandle.getDirectoryHandle(name, { create: true });
+                } catch (err) {
+                    // Directory creation failed — record and skip
+                    result.errors.push(`Failed to create directory '${name}': ${err.message}`);
+                    continue;
+                }
+
+                // Recursively copy the subdirectory
+                await copyDirectoryToPrivateStorage(handle, newDirHandle, result);
             }
+
+        } catch (err) {
+            // Any failure for this entry is recorded but does not stop the process
+            result.errors.push(`Failed to copy '${name}': ${err.message}`);
+            continue;
         }
+
+        // Yield to the event loop to avoid UI freezing on Android
+        await new Promise(requestAnimationFrame);
     }
-    catch(err)
-    {
-        alert(err);
-    }
+
+    return result;
 }
 
 // Collect all .webm file pointers under a directory in private storage
@@ -194,9 +228,22 @@ document.getElementById('addImportBtn').addEventListener('click', async () => {
         }
 
         const targetDir = await importsDir.getDirectoryHandle(targetName, { create: true });
-        await copyDirectoryToPrivateStorage(sourceDir, targetDir);
 
+        // Run the copy operation and get the result object
+        const result = await copyDirectoryToPrivateStorage(sourceDir, targetDir);
+
+        // Refresh UI first so the user sees the updated storage immediately
         renderStorage();
+
+        // Build the final message
+        let message = `Imported ${result.count} music file(s).`;
+
+        if (result.errors.length > 0) {
+            message += "\n\nSome items could not be copied:\n" + result.errors.join("\n");
+        }
+
+        // Show the summary after UI is updated
+        alert(message);
     } catch (err) {
         console.warn(err);
     }
