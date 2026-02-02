@@ -72,6 +72,21 @@ html, body {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  flex-wrap: wrap; /* allow wrapping */
+}
+
+@media (max-width: 480px) {
+    .control-group.left-controls,
+    .control-group.right-controls {
+        width: 100%;        /* each group takes full width */
+        justify-content: center; /* center buttons */
+        margin-top: 6px;
+        flex-wrap: wrap; /* allow wrapping */
+    }
+
+    #volumeSlider {
+        width: 60%; /* shrink slider on small screens */
+    }
 }
 
 .left-controls,
