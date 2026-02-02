@@ -91,6 +91,23 @@
                     <div class="track-artist"></div>
                 </section>
 
+                <!-- Progress + time -->
+                <section class="progress-section">
+                    <span id="npTimeDisplay" title="Current Time / Total Duration">00:00 / 00:00</span>
+                    <input type="range" id="npProgressBar" min="0" max="100" value="0" title="Seek Timeline" />
+                    <button id="npVolumeToggle" title="Toggle Volume">🔊</button>
+                    <input type="range" id="npVolumeSlider" min="0" max="100" value="100" title="Adjust Volume" />
+                </section>
+
+                <!-- Playback controls -->
+                <section class="np-controls">
+                    <button id="npPrevBtn" title="Previous Track">⏮️</button>
+                    <button id="npPlayBtn" title="Play">▶️</button>
+                    <button id="npStopBtn" title="Stop">⏹️</button>
+                    <button id="npNextBtn" title="Next Track">⏭️</button>
+                    <button id="npPlayModeBtn" title="Playback Mode">🔀</button>
+                </section>
+
                 <!-- Playback queue -->
                 <ul id="nowPlayingQueue" class="list"></ul>
             </main>

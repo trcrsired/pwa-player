@@ -120,14 +120,11 @@ async function playNext() {
     await nowPlaying_playIndex(nowPlayingIndex);
 }
 
+document.getElementById("prevBtn").addEventListener("click", playPrevious);
+document.getElementById("npPrevBtn").addEventListener("click", playPrevious);
 
-document.getElementById("prevBtn").addEventListener("click", () => {
-    playPrev();
-});
-
-document.getElementById("nextBtn").addEventListener("click", () => {
-    playNext();
-});
+document.getElementById("nextBtn").addEventListener("click", playNext);
+document.getElementById("npNextBtn").addEventListener("click", playNext);
 
 // Try to restore last playback state.
 // Priority:
@@ -155,4 +152,69 @@ async function restoreLastPlayback() {
 
     // Nothing to restore
     return false;
+}
+
+
+function updateNowPlayingInfo(entry) {
+    const titleEl = document.querySelector("#nowPlayingInfo .track-title");
+    const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
+
+    if (!entry) {
+        titleEl.textContent = "No track playing";
+        artistEl.textContent = "";
+        return;
+    }
+
+    // Basic metadata
+    titleEl.textContent = entry.name || "Unknown Title";
+    artistEl.textContent = entry.artist || "";
+}
+
+function renderNowPlayingQueue() {
+    const ul = document.getElementById("nowPlayingQueue");
+    ul.innerHTML = "";
+
+    nowPlayingQueue.forEach((entry, i) => {
+        const li = document.createElement("li");
+        li.className = "list-item";
+
+        // Highlight current track
+        if (i === nowPlayingIndex) {
+            li.classList.add("active");
+        }
+
+        li.textContent = entry.name || entry.path;
+
+        // Clicking jumps to that track
+        li.addEventListener("click", () => {
+            nowPlaying_playIndex(i);
+        });
+
+        ul.appendChild(li);
+    });
+}
+renderNowPlayingQueue()
+async function nowPlaying_playIndex(index) {
+    const entry = nowPlayingQueue[index];
+    if (!entry) return;
+
+    const resolved = await storage_resolvePath(entry.path);
+
+    await play_source(resolved, {
+        playlistName: entry.playlistName,
+        index
+    });
+
+    nowPlayingIndex = index;
+
+    // Update UI
+    updateNowPlayingInfo(entry);
+    renderNowPlayingQueue();
+}
+
+function showNowPlayingView() {
+    updateNowPlayingInfo(nowPlayingQueue[nowPlayingIndex]);
+    renderNowPlayingQueue();
+
+    switchView("nowPlayingView");
 }

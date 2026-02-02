@@ -68,6 +68,7 @@ function updatePlayModeButton() {
             btn.textContent = "🔀";
             break;
     }
+    document.getElementById("npPlayModeBtn").textContent = btn.textContent;
 }
 
 async function loadPlayMode() {
@@ -94,17 +95,29 @@ loadPlayMode();
 
 const video = document.getElementById("player");
 const playBtn = document.getElementById("playBtn");
+const npPlayBtn = document.getElementById("npPlayBtn");
 const stopBtn = document.getElementById("stopBtn");
+const npStopBtn = document.getElementById("npStopBtn");
 const pickerBtn = document.getElementById("pickerBtn");
 const volumeSlider = document.getElementById("volumeSlider");
+const npVolumeSlider = document.getElementById("npVolumeSlider");
 const timeDisplay = document.getElementById("timeDisplay");
+const npTimeDisplay = document.getElementById("npTimeDisplay");
 const progressBar = document.getElementById("progressBar");
+const npProgressBar = document.getElementById("npProgressBar");
 const rotationBtn = document.getElementById("rotationBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const controls = document.getElementById("controls");
 const volumeToggleBtn = document.getElementById("volumeToggle");
+const npVolumeToggleBtn = document.getElementById("npVolumeToggle");
 const burgerBtn = document.getElementById('burgerBtn');
 const configOptions = document.getElementById('configOptions');
+
+function updateTimeDisplay(txtct)
+{
+  timeDisplay.textContent = txtct;
+  npTimeDisplay.textContent = txtct;
+}
 
 async function play_source(sourceobject, playlist) {
   try {
@@ -177,12 +190,14 @@ window.addEventListener("drop", e => {
     play_source(file);
 });
 
-playBtn.onclick = async () => {
+async function togglePlayBtn()
+{
     // If a video is already loaded → toggle play/pause
     if (video.src) {
         if (video.readyState < 3) return;
         video.paused ? video.play() : video.pause();
         playBtn.textContent = video.paused ? "▶️" : "⏸️";
+        npPlayBtn.textContent = playBtn.textContent;
         return;
     }
 
@@ -192,19 +207,25 @@ playBtn.onclick = async () => {
 
     // Nothing to restore → open picker
     pickerBtn.click();
-};
+}
 
+playBtn.onclick = togglePlayBtn;
+npPlayBtn.onclick = togglePlayBtn;
 
-stopBtn.onclick = () => {
+async function toggleStopBtn()
+{
   video.pause();
   video.currentTime = 0;
   video.removeAttribute("src");
   video.load();
   playBtn.textContent = "▶️";
+  npPlayBtn.textContent = playBtn.textContent;
   navigator.mediaSession.metadata = new MediaMetadata({});
   document.title = `PWA Player`;
-};
+}
 
+stopBtn.onclick = toggleStopBtn;
+npStopBtn.onclick = toggleStopBtn;
 
 pickerBtn.onclick = async (e) => {
   try {
@@ -217,7 +238,7 @@ pickerBtn.onclick = async (e) => {
   }
   catch (err) {
       if (video.src && video.currentTime > 0) {
-          stopBtn.onclick(); // Only stop if something's playing
+          toggleStopBtn(); // Only stop if something's playing
       }
   }
 };
@@ -233,21 +254,31 @@ webBtn.onclick = () => {
   catch (err) {
       console.warn("web picker cancelled or failed:", err);
       if (video.src && video.currentTime > 0) {
-          stopBtn.onclick(); // Only stop if something's playing
+          toggleStopBtn(); // Only stop if something's playing
       }
   }
 };
-volumeSlider.addEventListener("input", () => {
-  const percent = parseInt(volumeSlider.value, 10); // raw percent
+
+function volumeSliderInput(objVolumeSlider)
+{
+  const percent = parseInt(objVolumeSlider.value, 10); // raw percent
   const normalized = Math.min(1, Math.max(0, percent / 100));
 
   if (volumeToggleBtn.textContent.trim() === "🔊") {
     player.volume = normalized;
   }
+}
+
+volumeSlider.addEventListener("input", () => {
+  volumeSliderInput(volumeSlider);
 });
 
-// Toggle visibility on button click
-volumeToggleBtn.addEventListener("click", () => {
+npVolumeSlider.addEventListener("input", () => {
+  volumeSliderInput(npVolumeSlider);
+});
+
+function volumeToggleBtnClick()
+{
   if (volumeToggleBtn.textContent.trim() === "🔊") {
     video.volume = 0;
     volumeToggleBtn.textContent = "🔇";
@@ -257,7 +288,12 @@ volumeToggleBtn.addEventListener("click", () => {
     player.volume = normalized;
     volumeToggleBtn.textContent = "🔊";
   }
-});
+  npVolumeToggleBtn.textContent = volumeToggleBtn.textContent;
+}
+
+// Toggle visibility on button click
+volumeToggleBtn.addEventListener("click", volumeToggleBtnClick);
+npVolumeToggleBtn.addEventListener("click", volumeToggleBtnClick);
 
 rotationBtn.addEventListener("click", () => {
   const orientation = screen?.orientation;
@@ -279,17 +315,21 @@ video.addEventListener("timeupdate", () => {
   const duration = video.duration;
   if (!video.src || Number.isNaN(duration))
   {
-    timeDisplay.textContent = "00:00 / 00:00";
+    updateTimeDisplay("00:00 / 00:00");
     progressBar.max = 0;
     progressBar.value = 0;
+    npProgressBar.max = 0;
+    npProgressBar.value = 0;
     return;
   }
   const currentTime = video.currentTime;
   const current = formatTime(currentTime);
   const total = formatTime(duration);
-  timeDisplay.textContent = `${current} / ${total}`;
+  updateTimeDisplay(`${current} / ${total}`);
   progressBar.max = duration;
   progressBar.value = currentTime;
+  npProgressBar.max = duration;
+  npProgressBar.value = currentTime;
 });
 
 function fullscreencallback()
@@ -307,6 +347,9 @@ fullscreenBtn.onclick = fullscreencallback;
 
 progressBar.oninput = () => {
   video.currentTime = progressBar.value;
+};
+npProgressBar.oninput = () => {
+  video.currentTime = npProgressBar.value;
 };
 
 document.addEventListener("keydown", (e) => {
@@ -362,7 +405,8 @@ document.addEventListener("keydown", (e) => {
   function togglePlay(video) {
     if (video.readyState < 3 || !video.src) return;
     video.paused ? video.play() : video.pause();
-    document.getElementById("playBtn").textContent = video.paused ? "▶️" : "⏸️";
+    playBtn.textContent = video.paused ? "▶️" : "⏸️";
+    npPlayBtn.textContent = playBtn;
   }
 
   let hideTimeout;

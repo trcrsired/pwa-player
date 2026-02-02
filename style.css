@@ -378,3 +378,27 @@ button:hover,
   z-index: 1;
   border-bottom: 1px solid #ddd;
 }
+
+#nowPlayingQueue .active {
+    background: rgba(255,255,255,0.15);
+    font-weight: bold;
+}
+
+#nowPlayingView .content {
+    overflow-y: auto;
+    height: calc(100vh - 60px); /* 60px = header height */
+    padding-bottom: 20px;
+}
+
+#nowPlayingQueue {
+    margin-top: 10px;
+}
+
+#nowPlayingView {
+    display: flex;
+    flex-direction: column;
+}
+
+#nowPlayingView .content {
+    flex: 1;
+}
