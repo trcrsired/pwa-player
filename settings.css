@@ -170,3 +170,20 @@ html, body {
 .list li:hover {
     background: var(--btn-hover);
 }
+
+.playlist-item {
+    padding: 10px 14px;
+    font-size: 16px;
+    line-height: 1.4;
+    cursor: pointer;
+    user-select: none;
+}
+
+.playlist-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.playlist-item .item-origin {
+    display: block;
+    word-break: break-all;
+}

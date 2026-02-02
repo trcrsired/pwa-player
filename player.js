@@ -1,4 +1,10 @@
-const views = ["storageView", "settingsView", "aboutView", "playlistView"];
+function getAllViews() {
+  return Array.from(document.querySelectorAll(".view"));
+}
+
+function getActiveView() {
+  return getAllViews().find(v => !v.classList.contains("hidden")) || null;
+}
 
 function nop() {}
 
@@ -38,230 +44,282 @@ async function getMediaMetadataFromSource(sourceobject) {
   ];
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const video = document.getElementById("player");
-  const playBtn = document.getElementById("playBtn");
-  const stopBtn = document.getElementById("stopBtn");
-  const pickerBtn = document.getElementById("pickerBtn");
-  const volumeSlider = document.getElementById("volumeSlider");
-  const timeDisplay = document.getElementById("timeDisplay");
-  const progressBar = document.getElementById("progressBar");
-  const rotationBtn = document.getElementById("rotationBtn");
-  const fullscreenBtn = document.getElementById("fullscreenBtn");
-  const controls = document.getElementById("controls");
-  const volumeToggleBtn = document.getElementById("volumeToggle");
-  const burgerBtn = document.getElementById('burgerBtn');
-  const configOptions = document.getElementById('configOptions');
+// Playback modes
+const PLAY_MODES = ["once", "repeat", "repeat-one", "shuffle"];
 
-  async function play_source(sourceobject)
-  {
-    try {
-      const result = await getMediaMetadataFromSource(sourceobject);
-      if (!result)
-      {
-        return;
-      }
-      const sourceobj = result[0];
-      const blobURL = result[1];
-      const mediametadata = result[2];
-      video.src = blobURL;
-      controls.classList.remove("hidden");
-      video.play();
-      playBtn.textContent = "⏸️";
-      // Save it into the indexedDB
-      kv_set("lastplayed", sourceobject).then(nop).catch(nop);
-      navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
-      document.title = `PWA Player ▶️ ${mediametadata.title}`;
+// Default mode is Shuffle
+let playMode = "shuffle";
+
+// Update button text
+function updatePlayModeButton() {
+    const btn = document.getElementById("playModeBtn");
+
+    switch (playMode) {
+        case "once":
+            btn.textContent = "➡️";
+            break;
+        case "repeat":
+            btn.textContent = "🔁";
+            break;
+        case "repeat-one":
+            btn.textContent = "🔂1";
+            break;
+        case "shuffle":
+            btn.textContent = "🔀";
+            break;
     }
-    catch(err)
-    {
+}
 
+async function loadPlayMode() {
+    const saved = await kv_get("playMode");
+    if (saved && PLAY_MODES.includes(saved)) {
+        playMode = saved;
+    } else {
+        playMode = "shuffle"; // default
     }
-  }
+    updatePlayModeButton();
+    return playMode;
+}
 
-  const player = video;
-  const container = document.getElementById("playerContainer");
+// Cycle playback mode
+document.getElementById("playModeBtn").addEventListener("click", () => {
+    const index = PLAY_MODES.indexOf(playMode);
+    playMode = PLAY_MODES[(index + 1) % PLAY_MODES.length];
+    kv_set("playMode", playMode);
 
-  ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
-      window.addEventListener(eventName, e => e.preventDefault());
-  });
+    updatePlayModeButton();
+});
 
-  window.addEventListener("dragover", () => {
-      container.style.outline = "3px dashed #4caf50";
-  });
+loadPlayMode();
 
-  window.addEventListener("dragleave", () => {
-      container.style.outline = "none";
-  });
+const video = document.getElementById("player");
+const playBtn = document.getElementById("playBtn");
+const stopBtn = document.getElementById("stopBtn");
+const pickerBtn = document.getElementById("pickerBtn");
+const volumeSlider = document.getElementById("volumeSlider");
+const timeDisplay = document.getElementById("timeDisplay");
+const progressBar = document.getElementById("progressBar");
+const rotationBtn = document.getElementById("rotationBtn");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+const controls = document.getElementById("controls");
+const volumeToggleBtn = document.getElementById("volumeToggle");
+const burgerBtn = document.getElementById('burgerBtn');
+const configOptions = document.getElementById('configOptions');
 
-  window.addEventListener("drop", e => {
-      container.style.outline = "none";
-
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-
-      if (
-          !file.type.startsWith("video/") &&
-          !file.type.startsWith("audio/")
-      ) {
-          alert("Please drop a video or audio file");
-          return;
-      }
-
-      play_source(file);
-  });
-
-  playBtn.onclick = async () => {
-    if (!video.src)
-    {
-      const lastplayed = await kv_get("lastplayed");
-      if (lastplayed)
-      {
-        play_source(lastplayed).catch(nop);
-        return;
-      }
-      pickerBtn.click();
+async function play_source(sourceobject, playlist) {
+  try {
+    const result = await getMediaMetadataFromSource(sourceobject);
+    if (!result) {
       return;
     }
-    if (video.readyState < 3) return;
-    video.paused ? video.play() : video.pause();
-    playBtn.textContent = video.paused ? "▶️" : "⏸️";
-  };
 
-  stopBtn.onclick = () => {
-    video.pause();
-    video.currentTime = 0;
-    video.removeAttribute("src");
-    video.load();
-    playBtn.textContent = "▶️";
-    navigator.mediaSession.metadata = new MediaMetadata({});
-    document.title = `PWA Player`;
-  };
+    const sourceobj = result[0];
+    const blobURL = result[1];
+    const mediametadata = result[2];
 
+    video.src = blobURL;
+    controls.classList.remove("hidden");
+    video.play();
+    playBtn.textContent = "⏸️";
 
-  pickerBtn.onclick = async (e) => {
-    try {
-        const [handle] = await window.showOpenFilePicker(
-          {
-            startIn: 'videos'
-          }
-        );
-        play_source(handle).catch(nop);
+    // Save playback state
+    if (playlist) {
+      // Playing from a playlist:
+      // - clear lastplayed
+      // - save lastplaylist
+      kv_delete("lastplayed").catch(() => {});
+      kv_set("lastplaylist", playlist).catch(() => {});
+    } else {
+      // Playing a single file:
+      // - clear lastplaylist
+      // - save lastplayed
+      kv_delete("lastplaylist").catch(() => {});
+      kv_set("lastplayed", sourceobject).catch(() => {});
     }
-    catch (err) {
-        if (video.src && video.currentTime > 0) {
-            stopBtn.onclick(); // Only stop if something's playing
+
+    navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
+    document.title = `PWA Player ▶️ ${mediametadata.title}`;
+  }
+  catch (err) {
+    console.warn(err);
+  }
+}
+
+const player = video;
+const container = document.getElementById("playerContainer");
+
+["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+    window.addEventListener(eventName, e => e.preventDefault());
+});
+
+window.addEventListener("dragover", () => {
+    container.style.outline = "3px dashed #4caf50";
+});
+
+window.addEventListener("dragleave", () => {
+    container.style.outline = "none";
+});
+
+window.addEventListener("drop", e => {
+    container.style.outline = "none";
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    if (
+        !file.type.startsWith("video/") &&
+        !file.type.startsWith("audio/")
+    ) {
+        alert("Please drop a video or audio file");
+        return;
+    }
+
+    play_source(file);
+});
+
+playBtn.onclick = async () => {
+    // If a video is already loaded → toggle play/pause
+    if (video.src) {
+        if (video.readyState < 3) return;
+        video.paused ? video.play() : video.pause();
+        playBtn.textContent = video.paused ? "▶️" : "⏸️";
+        return;
+    }
+
+    // Try to restore last playlist or last file
+    const restored = await restoreLastPlayback();
+    if (restored) return;
+
+    // Nothing to restore → open picker
+    pickerBtn.click();
+};
+
+
+stopBtn.onclick = () => {
+  video.pause();
+  video.currentTime = 0;
+  video.removeAttribute("src");
+  video.load();
+  playBtn.textContent = "▶️";
+  navigator.mediaSession.metadata = new MediaMetadata({});
+  document.title = `PWA Player`;
+};
+
+
+pickerBtn.onclick = async (e) => {
+  try {
+      const [handle] = await window.showOpenFilePicker(
+        {
+          startIn: 'videos'
         }
-    }
-  };
-  webBtn.onclick = () => {
-    try {
-      const url = prompt("Enter video URL:");
-
-      if (url)
-      {
-        play_source(url).catch(nop);
+      );
+      play_source(handle).catch(nop);
+  }
+  catch (err) {
+      if (video.src && video.currentTime > 0) {
+          stopBtn.onclick(); // Only stop if something's playing
       }
+  }
+};
+webBtn.onclick = () => {
+  try {
+    const url = prompt("Enter video URL:");
+
+    if (url)
+    {
+      play_source(url).catch(nop);
     }
-    catch (err) {
-        console.warn("web picker cancelled or failed:", err);
-        if (video.src && video.currentTime > 0) {
-            stopBtn.onclick(); // Only stop if something's playing
-        }
-    }
-  };
-  volumeSlider.addEventListener("input", () => {
+  }
+  catch (err) {
+      console.warn("web picker cancelled or failed:", err);
+      if (video.src && video.currentTime > 0) {
+          stopBtn.onclick(); // Only stop if something's playing
+      }
+  }
+};
+volumeSlider.addEventListener("input", () => {
+  const percent = parseInt(volumeSlider.value, 10); // raw percent
+  const normalized = Math.min(1, Math.max(0, percent / 100));
+
+  if (volumeToggleBtn.textContent.trim() === "🔊") {
+    player.volume = normalized;
+  }
+});
+
+// Toggle visibility on button click
+volumeToggleBtn.addEventListener("click", () => {
+  if (volumeToggleBtn.textContent.trim() === "🔊") {
+    video.volume = 0;
+    volumeToggleBtn.textContent = "🔇";
+  } else {
     const percent = parseInt(volumeSlider.value, 10); // raw percent
     const normalized = Math.min(1, Math.max(0, percent / 100));
-
-    if (volumeToggleBtn.textContent.trim() === "🔊") {
-      player.volume = normalized;
-    }
-  });
-
-  // Toggle visibility on button click
-  volumeToggleBtn.addEventListener("click", () => {
-    if (volumeToggleBtn.textContent.trim() === "🔊") {
-      video.volume = 0;
-      volumeToggleBtn.textContent = "🔇";
-    } else {
-      const percent = parseInt(volumeSlider.value, 10); // raw percent
-      const normalized = Math.min(1, Math.max(0, percent / 100));
-      player.volume = normalized;
-      volumeToggleBtn.textContent = "🔊";
-    }
-  });
-
-  rotationBtn.addEventListener("click", () => {
-    const orientation = screen?.orientation;
-    if (!orientation || !orientation.lock) return;
-
-    const current = orientation.type;
-
-    if (current.startsWith("portrait")) {
-      orientation.lock("landscape").catch((err) => {
-        console.warn("Rotation failed:", err);
-      });
-    } else if (current.startsWith("landscape")) {
-      orientation.lock("portrait").catch((err) => {
-      });
-    }
-  });
-
-  video.addEventListener("timeupdate", () => {
-    const duration = video.duration;
-    if (!video.src || Number.isNaN(duration))
-    {
-      timeDisplay.textContent = "00:00 / 00:00";
-      progressBar.max = 0;
-      progressBar.value = 0;
-      return;
-    }
-    const currentTime = video.currentTime;
-    const current = formatTime(currentTime);
-    const total = formatTime(duration);
-    timeDisplay.textContent = `${current} / ${total}`;
-    progressBar.max = duration;
-    progressBar.value = currentTime;
-  });
-
-  function fullscreencallback()
-  {
-    const container = document.getElementById("playerContainer");
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      container.requestFullscreen();
-      controls.classList.toggle('hidden');
-    }
+    player.volume = normalized;
+    volumeToggleBtn.textContent = "🔊";
   }
+});
 
-  fullscreenBtn.onclick = fullscreencallback;
+rotationBtn.addEventListener("click", () => {
+  const orientation = screen?.orientation;
+  if (!orientation || !orientation.lock) return;
 
-  progressBar.oninput = () => {
-    video.currentTime = progressBar.value;
-  };
+  const current = orientation.type;
+
+  if (current.startsWith("portrait")) {
+    orientation.lock("landscape").catch((err) => {
+      console.warn("Rotation failed:", err);
+    });
+  } else if (current.startsWith("landscape")) {
+    orientation.lock("portrait").catch((err) => {
+    });
+  }
+});
+
+video.addEventListener("timeupdate", () => {
+  const duration = video.duration;
+  if (!video.src || Number.isNaN(duration))
+  {
+    timeDisplay.textContent = "00:00 / 00:00";
+    progressBar.max = 0;
+    progressBar.value = 0;
+    return;
+  }
+  const currentTime = video.currentTime;
+  const current = formatTime(currentTime);
+  const total = formatTime(duration);
+  timeDisplay.textContent = `${current} / ${total}`;
+  progressBar.max = duration;
+  progressBar.value = currentTime;
+});
+
+function fullscreencallback()
+{
+  const container = document.getElementById("playerContainer");
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    container.requestFullscreen();
+    controls.classList.toggle('hidden');
+  }
+}
+
+fullscreenBtn.onclick = fullscreencallback;
+
+progressBar.oninput = () => {
+  video.currentTime = progressBar.value;
+};
+
 document.addEventListener("keydown", (e) => {
-  const is_escape = (e.code === "Escape");
-  let has_views = false;
-  for (const id of views) {
-    const el = document.getElementById(id);
-    if (el && !el.classList.contains("hidden")) {
-      has_views = true;
-      if (is_escape)
-      {
-        el.classList.add("hidden");
-      }
-    }
-  }
-  if (has_views)
-  {
-    if (is_escape)
-    {
+  const activeView = getActiveView();
+
+  if (activeView) {
+    if (e.code === "Escape") {
+      activeView.classList.add("hidden");
       document.getElementById("playerContainer").classList.remove("hidden");
     }
     return;
   }
+
   const video = document.getElementById("player");
 
   switch (e.code) {
@@ -355,10 +413,51 @@ document.addEventListener("keydown", (e) => {
       }
     });
   }
-});
 
+video.addEventListener("ended", () => {
+    switch (playMode) {
+        case "once":
+            // Do nothing
+            break;
+
+        case "repeat-one":
+            video.currentTime = 0;
+            video.play();
+            break;
+
+        case "repeat":
+        case "shuffle":
+            // Placeholder: will call playNext() later
+            playNext();
+            break;
+    }
+});
 
 document.getElementById('storageBtn').addEventListener('click', () => {
-    document.getElementById("storageView").classList.remove("hidden");
-    document.getElementById("playerContainer").classList.add("hidden");
+  document.getElementById("storageView").classList.remove("hidden");
+  document.getElementById("playerContainer").classList.add("hidden");
 });
+
+document.getElementById('nowPlayingBtn').addEventListener('click', () => {
+  document.getElementById("nowPlayingView").classList.remove("hidden");
+  document.getElementById("playerContainer").classList.add("hidden");
+});
+
+/*
+
+// Open Now Playing view
+document.getElementById("nowPlayingBtn").addEventListener("click", () => {
+    document.getElementById("nowPlayingView").classList.remove("hidden");
+    document.getElementById("playerContainer").classList.add("hidden");
+
+    nowPlaying_load();
+    nowPlaying_renderQueue();
+});
+*/
+
+// Back button
+document.getElementById("nowPlayingBackBtn").addEventListener("click", () => {
+    document.getElementById("nowPlayingView").classList.add("hidden");
+    document.getElementById("playerContainer").classList.remove("hidden");
+});
+

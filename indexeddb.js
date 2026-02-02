@@ -85,3 +85,12 @@ async function kv_set(key, value)
   }
   return await kv_sync.set(key, value);
 }
+
+async function kv_delete(key)
+{
+  if (!kv_sync)
+  {
+    kv_sync = await kv_async.init();
+  }
+  return await kv_sync.delete(key);
+}

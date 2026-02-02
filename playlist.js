@@ -1,0 +1,316 @@
+// Load all playlists from IndexedDB
+async function playlists_load() {
+    // Structure:
+    // {
+    //   "Default": [ { name, path }, ... ],
+    //   "MyPlaylist": [ ... ]
+    // }
+    return await kv_get("playlists") || { "Default": [] };
+}
+
+// Save all playlists to IndexedDB
+async function playlists_save(all) {
+    await kv_set("playlists", all);
+}
+
+async function playlist_render() {
+    const list = await playlist_load();
+    const ul = document.getElementById("playlistList");
+    ul.innerHTML = "";
+
+    list.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "list-item";
+        li.innerHTML = `
+            <span>${item.name}</span>
+            <button class="remove-btn" data-index="${index}">✖</button>
+        `;
+        ul.appendChild(li);
+    });
+
+    // Remove item
+    ul.querySelectorAll(".remove-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const idx = parseInt(btn.dataset.index, 10);
+            const list = await playlist_load();
+            list.splice(idx, 1);
+            await playlist_save(list);
+            playlist_render();
+        });
+    });
+}
+
+
+async function addToPlaylist(name) {
+    alert(`TODO: add items to playlist "${name}"`);
+}
+
+function showPlaylistHeaderMenu(playlistName, x, y) {
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+
+    menu.innerHTML = `
+        <div class="menu-item" data-action="rename">Rename</div>
+        <div class="menu-item" data-action="duplicate">Duplicate</div>
+        <div class="menu-item" data-action="export">Export</div>
+        <div class="menu-item danger" data-action="delete">Delete</div>
+    `;
+
+    document.body.appendChild(menu);
+
+    const closeMenu = () => menu.remove();
+    setTimeout(() => document.addEventListener("click", closeMenu, { once: true }), 0);
+
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const action = item.dataset.action;
+            const playlists = await playlists_load();
+
+            if (action === "rename") {
+                const newName = prompt("New playlist name:", playlistName);
+                if (newName && newName.trim()) {
+                    playlists[newName.trim()] = playlists[playlistName];
+                    delete playlists[playlistName];
+                }
+            }
+
+            if (action === "duplicate") {
+                const copyName = playlistName + " Copy";
+                playlists[copyName] = JSON.parse(JSON.stringify(playlists[playlistName]));
+            }
+
+            if (action === "export") {
+                const json = JSON.stringify(playlists[playlistName], null, 2);
+                console.log("EXPORT PLAYLIST:", json);
+                alert("Playlist exported to console.");
+            }
+
+            if (action === "delete") {
+                const confirmDelete = confirm(`Delete playlist "${playlistName}"?`);
+                if (confirmDelete) {
+                    delete playlists[playlistName];
+                }
+            }
+
+            await playlists_save(playlists);
+            playlist_renderTree();
+        });
+    });
+}
+
+function classifyPath(path) {
+    if (path.startsWith("imports/")) return "/imports/";
+    if (path.startsWith("external/")) return "/external/";
+    if (path.startsWith("http://") || path.startsWith("https://")) return "/url/";
+    return "/unknown/";
+}
+
+async function storage_resolvePath(path) {
+    // Case 1: private storage (navigator.storage)
+    if (path.startsWith("imports/")) {
+        const root = await navigator.storage.getDirectory();
+        const parts = path.split("/");
+
+        let current = root;
+
+        for (let i = 0; i < parts.length; i++) {
+            const name = parts[i];
+
+            if (i === parts.length - 1) {
+                // Return ONLY the fileHandle
+                return await current.getFileHandle(name);
+            }
+
+            current = await current.getDirectoryHandle(name);
+        }
+    }
+
+    // Case 2: URL or external path → return string
+    return path;
+}
+
+function showPlaylistItemMenu(playlistName, index, x, y) {
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+
+    menu.innerHTML = `
+        <div class="menu-item" data-action="play">Play</div>
+        <div class="menu-item" data-action="export">Export File</div>
+        <div class="menu-item" data-action="move-up">Move Up</div>
+        <div class="menu-item" data-action="move-down">Move Down</div>
+        <div class="menu-item danger" data-action="remove">Remove</div>
+    `;
+
+    document.body.appendChild(menu);
+
+    const closeMenu = () => menu.remove();
+    setTimeout(() => document.addEventListener("click", closeMenu, { once: true }), 0);
+
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const action = item.dataset.action;
+            const playlists = await playlists_load();
+            const list = playlists[playlistName];
+            const entry = list[index];
+
+            if (action === "play") {
+                const resolved = await storage_resolvePath(entry.path);
+                play_source(resolved);
+            }
+
+            if (action === "export") {
+                exportMedia(entry.path);
+            }
+
+            if (action === "move-up" && index > 0) {
+                [list[index - 1], list[index]] = [list[index], list[index - 1]];
+            }
+
+            if (action === "move-down" && index < list.length - 1) {
+                [list[index + 1], list[index]] = [list[index], list[index + 1]];
+            }
+
+            if (action === "remove") {
+                list.splice(index, 1);
+            }
+
+            await playlists_save(playlists);
+            playlist_renderTree();
+        });
+    });
+}
+
+
+async function playlist_renderTree() {
+    const playlists = await playlists_load();
+    const tree = document.getElementById("playlistTree");
+    tree.innerHTML = "";
+
+    Object.entries(playlists).forEach(([playlistName, items]) => {
+        const li = document.createElement("li");
+        li.className = "playlist-node";
+
+        li.innerHTML = `
+            <div class="playlist-header">
+                <button class="toggle" aria-label="Toggle playlist">+</button>
+                <span class="playlist-name">${playlistName}</span>
+            </div>
+            <ul class="playlist-items hidden"></ul>
+        `;
+
+        const header = li.querySelector(".playlist-header");
+        const toggleBtn = header.querySelector(".toggle");
+        const itemsContainer = li.querySelector(".playlist-items");
+
+        toggleBtn.addEventListener("click", () => {
+            const hidden = itemsContainer.classList.toggle("hidden");
+            toggleBtn.textContent = hidden ? "+" : "−";
+        });
+
+        header.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            showPlaylistHeaderMenu(playlistName, e.pageX, e.pageY);
+        });
+
+        items.forEach((item, index) => {
+            const itemLi = document.createElement("li");
+            itemLi.className = "playlist-item";
+
+            itemLi.innerHTML = `
+                <span class="item-origin">${item.path}</span>
+            `;
+
+            itemLi.addEventListener("click", async () => {
+                await startNowPlayingFromPlaylist(playlistName, index);
+            });
+
+            itemLi.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                showPlaylistItemMenu(playlistName, index, e.pageX, e.pageY);
+            });
+
+            itemsContainer.appendChild(itemLi);
+        });
+
+        tree.appendChild(li);
+    });
+}
+
+
+function showPlaylistItemMenu(playlistName, index, x, y) {
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+
+    menu.innerHTML = `
+        <div class="menu-item" data-action="delete">Delete</div>
+        <div class="menu-item" data-action="move-up">Move Up</div>
+        <div class="menu-item" data-action="move-down">Move Down</div>
+    `;
+
+    document.body.appendChild(menu);
+
+    const closeMenu = () => menu.remove();
+    setTimeout(() => document.addEventListener("click", closeMenu, { once: true }), 0);
+
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const action = item.dataset.action;
+            const playlists = await playlists_load();
+            const list = playlists[playlistName];
+
+            if (action === "delete") {
+                list.splice(index, 1);
+            } else if (action === "move-up" && index > 0) {
+                [list[index - 1], list[index]] = [list[index], list[index - 1]];
+            } else if (action === "move-down" && index < list.length - 1) {
+                [list[index + 1], list[index]] = [list[index], list[index + 1]];
+            }
+
+            await playlists_save(playlists);
+            playlist_renderTree();
+        });
+    });
+}
+
+// Open Playlist view
+document.getElementById("playlistBtn").addEventListener("click", () => {
+    document.getElementById("playlistView").classList.remove("hidden");
+    document.getElementById("playerContainer").classList.add("hidden");
+    playlist_renderTree();
+});
+
+// Back from Playlist to player
+document.getElementById("playlistBackBtn").addEventListener("click", () => {
+    document.getElementById("playlistView").classList.add("hidden");
+    document.getElementById("playerContainer").classList.remove("hidden");
+});
+
+document.getElementById("newPlaylistBtn").addEventListener("click", async () => {
+    const name = prompt("Enter new playlist name:");
+
+    if (!name) return;
+
+    const trimmed = name.trim();
+    if (!trimmed) {
+        alert("Playlist name cannot be empty.");
+        return;
+    }
+
+    const playlists = await playlists_load();
+
+    if (playlists[trimmed]) {
+        alert("A playlist with this name already exists.");
+        return;
+    }
+
+    playlists[trimmed] = []; // empty playlist
+    await playlists_save(playlists);
+
+    playlist_renderTree();
+});

@@ -21,8 +21,11 @@
                 <!-- Row 1: Playback & Timeline -->
                 <div class="control-row">
                     <div class="control-group left-controls">
+                        <button id="prevBtn" title="Previous Track">⏮️</button>
                         <button id="playBtn" title="Play">▶️</button>
                         <button id="stopBtn" title="Stop">⏹️</button>
+                        <button id="nextBtn" title="Next Track">⏭️</button>
+                        <button id="playModeBtn" title="Playback Mode">🔀</button>
                     </div>
 
                     <div class="control-group right-controls">
@@ -48,6 +51,7 @@
 
                 <div class="control-row config-row hidden" id="configOptions">
                     <div class="control-group full-width">
+                        <button class="config-item" id="nowPlayingBtn" title="Now Playing">▶️ Now Playing</button>
                         <button class="config-item" id="playlistBtn" title="Playlist">🎵 Playlist</button>
                         <button class="config-item" id="storageBtn" title="Storage">🗂️ Storage</button>
                         <button class="config-item" id="settingsBtn" title="Settings">⚙️ Settings</button>
@@ -59,7 +63,7 @@
 
         </div>
 
-        <div id="storageView" class="hidden">
+        <div id="storageView" class="view hidden">
             <header class="topbar">
                 <button id="backBtn" class="back-btn">←</button>
                 <h1 class="title">Storage Manager</h1>
@@ -74,10 +78,42 @@
                 <ul id="storageList" class="list"></ul>
             </main>
         </div>
+        <div id="nowPlayingView" class="view hidden">
+            <header class="topbar">
+                <button id="nowPlayingBackBtn" class="back-btn">←</button>
+                <h1 class="title">Now Playing</h1>
+            </header>
+
+            <main class="content">
+                <!-- Current playing track info -->
+                <section id="nowPlayingInfo" class="now-playing-info">
+                    <div class="track-title">No track playing</div>
+                    <div class="track-artist"></div>
+                </section>
+
+                <!-- Playback queue -->
+                <ul id="nowPlayingQueue" class="list"></ul>
+            </main>
+        </div>
+
+        <div id="playlistView" class="view hidden">
+            <header class="topbar">
+                <button id="playlistBackBtn" class="back-btn">←</button>
+                <h1 class="title">Playlists</h1>
+            </header>
+
+            <main class="content">
+                <button id="newPlaylistBtn" class="new-playlist-btn">+</button>
+                <ul id="playlistTree" class="playlist-tree"></ul>
+            </main>
+        </div>
+
 
         <script src="indexeddb.js"></script>
-        <script src="player.js"></script>
+        <script src="nowplaying.js"></script>
+        <script src="playlist.js"></script>
         <script src="storage.js"></script>
+        <script src="player.js"></script>
         <script src="sw-register.js"></script>
     </body>
 </html>

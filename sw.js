@@ -8,8 +8,10 @@ self.addEventListener("install", (event) => {
         "/style.css",  // Styles
         "/settings.css",  // Settings Styles
         "/indexeddb.js",  // JS logic
+        "/nowplaying.js",
         "/player.js",  // JS logic
         "/storage.js",  // JS logic
+        "/playlist.js",
         "/sw-register.js",
         "/manifest.json",
         "/icons/icon.webp"

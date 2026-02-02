@@ -59,23 +59,106 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle) {
     }
 }
 
+// Collect all .webm file pointers under a directory in private storage
+async function collectWebmPointers(dirHandle, basePath) {
+    const result = [];
+
+    for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === "file") {
+            if (!name.toLowerCase().endsWith(".webm")) continue;
+
+            // Store only pointer info: name + logical path
+            result.push({
+                name,
+                path: `${basePath}/${name}`
+            });
+        } else if (handle.kind === "directory") {
+            const subPath = `${basePath}/${name}`;
+            const subPointers = await collectWebmPointers(handle, subPath);
+            result.push(...subPointers);
+        }
+    }
+
+    return result;
+}
+
+async function addImportsDirectoryToPlaylist(importsDirHandle, dirName, playlistName) {
+    try {
+        const targetDir = await importsDirHandle.getDirectoryHandle(dirName, { create: false });
+
+        const basePath = `imports/${dirName}`;
+        const pointers = await collectWebmPointers(targetDir, basePath);
+
+        if (pointers.length === 0) {
+            alert(`No .webm files found in "${dirName}".`);
+            return;
+        }
+
+        const playlists = await playlists_load();
+        playlists[playlistName].push(...pointers);
+        await playlists_save(playlists);
+
+        alert(`Added ${pointers.length} items to playlist "${playlistName}".`);
+    } catch (err) {
+        console.error(err);
+        alert("Failed to add directory to playlist.");
+    }
+}
+
+async function choosePlaylistAndAdd(importsDirHandle, dirName) {
+    const playlists = await playlists_load();
+    const names = Object.keys(playlists);
+
+    // Simple prompt selector
+    const choice = prompt(
+        "Add to which playlist?\n" +
+        names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+        "1"
+    );
+
+    if (!choice) return;
+
+    const index = parseInt(choice, 10) - 1;
+    if (index < 0 || index >= names.length) {
+        alert("Invalid selection");
+        return;
+    }
+
+    const selectedName = names[index];
+    await addImportsDirectoryToPlaylist(importsDirHandle, dirName, selectedName);
+}
+
 async function renderStorage() {
-    const list = document.getElementById('storageList');
-    list.innerHTML = '';
+    const list = document.getElementById("storageList");
+    list.innerHTML = "";
 
     const root = await navigator.storage.getDirectory();
     let importsDir;
 
     try {
-        importsDir = await root.getDirectoryHandle('imports');
+        importsDir = await root.getDirectoryHandle("imports");
     } catch {
         return;
     }
 
     for await (const [name, handle] of importsDir.entries()) {
-        if (handle.kind === 'directory') {
-            const li = document.createElement('li');
-            li.textContent = name;
+        if (handle.kind === "directory") {
+            const li = document.createElement("li");
+
+            // Directory label
+            const span = document.createElement("span");
+            span.textContent = name;
+
+            // Button: add this directory's .webm files to playlist
+            const btn = document.createElement("button");
+            btn.textContent = "+";
+            btn.addEventListener("click", async () => {
+                await choosePlaylistAndAdd(importsDir, name);
+            });
+
+
+            li.appendChild(span);
+            li.appendChild(btn);
             list.appendChild(li);
         }
     }
@@ -143,3 +226,4 @@ document.getElementById("backBtn").addEventListener("click", () => {
 });
 
 renderStorage();
+
