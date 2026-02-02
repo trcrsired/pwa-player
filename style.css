@@ -386,30 +386,7 @@ button:hover,
 
 #nowPlayingView .content {
     overflow-y: auto;
-    height: calc(100vh - 60px); /* 60px = header height */
+    height: calc(100vh - 100px); /* 60px = header height */
     padding-bottom: 20px;
 }
 
-#nowPlayingView {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
-
-/* Scrollable area */
-#nowPlayingView .scroll-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px 16px 20px;
-}
-
-/* Fixed bottom controls */
-.fixed-controls {
-    display: flex;
-    gap: 10px;
-    padding: 10px 16px;
-    border-top: 1px solid #444;
-    background: #111;
-    position: sticky;
-    bottom: 0;
-}
