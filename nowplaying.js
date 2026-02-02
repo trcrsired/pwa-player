@@ -26,6 +26,8 @@ async function nowPlaying_playIndex(index) {
     });
 
     nowPlayingIndex = index;
+    updateNowPlayingInfo(entry);
+    renderNowPlayingQueue();
 }
 
 async function startNowPlayingFromPlaylist(playlistName, startIndex) {
@@ -126,6 +128,10 @@ document.getElementById("npPrevBtn").addEventListener("click", playPrevious);
 document.getElementById("nextBtn").addEventListener("click", playNext);
 document.getElementById("npNextBtn").addEventListener("click", playNext);
 
+function getActiveQueue() {
+    return playMode === "shuffle" ? shuffledQueue : nowPlayingQueue;
+}
+
 // Try to restore last playback state.
 // Priority:
 // 1. Last playlist (playlistName + index)
@@ -174,7 +180,9 @@ function renderNowPlayingQueue() {
     const ul = document.getElementById("nowPlayingQueue");
     ul.innerHTML = "";
 
-    nowPlayingQueue.forEach((entry, i) => {
+    const queue = getActiveQueue();
+
+    queue.forEach((entry, i) => {
         const li = document.createElement("li");
         li.className = "list-item";
 
@@ -193,24 +201,8 @@ function renderNowPlayingQueue() {
         ul.appendChild(li);
     });
 }
+
 renderNowPlayingQueue()
-async function nowPlaying_playIndex(index) {
-    const entry = nowPlayingQueue[index];
-    if (!entry) return;
-
-    const resolved = await storage_resolvePath(entry.path);
-
-    await play_source(resolved, {
-        playlistName: entry.playlistName,
-        index
-    });
-
-    nowPlayingIndex = index;
-
-    // Update UI
-    updateNowPlayingInfo(entry);
-    renderNowPlayingQueue();
-}
 
 function showNowPlayingView() {
     updateNowPlayingInfo(nowPlayingQueue[nowPlayingIndex]);

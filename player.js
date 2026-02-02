@@ -83,13 +83,18 @@ async function loadPlayMode() {
 }
 
 // Cycle playback mode
-document.getElementById("playModeBtn").addEventListener("click", () => {
+
+function clickPlayModeBtn()
+{
     const index = PLAY_MODES.indexOf(playMode);
     playMode = PLAY_MODES[(index + 1) % PLAY_MODES.length];
     kv_set("playMode", playMode);
 
     updatePlayModeButton();
-});
+}
+
+document.getElementById("playModeBtn").addEventListener("click", clickPlayModeBtn);
+document.getElementById("npPlayModeBtn").addEventListener("click", clickPlayModeBtn);
 
 loadPlayMode();
 
