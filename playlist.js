@@ -100,35 +100,57 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
     });
 }
 
-function classifyPath(path) {
-    if (path.startsWith("imports/")) return "/imports/";
-    if (path.startsWith("external/")) return "/external/";
-    if (path.startsWith("http://") || path.startsWith("https://")) return "/url/";
-    return "/unknown/";
+// Resolve a path inside a given root directory.
+// Example: resolveUnderRoot(rootHandle, "imports/Anime/1.webm")
+async function resolveUnderRoot(rootHandle, path) {
+    const parts = path.split("/");
+    let current = rootHandle;
+
+    for (let i = 0; i != parts.length; ++i) {
+        const name = parts[i];
+
+        // Last part → file
+        if (i === parts.length - 1) {
+            return await current.getFileHandle(name);
+        }
+
+        // Directory
+        current = await current.getDirectoryHandle(name);
+    }
 }
 
-async function storage_resolvePath(path) {
-    // Case 1: private storage (navigator.storage)
-    if (path.startsWith("imports/")) {
-        const root = await navigator.storage.getDirectory();
-        const parts = path.split("/");
-
-        let current = root;
-
-        for (let i = 0; i < parts.length; i++) {
-            const name = parts[i];
-
-            if (i === parts.length - 1) {
-                // Return ONLY the fileHandle
-                return await current.getFileHandle(name);
-            }
-
-            current = await current.getDirectoryHandle(name);
+async function externalStorage_setRoot(handle) {
+    const db = await idb.openDB("storage-roots", 1, {
+        upgrade(db) {
+            db.createObjectStore("roots");
         }
+    });
+
+    await db.put("roots", handle, "external");
+    window.externalStorageRoot = handle;
+}
+
+async function storage_resolvePath(pointer) {
+
+    // navigator.storage://
+    if (pointer.startsWith("navigator_storage://")) {
+        const path = pointer.slice("navigator_storage://".length);
+        const root = await navigator.storage.getDirectory();
+        return await resolveUnderRoot(root, path);
     }
 
-    // Case 2: URL or external path → return string
-    return path;
+    // external_storage://
+    if (pointer.startsWith("external_storage://")) {
+        const path = pointer.slice("external_storage://".length);
+
+        if (!window.externalStorageRoot) {
+            throw new Error("external_storage:// root not set");
+        }
+
+        return await resolveUnderRoot(window.externalStorageRoot, path);
+    }
+
+    return pointer;
 }
 
 function showPlaylistItemMenu(playlistName, index, x, y) {
@@ -158,6 +180,7 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
             const entry = list[index];
 
             if (action === "play") {
+                console.log(entry.path);
                 const resolved = await storage_resolvePath(entry.path);
                 play_source(resolved);
             }

@@ -1,3 +1,30 @@
+// ============================================================
+// Central definition of all import roots inside private storage
+// ============================================================
+//
+// Each entry defines:
+// - rootName: logical name used in pointer paths
+// - dirName: actual directory name inside private storage
+// - enabled: allows future toggling or feature flags
+//
+const IMPORT_ROOTS = [
+    {
+        schema: "navigator_storage",
+        rootName: "imports",
+        dirName: "imports",
+        enabled: true
+    },
+    {
+        schema: "navigator_storage",
+        rootName: "files",
+        dirName: "files",
+        enabled: true
+    }
+];
+
+// ============================================================
+// Utility: check if a directory exists under a parent handle
+// ============================================================
 async function dirExists(name, parentHandle) {
     try {
         await parentHandle.getDirectoryHandle(name, { create: false });
@@ -7,7 +34,10 @@ async function dirExists(name, parentHandle) {
     }
 }
 
-async function promptForUniqueName(baseName, importsDirHandle) {
+// ============================================================
+// Prompt user for a unique directory name
+// ============================================================
+async function promptForUniqueName(baseName, parentHandle) {
     let attempts = 0;
 
     while (attempts < 3) {
@@ -20,103 +50,86 @@ async function promptForUniqueName(baseName, importsDirHandle) {
 
         const trimmed = name.trim();
         if (!trimmed || trimmed.includes('/')) {
-            alert('Invalid name. Directory names must not be empty or contain slashes.');
+            alert("Invalid name. Directory names must not be empty or contain slashes.");
             return null;
         }
 
         if (trimmed === baseName) {
-            ++attempts;
+            attempts++;
             alert(`"${baseName}" already exists. Please choose a different name.`);
             continue;
         }
 
-        if (!(await dirExists(trimmed, importsDirHandle))) {
+        if (!(await dirExists(trimmed, parentHandle))) {
             return trimmed;
         }
 
-        ++attempts;
+        attempts++;
         alert(`"${trimmed}" already exists. Try again.`);
     }
 
-    alert('Too many attempts. Import cancelled.');
+    alert("Too many attempts. Import cancelled.");
     return null;
 }
 
+// ============================================================
+// Copy a directory (from SAF) into private storage
+// ============================================================
 async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result = { count: 0, errors: [] }) {
     for await (const [name, handle] of sourceHandle.entries()) {
-
-        // Do NOT skip hidden files; let the file system decide what is valid.
         try {
             if (handle.kind === "file") {
-
-                // Attempt to read the source file
+                // SAF read (may fail on Android)
                 const file = await handle.getFile();
 
                 let writable = null;
                 try {
-                    // Create or open the target file
                     const targetFileHandle = await targetHandle.getFileHandle(name, { create: true });
-
-                    // Create a writable stream
                     writable = await targetFileHandle.createWritable();
-
-                    // Write the file content
                     await writable.write(file);
-
-                    // Count successful file imports
                     ++result.count;
-
                 } finally {
-                    // Ensure the writable stream is closed if it was created
-                    if (writable) {
-                        await writable.close();
-                    }
+                    if (writable) await writable.close();
                 }
+
             } else if (handle.kind === "directory") {
-
-                let newDirHandle = null;
-
+                let newDirHandle;
                 try {
-                    // Create or open the target directory
                     newDirHandle = await targetHandle.getDirectoryHandle(name, { create: true });
                 } catch (err) {
-                    // Directory creation failed — record and skip this directory
                     result.errors.push(`Failed to create directory '${name}': ${err.message}`);
                     continue;
                 }
 
-                // Recursively copy the subdirectory
                 await copyDirectoryToPrivateStorage(handle, newDirHandle, result);
             }
 
         } catch (err) {
-            // Any failure for this entry is recorded but does not stop the process
             result.errors.push(`Failed to copy '${name}': ${err.message}`);
-            continue;
         }
 
-        // Yield to the event loop to avoid UI freezing on Android
+        // Yield to avoid UI freeze
         await new Promise(requestAnimationFrame);
     }
 
     return result;
 }
 
-// Collect all .webm file pointers under a directory in private storage
-async function collectWebmPointers(dirHandle, basePath) {
+// ============================================================
+// Collect all file pointers recursively under a directory
+// ============================================================
+async function collectPointers(dirHandle, schema, basePath) {
     const result = [];
 
     for await (const [name, handle] of dirHandle.entries()) {
         if (handle.kind === "file") {
-
-            // Store only pointer info: name + logical path
             result.push({
                 name,
-                path: `${basePath}/${name}`
+                path: `${schema}://${basePath}/${name}`
             });
         } else if (handle.kind === "directory") {
             const subPath = `${basePath}/${name}`;
-            const subPointers = await collectWebmPointers(handle, subPath);
+            const subPointers = await collectPointers(handle, schema, subPath);
             result.push(...subPointers);
         }
     }
@@ -124,15 +137,18 @@ async function collectWebmPointers(dirHandle, basePath) {
     return result;
 }
 
-async function addImportsDirectoryToPlaylist(importsDirHandle, dirName, playlistName) {
+// ============================================================
+// Add all pointers from a directory (any root) to a playlist
+// ============================================================
+async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirName, playlistName) {
     try {
-        const targetDir = await importsDirHandle.getDirectoryHandle(dirName, { create: false });
+        const targetDir = await rootDirHandle.getDirectoryHandle(dirName, { create: false });
+        const basePath = `${rootName}/${dirName}`;
 
-        const basePath = `imports/${dirName}`;
-        const pointers = await collectWebmPointers(targetDir, basePath);
+        const pointers = await collectPointers(targetDir, schema, basePath);
 
         if (pointers.length === 0) {
-            alert(`No .webm files found in "${dirName}".`);
+            alert(`No files found in "${dirName}".`);
             return;
         }
 
@@ -147,11 +163,13 @@ async function addImportsDirectoryToPlaylist(importsDirHandle, dirName, playlist
     }
 }
 
-async function choosePlaylistAndAdd(importsDirHandle, dirName) {
+// ============================================================
+// Choose playlist and add directory contents
+// ============================================================
+async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
     const playlists = await playlists_load();
     const names = Object.keys(playlists);
 
-    // Simple prompt selector
     const choice = prompt(
         "Add to which playlist?\n" +
         names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
@@ -167,53 +185,98 @@ async function choosePlaylistAndAdd(importsDirHandle, dirName) {
     }
 
     const selectedName = names[index];
-    await addImportsDirectoryToPlaylist(importsDirHandle, dirName, selectedName);
+
+    await addDirectoryToPlaylist(
+        rootDirHandle,
+        entry.schema,
+        entry.rootName,
+        dirName,
+        selectedName
+    );
 }
 
+function getSchemaForRoot(rootHandle) {
+    // Private navigator.storage root
+    if (rootHandle === window.navigatorStorageRoot) {
+        return "navigator_storage";
+    }
+
+    // External SAF root
+    if (rootHandle === window.externalStorageRoot) {
+        return "external_storage";
+    }
+
+    // Fallback
+    return "unknown";
+}
+
+async function renderStorageEntry(list, dirHandle, entry) {
+    const schema = entry.schema;
+
+    for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind !== "directory") continue;
+
+        const li = document.createElement("li");
+
+        const fullPath = `${schema}://${entry.rootName}/${name}`;
+
+        const span = document.createElement("span");
+        span.textContent = fullPath;
+
+        const btn = document.createElement("button");
+        btn.textContent = "+";
+        btn.addEventListener("click", async () => {
+            await choosePlaylistAndAdd(dirHandle, entry, name);
+        });
+
+        li.appendChild(span);
+        li.appendChild(btn);
+        list.appendChild(li);
+    }
+}
+
+
+// ============================================================
+// Render all import roots and their subdirectories
+// ============================================================
 async function renderStorage() {
     const list = document.getElementById("storageList");
     list.innerHTML = "";
 
-    const root = await navigator.storage.getDirectory();
-    let importsDir;
-
-    try {
-        importsDir = await root.getDirectoryHandle("imports");
-    } catch {
-        return;
+    if (!window.navigatorStorageRoot) {
+        window.navigatorStorageRoot = await navigator.storage.getDirectory();
     }
 
-    for await (const [name, handle] of importsDir.entries()) {
-        if (handle.kind === "directory") {
-            const li = document.createElement("li");
+    const root = window.navigatorStorageRoot;
 
-            // Directory label
-            const span = document.createElement("span");
-            span.textContent = name;
+    for (const entry of IMPORT_ROOTS) {
+        if (!entry.enabled) continue;
 
-            // Button: add this directory's .webm files to playlist
-            const btn = document.createElement("button");
-            btn.textContent = "+";
-            btn.addEventListener("click", async () => {
-                await choosePlaylistAndAdd(importsDir, name);
-            });
-
-
-            li.appendChild(span);
-            li.appendChild(btn);
-            list.appendChild(li);
+        let rootDir;
+        try {
+            rootDir = await root.getDirectoryHandle(entry.dirName);
+        } catch {
+            continue;
         }
+
+        await renderStorageEntry(list, rootDir, entry, root);
     }
 }
 
-document.getElementById('addImportBtn').addEventListener('click', async () => {
+
+
+
+// ============================================================
+// Import directory (showDirectoryPicker)
+// ============================================================
+document.getElementById("addImportBtn").addEventListener("click", async () => {
     try {
-        const sourceDir = await window.showDirectoryPicker({ startIn: 'music' });
+        const sourceDir = await window.showDirectoryPicker({ startIn: "music" });
         const permission = await verifyPermission(sourceDir);
         if (!permission) return;
 
         const privateRoot = await navigator.storage.getDirectory();
-        const importsDir = await privateRoot.getDirectoryHandle('imports', { create: true });
+        const importsDir = await privateRoot.getDirectoryHandle("imports", { create: true });
 
         let targetName = sourceDir.name;
         if (await dirExists(targetName, importsDir)) {
@@ -222,63 +285,105 @@ document.getElementById('addImportBtn').addEventListener('click', async () => {
         }
 
         const targetDir = await importsDir.getDirectoryHandle(targetName, { create: true });
-
-        // Run the copy operation and get the result object
         const result = await copyDirectoryToPrivateStorage(sourceDir, targetDir);
 
-        // Refresh UI first so the user sees the updated storage immediately
         renderStorage();
 
-        // Build the final message
-        let message = `Imported ${result.count} music file(s).`;
-
+        let message = `Imported ${result.count} file(s).`;
         if (result.errors.length > 0) {
             message += "\n\nSome items could not be copied:\n" + result.errors.join("\n");
         }
 
-        // Show the summary after UI is updated
         alert(message);
     } catch (err) {
         console.warn(err);
     }
 });
 
-document.getElementById('clearImports').addEventListener('click', async () => {
+// ============================================================
+// Clear all import roots
+// ============================================================
+document.getElementById("clearImports").addEventListener("click", async () => {
     const confirmed = confirm(
-        'This will permanently delete all imported directories and the entire "imports" folder.\nAre you sure you want to proceed?'
+        "This will permanently delete all imported directories:\n" +
+        IMPORT_ROOTS.map(r => `• "${r.dirName}"`).join("\n") +
+        "\n\nAre you sure you want to proceed?"
     );
     if (!confirmed) return;
 
     try {
         const rootDir = await navigator.storage.getDirectory();
+        let removedAny = false;
 
-        let exists = false;
-        for await (const [name, handle] of rootDir.entries()) {
-            if (name === 'imports' && handle.kind === 'directory') {
-                exists = true;
-                break;
+        for (const entry of IMPORT_ROOTS) {
+            if (!entry.enabled) continue;
+
+            try {
+                await rootDir.removeEntry(entry.dirName, { recursive: true });
+                removedAny = true;
+            } catch {
+                // ignore missing directories
             }
         }
 
-        if (!exists) {
-            alert('No "imports" folder found.');
-            return;
-        }
-
-        await rootDir.removeEntry('imports', { recursive: true });
-
-        alert('All imported directories have been removed.');
+        alert(removedAny ? "All import folders have been removed." : "No import folders found.");
         renderStorage();
     } catch (err) {
         console.error(err);
-        alert('Failed to clear imports.');
+        alert("Failed to clear imports.");
     }
 });
 
+// ============================================================
+// Back button
+// ============================================================
 document.getElementById("backBtn").addEventListener("click", () => {
     document.getElementById("storageView").classList.add("hidden");
     document.getElementById("playerContainer").classList.remove("hidden");
 });
 
-renderStorage();
+// ============================================================
+// File picker import (input type="file")
+// ============================================================
+document.getElementById("addFilesBtn").addEventListener("click", () => {
+    document.getElementById("filePicker").click();
+});
 
+document.getElementById("filePicker").addEventListener("change", async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const privateRoot = await navigator.storage.getDirectory();
+    const filesDir = await privateRoot.getDirectoryHandle("files", { create: true });
+
+    const targetName = "files_" + Date.now();
+    const targetDir = await filesDir.getDirectoryHandle(targetName, { create: true });
+
+    let count = 0;
+    const errors = [];
+
+    for (const file of files) {
+        try {
+            const targetFileHandle = await targetDir.getFileHandle(file.name, { create: true });
+            const writable = await targetFileHandle.createWritable();
+            await writable.write(await file.arrayBuffer());
+            await writable.close();
+            ++count;
+        } catch (err) {
+            errors.push(`Failed to import ${file.name}: ${err.message}`);
+        }
+    }
+
+    renderStorage();
+
+    let msg = `Imported ${count} file(s).`;
+    if (errors.length > 0) {
+        msg += "\n\nErrors:\n" + errors.join("\n");
+    }
+    alert(msg);
+});
+
+// ============================================================
+// Initial render
+// ============================================================
+renderStorage();
