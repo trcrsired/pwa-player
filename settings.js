@@ -3,7 +3,6 @@ document.getElementById("settingsYear").textContent =
     `2025–${new Date().getFullYear()}`;
 
 document.getElementById("settingsBtn").addEventListener("click", () => {
-    console.log("here");
     document.getElementById("playerContainer").classList.add("hidden");
     document.getElementById("settingsView").classList.remove("hidden");
 });

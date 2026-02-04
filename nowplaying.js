@@ -28,7 +28,8 @@ async function nowPlaying_playIndex(index) {
 
     await play_source(resolved, {
         playlistName: entry.playlistName,
-        index
+        entryPath: entry.path,
+        index,
     });
 
     nowPlayingIndex = index;
@@ -304,7 +305,6 @@ function showNowPlayingItemMenu(index, x, y) {
     });
 }
 
-
 function renderNowPlayingQueue() {
     const ul = document.getElementById("nowPlayingQueue");
     ul.innerHTML = "";
@@ -333,7 +333,6 @@ function renderNowPlayingQueue() {
         // Right-click → context menu
         li.addEventListener("contextmenu", (e) => {
             e.preventDefault();
-            console.log("RIGHT CLICK WORKS", i);
             showNowPlayingItemMenu(i, e.pageX, e.pageY);
         });
 

@@ -249,21 +249,6 @@ function getSchemaForRoot(rootHandle) {
     return "unknown";
 }
 
-// Detect long-press for mobile devices
-function addLongPress(element, callback) {
-    let timer = null;
-
-    element.addEventListener("touchstart", (e) => {
-        timer = setTimeout(() => {
-            const touch = e.touches[0];
-            callback(touch.pageX, touch.pageY);
-        }, 500);
-    });
-
-    element.addEventListener("touchend", () => clearTimeout(timer));
-    element.addEventListener("touchmove", () => clearTimeout(timer));
-}
-
 function showStorageDirMenu(entry, dirName, x, y) {
     // Remove existing menu
     const existing = document.querySelector(".context-menu");
@@ -347,11 +332,6 @@ async function loadStorageSubdirs(subList, dirHandle, entry) {
         header.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             showStorageDirMenu(entry, name, e.pageX, e.pageY);
-        });
-
-        // Long-press menu
-        addLongPress(header, (x, y) => {
-            showStorageDirMenu(entry, name, x, y);
         });
 
         // Quick add to playlist
@@ -439,11 +419,6 @@ async function renderStorage() {
         header.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             showStorageDirMenu(entry, null, e.pageX, e.pageY);
-        });
-
-        // Long-press menu
-        addLongPress(header, (x, y) => {
-            showStorageDirMenu(entry, null, x, y);
         });
 
         list.appendChild(li);
