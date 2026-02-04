@@ -92,7 +92,7 @@ async function play_source(sourceobject, playlist) {
     const entry = {
         name: mediametadata.title,
         artist: mediametadata.artist || "",
-        path: playlist.entryPath || blobURL
+        path: playlist?.entryPath || blobURL
     };
 
     // Update Now Playing UI
