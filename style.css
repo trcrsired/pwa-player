@@ -63,6 +63,7 @@ html, body {
 
 #controls.hidden {
   opacity: 0;
+  pointer-events: none; /* disable all clicks */
 }
 
 /* Control Rows */
