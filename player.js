@@ -86,15 +86,6 @@ async function play_source(sourceobject, playlist) {
     video.play();
     playBtn.textContent = "⏸️";
 
-    // Save playback state
-    if (playlist) {
-      // Playing from a playlist:
-      // - clear lastplayed
-      // - save lastplaylist
-      kv_delete("lastplayed").catch(() => {});
-      kv_set("lastplaylist", playlist).catch(() => {});
-    }
-
     navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
     document.title = `PWA Player ▶️ ${mediametadata.title}`;
 
@@ -107,6 +98,23 @@ async function play_source(sourceobject, playlist) {
 
     // Update Now Playing UI
     updateNowPlayingInfo(entry);
+
+    // Save playback state
+    if (playlist) {
+        // Playing from a playlist:
+        // - clear lastplayed
+        // - save lastplaylist
+        kv_delete("lastplayed").catch(() => {});
+        kv_set("lastplaylist", playlist).catch(() => {});
+    } else {
+        // Playing a single file:
+        // Only save lastplayed if there is no existing lastplaylist.
+        // This prevents overwriting playlist resume state.
+      const lp = await kv_get("lastplaylist");
+      if (!lp) {
+          kv_set("lastplayed", sourceobject).catch(() => {});
+      }
+    }
   }
   catch (err) {
     console.warn(err);
