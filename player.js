@@ -286,8 +286,17 @@ video.addEventListener("timeupdate", () => {
   }
   const currentTime = video.currentTime;
   const current = formatTime(currentTime);
-  const total = formatTime(duration);
-  updateTimeDisplay(`${current} / ${total}`);
+
+  let total = null;
+  if (Number.isFinite(video.duration) && video.duration > 0) {
+      total = formatTime(video.duration);
+  }
+
+  if (total) {
+      updateTimeDisplay(`${current} / ${total}`);
+  } else {
+      updateTimeDisplay(current);
+  }
   progressBar.max = duration;
   progressBar.value = currentTime;
   npProgressBar.max = duration;
