@@ -377,7 +377,7 @@ document.addEventListener("keydown", (e) => {
     if (video.readyState < 3 || !video.src) return;
     video.paused ? video.play() : video.pause();
     playBtn.textContent = video.paused ? "▶️" : "⏸️";
-    npPlayBtn.textContent = playBtn;
+    npPlayBtn.textContent = playBtn.textContent;
   }
 
   let hideTimeout;
