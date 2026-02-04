@@ -1,5 +1,6 @@
 :root {
   --color-bg: #000;
+  --color-fg: #fff;
   --color-ui-bg: rgba(255,255,255,0);
   --color-ui-fg: #222;
   --color-hover: #d0d0d0;
@@ -102,11 +103,15 @@ html, body {
   align-items: center;
 }
 
+.control-group button {
+    color: var(--color-fg);
+}
+
 /* Buttons */
 button,
 .picker-button {
   background: var(--color-ui-bg);
-  color: white;
+  color: var(--color-fg);
   border: none;
   padding: var(--button-padding);
   border-radius: var(--button-radius);
@@ -136,7 +141,7 @@ button:hover,
 /* Fullscreen buttons styling */
 #fullscreenBtn {
   background: var(--color-ui-bg);
-  color: white;
+  color: var(--color-fg);
   border: none;
   padding: var(--button-padding);
   border-radius: var(--button-radius);
@@ -187,7 +192,7 @@ button:hover,
 }
 
 .config-item {
-  color: white;
+  color: var(--color-fg);
   font-size: 16px;
   padding: 8px 12px;
   border-radius: 4px;
@@ -198,6 +203,16 @@ button:hover,
 
 .config-item:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+@media (prefers-color-scheme: light) {
+  .config-item {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .config-item:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
 }
 
 .config-row {
@@ -223,7 +238,7 @@ button:hover,
   padding: 8px 12px;
   border-radius: 4px;
   background-color: rgba(255, 255, 255, 0.1);
-  color: white;
+  color: var(--color-fg);
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
@@ -283,7 +298,6 @@ button:hover,
 /* Description block for storage overlay */
 .storage-description {
   font-size: 0.95rem;
-  color: #ccc;
   margin-bottom: 10px;
   line-height: 1.4;
 }
@@ -420,6 +434,7 @@ button:hover,
     --color-ui-fg: #000;
     --color-hover: #e0e0e0;
     --color-text: #000;
+    --color-fg: #000;
 
     --controls-ui-bg: rgba(0, 0, 0, 0);
   }
