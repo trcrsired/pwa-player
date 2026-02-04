@@ -93,12 +93,6 @@ async function play_source(sourceobject, playlist) {
       // - save lastplaylist
       kv_delete("lastplayed").catch(() => {});
       kv_set("lastplaylist", playlist).catch(() => {});
-    } else {
-      // Playing a single file:
-      // - clear lastplaylist
-      // - save lastplayed
-      kv_delete("lastplaylist").catch(() => {});
-      kv_set("lastplayed", sourceobject).catch(() => {});
     }
 
     navigator.mediaSession.metadata = new MediaMetadata(mediametadata);

@@ -2,7 +2,11 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="theme-color" content="#000000">
+        <!-- Light mode -->
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+
+        <!-- Dark mode -->
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     	<meta name="msvalidate.01" content="0EBF88DA5B81674DD7E39378483EC964" />
@@ -49,7 +53,7 @@
                     </div>
                 </div>
 
-                <div class="control-row config-row hidden" id="configOptions">
+                <div class="control-row config-row" id="configOptions">
                     <div class="control-group full-width">
                         <button class="config-item" id="nowPlayingBtn" title="Now Playing">▶️ Now Playing</button>
                         <button class="config-item" id="playlistBtn" title="Playlist">🎵 Playlist</button>
@@ -63,7 +67,7 @@
 
         </div>
 
-        <div id="storageView" class="view hidden">
+        <div id="storageView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="backBtn" class="back-btn">←</button>
                 <h1 class="title">Storage Manager</h1>
@@ -80,7 +84,7 @@
                 <ul id="storageList" class="list"></ul>
             </main>
         </div>
-        <div id="nowPlayingView" class="view hidden">
+        <div id="nowPlayingView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="nowPlayingBackBtn" class="back-btn">←</button>
                 <h1 class="title">Now Playing</h1>
@@ -116,7 +120,7 @@
             </main>
         </div>
 
-        <div id="playlistView" class="view hidden">
+        <div id="playlistView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="playlistBackBtn" class="back-btn">←</button>
                 <h1 class="title">Playlists</h1>
@@ -127,13 +131,60 @@
                 <ul id="playlistTree" class="playlist-tree"></ul>
             </main>
         </div>
+        <div id="settingsView" class="overlay-view hidden">
+            <header class="topbar">
+                <button id="settingsCloseBtn" class="back-btn">←</button>
+                <h1 class="title">Settings</span>
+            </header>
 
+            <main class="content">
+
+                <h3>About This App</h3>
+
+                <p class="storage-description">
+                    This app works best in modern Chromium-based browsers. The user prefers Microsoft Edge, which fully supports the File System Access API. Firefox and Safari do not support this API, so they are not recommended for importing or managing local media files.
+                </p>
+
+                <ul class="overlay-list">
+                    <li>
+                        <strong>Source Code:</strong><br>
+                        <a href="https://github.com/trcrsired/pwa-player" target="_blank">
+                            https://github.com/trcrsired/pwa-player
+                        </a>
+                    </li>
+
+                    <li>
+                        <strong>License:</strong><br>
+                        GPLv3 — Free Software Foundation
+                    </li>
+
+                    <li>
+                        <strong>Organization:</strong><br>
+                        cppfastio
+                    </li>
+
+                    <li>
+                        <strong>Year:</strong><br>
+                        <span id="settingsYear"></span>
+                    </li>
+
+                    <li>
+                        <strong>PWA Store Listing:</strong><br>
+                        <a href="https://pwa-store-7x5.pages.dev" target="_blank">
+                            https://pwa-store-7x5.pages.dev
+                        </a>
+                    </li>
+                </ul>
+
+            </div>
+        </div>
 
         <script src="indexeddb.js"></script>
         <script src="nowplaying.js"></script>
         <script src="playlist.js"></script>
         <script src="storage.js"></script>
         <script src="player.js"></script>
+        <script src="settings.js"></script>
         <script src="sw-register.js"></script>
     </body>
 </html>

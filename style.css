@@ -63,7 +63,6 @@ html, body {
 
 #controls.hidden {
   opacity: 0;
-  pointer-events: none;
 }
 
 /* Control Rows */
@@ -394,14 +393,59 @@ button:hover,
   border-bottom: 1px solid #ddd;
 }
 
-#nowPlayingQueue .active {
-    background: rgba(255,255,255,0.15);
+.overlay-view {
     font-weight: bold;
 }
 
-#nowPlayingView .content {
+.overlay-view {
     overflow-y: auto;
-    height: calc(100vh - 100px); /* 60px = header height */
+    height: calc(100vh); /* 60px = header height */
     padding-bottom: 20px;
 }
 
+.context-menu {
+    position: absolute;
+    z-index: 9999;
+    background: #222;
+    border: 1px solid #444;
+    padding: 6px 0;
+    border-radius: 6px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #fafafa;
+    --color-ui-bg: rgba(0, 0, 0, 0);
+    --color-ui-fg: #000;
+    --color-hover: #e0e0e0;
+    --color-text: #000;
+
+    --controls-ui-bg: rgba(0, 0, 0, 0);
+  }
+
+  .context-menu {
+    background: #fff;
+    border: 1px solid #ccc;
+  }
+
+  .context-menu .menu-item {
+    color: #000;
+  }
+
+  .context-menu .menu-item:hover {
+    background-color: #f0f0f0;
+  }
+
+  .overlay-panel {
+    background: #fff;
+  }
+
+  .overlay-header {
+    background: #f0f0f0;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .overlay-list li {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}

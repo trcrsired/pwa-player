@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-player-cache-v25";
+const CACHE_NAME = "pwa-player-cache-v26";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -12,6 +12,7 @@ self.addEventListener("install", (event) => {
         "/player.js",  // JS logic
         "/storage.js",  // JS logic
         "/playlist.js",
+        "/settings.js",
         "/sw-register.js",
         "/manifest.json",
         "/icons/icon.webp"

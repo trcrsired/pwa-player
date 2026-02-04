@@ -184,6 +184,127 @@ function updateNowPlayingInfo(entry) {
     urlEl.textContent = entry.path || "";
 }
 
+function removeFromNowPlaying(index) {
+    const queue = getActiveQueue();
+
+    // Remove the selected item
+    queue.splice(index, 1);
+
+    // If the removed item is the currently playing one
+    if (index === nowPlayingIndex) {
+
+        // If queue becomes empty
+        if (queue.length === 0) {
+            video.pause();
+            nowPlayingIndex = -1;
+            updateNowPlayingInfo(null);
+            renderNowPlayingQueue();
+            return;
+        }
+
+        // Play the next available item
+        const nextIndex = Math.min(index, queue.length - 1);
+        nowPlaying_playIndex(nextIndex);
+
+    } else if (index < nowPlayingIndex) {
+        // If an earlier item was removed, shift current index left
+        --nowPlayingIndex;
+    }
+
+    // Refresh UI
+    renderNowPlayingQueue();
+}
+
+function positionContextMenu(menu, x, y) {
+    const menuWidth = menu.offsetWidth;
+    const menuHeight = menu.offsetHeight;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = x;
+    let top = y;
+
+    // Prefer right side, flip left if overflowing
+    if (left + menuWidth > viewportWidth) {
+        left = x - menuWidth;
+        if (left < 0) left = 0;
+    }
+
+    // Prefer below, flip above if overflowing
+    if (top + menuHeight > viewportHeight) {
+        top = y - menuHeight;
+        if (top < 0) top = 0;
+    }
+
+    menu.style.left = left + "px";
+    menu.style.top = top + "px";
+}
+
+function closeContextMenu() {
+    const existing = document.querySelector(".context-menu");
+    if (existing) existing.remove();
+}
+
+function enableContextMenuAutoClose(menu) {
+    const handler = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener("mousedown", handler);
+            document.removeEventListener("touchstart", handler);
+        }
+    };
+
+    // Use mousedown/touchstart so it closes BEFORE new menus open
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+}
+
+function confirmRemoveFromNowPlaying(index) {
+    const queue = getActiveQueue();
+    const entry = queue[index];
+
+    const ok = confirm(`Remove "${entry.name || entry.path}" from the queue?`);
+    if (!ok) return;
+
+    removeFromNowPlaying(index);
+}
+
+function showNowPlayingItemMenu(index, x, y) {
+    closeContextMenu();
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+
+    menu.innerHTML = `
+        <div class="menu-item danger" data-action="remove">Remove from Queue</div>
+        <div class="menu-item" data-action="close">Close</div>
+    `;
+
+    // Step 1: append BEFORE measuring
+    document.body.appendChild(menu);
+
+    // Step 2: force layout (important!)
+    menu.getBoundingClientRect();
+
+    // Step 3: now position correctly
+    positionContextMenu(menu, x, y);
+
+    enableContextMenuAutoClose(menu);
+
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", () => {
+            const action = item.dataset.action;
+
+            if (action === "remove") {
+                confirmRemoveFromNowPlaying(index);
+            }
+
+            closeContextMenu();
+        });
+    });
+}
+
+
 function renderNowPlayingQueue() {
     const ul = document.getElementById("nowPlayingQueue");
     ul.innerHTML = "";
@@ -199,11 +320,21 @@ function renderNowPlayingQueue() {
             li.classList.add("active");
         }
 
-        li.textContent = entry.name || entry.path;
+        // Display track name only
+        li.innerHTML = `
+            <span class="np-item-title">${entry.name || entry.path}</span>
+        `;
 
-        // Clicking jumps to that track
+        // Left-click → play
         li.addEventListener("click", () => {
             nowPlaying_playIndex(i);
+        });
+
+        // Right-click → context menu
+        li.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            console.log("RIGHT CLICK WORKS", i);
+            showNowPlayingItemMenu(i, e.pageX, e.pageY);
         });
 
         ul.appendChild(li);

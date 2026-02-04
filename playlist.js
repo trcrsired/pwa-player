@@ -56,6 +56,7 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
         <div class="menu-item" data-action="duplicate">Duplicate</div>
         <div class="menu-item" data-action="export">Export</div>
         <div class="menu-item danger" data-action="delete">Delete</div>
+        <div class="menu-item" data-action="close">Close</div>
     `;
 
     document.body.appendChild(menu);
@@ -94,6 +95,10 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
                 }
             }
 
+            if (action === "close")
+            {
+                closeMenu(); return;
+            }
             await playlists_save(playlists);
             playlist_renderTree();
         });
@@ -154,39 +159,44 @@ async function storage_resolvePath(pointer) {
 }
 
 function showPlaylistItemMenu(playlistName, index, x, y) {
+    // Close any existing menu
+    const existing = document.querySelector(".context-menu");
+    if (existing) existing.remove();
+
     const menu = document.createElement("div");
     menu.className = "context-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
 
     menu.innerHTML = `
-        <div class="menu-item" data-action="play">Play</div>
-        <div class="menu-item" data-action="export">Export File</div>
+        <div class="menu-item danger" data-action="delete">Delete</div>
         <div class="menu-item" data-action="move-up">Move Up</div>
         <div class="menu-item" data-action="move-down">Move Down</div>
-        <div class="menu-item danger" data-action="remove">Remove</div>
+        <div class="menu-item" data-action="close">Close</div>
     `;
 
     document.body.appendChild(menu);
 
     const closeMenu = () => menu.remove();
-    setTimeout(() => document.addEventListener("click", closeMenu, { once: true }), 0);
+
+    // Auto-close when clicking outside
+    setTimeout(() => {
+        document.addEventListener("mousedown", (e) => {
+            if (!menu.contains(e.target)) closeMenu();
+        }, { once: true });
+    }, 0);
 
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
             const playlists = await playlists_load();
             const list = playlists[playlistName];
-            const entry = list[index];
 
-            if (action === "play") {
-                console.log(entry.path);
-                const resolved = await storage_resolvePath(entry.path);
-                play_source(resolved);
-            }
-
-            if (action === "export") {
-                exportMedia(entry.path);
+            if (action === "delete") {
+                const ok = confirm(`Remove this item from playlist "${playlistName}"?`);
+                if (ok) {
+                    list.splice(index, 1);
+                }
             }
 
             if (action === "move-up" && index > 0) {
@@ -197,16 +207,17 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
                 [list[index + 1], list[index]] = [list[index], list[index + 1]];
             }
 
-            if (action === "remove") {
-                list.splice(index, 1);
+            if (action === "close") {
+                closeMenu();
+                return;
             }
 
             await playlists_save(playlists);
             playlist_renderTree();
+            closeMenu();
         });
     });
 }
-
 
 async function playlist_renderTree() {
     const playlists = await playlists_load();
@@ -263,40 +274,83 @@ async function playlist_renderTree() {
     });
 }
 
+function showPlaylistHeaderMenu(playlistName, x, y) {
+    // Close any existing menu first
+    const existing = document.querySelector(".context-menu");
+    if (existing) existing.remove();
 
-function showPlaylistItemMenu(playlistName, index, x, y) {
     const menu = document.createElement("div");
     menu.className = "context-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
 
     menu.innerHTML = `
-        <div class="menu-item" data-action="delete">Delete</div>
-        <div class="menu-item" data-action="move-up">Move Up</div>
-        <div class="menu-item" data-action="move-down">Move Down</div>
+        <div class="menu-item" data-action="rename">Rename</div>
+        <div class="menu-item" data-action="duplicate">Duplicate</div>
+        <div class="menu-item" data-action="export">Export</div>
+        <div class="menu-item danger" data-action="delete">Delete</div>
+        <div class="menu-item danger" data-action="clear">Clear Playlist</div>
+        <div class="menu-item" data-action="close">Close</div>
     `;
 
     document.body.appendChild(menu);
 
     const closeMenu = () => menu.remove();
-    setTimeout(() => document.addEventListener("click", closeMenu, { once: true }), 0);
 
+    // Auto-close when clicking outside
+    setTimeout(() => {
+        document.addEventListener("mousedown", (e) => {
+            if (!menu.contains(e.target)) closeMenu();
+        }, { once: true });
+    }, 0);
+
+    // Menu actions
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
             const playlists = await playlists_load();
-            const list = playlists[playlistName];
+
+            if (action === "rename") {
+                const newName = prompt("New playlist name:", playlistName);
+                if (newName && newName.trim()) {
+                    playlists[newName.trim()] = playlists[playlistName];
+                    delete playlists[playlistName];
+                }
+            }
+
+            if (action === "duplicate") {
+                const copyName = playlistName + " Copy";
+                playlists[copyName] = JSON.parse(JSON.stringify(playlists[playlistName]));
+            }
+
+            if (action === "export") {
+                const json = JSON.stringify(playlists[playlistName], null, 2);
+                console.log("EXPORT PLAYLIST:", json);
+                alert("Playlist exported to console.");
+            }
 
             if (action === "delete") {
-                list.splice(index, 1);
-            } else if (action === "move-up" && index > 0) {
-                [list[index - 1], list[index]] = [list[index], list[index - 1]];
-            } else if (action === "move-down" && index < list.length - 1) {
-                [list[index + 1], list[index]] = [list[index], list[index + 1]];
+                const confirmDelete = confirm(`Delete playlist "${playlistName}"?`);
+                if (confirmDelete) {
+                    delete playlists[playlistName];
+                }
+            }
+
+            if (action === "clear") {
+                const ok = confirm(`Clear ALL items in playlist "${playlistName}"?`);
+                if (ok) {
+                    playlists[playlistName] = []; // clear entire playlist
+                }
+            }
+
+            if (action === "close") {
+                closeMenu();
+                return;
             }
 
             await playlists_save(playlists);
             playlist_renderTree();
+            closeMenu();
         });
     });
 }

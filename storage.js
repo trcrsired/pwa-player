@@ -64,12 +64,42 @@ async function promptForUniqueName(baseName, parentHandle) {
             return trimmed;
         }
 
-        attempts++;
+        ++attempts;
         alert(`"${trimmed}" already exists. Try again.`);
     }
 
     alert("Too many attempts. Import cancelled.");
     return null;
+}
+
+// Allowed media extensions (same as file_handlers)
+const ALLOWED_EXTENSIONS = new Set([
+    ".mp4", ".webm", ".mkv",
+    ".mp3", ".wav", ".flac"
+]);
+
+function isAllowedFile(name) {
+    // Ensure name is a non-empty string
+    try
+    {
+        if (typeof name !== "string") return false;
+
+        // Normalize
+        const lower = name.trim().toLowerCase();
+        if (!lower) return false;
+
+        // Extract extension safely
+        const dotIndex = lower.lastIndexOf(".");
+        if (dotIndex === -1) return false;
+
+        const ext = lower.slice(dotIndex);
+
+        return ALLOWED_EXTENSIONS.has(ext);
+    }
+    catch
+    {
+        return false;
+    }
 }
 
 // ============================================================
@@ -79,6 +109,10 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result 
     for await (const [name, handle] of sourceHandle.entries()) {
         try {
             if (handle.kind === "file") {
+                if (!isAllowedFile(name))
+                {
+                    continue;
+                }
                 // SAF read (may fail on Android)
                 // Chromium Recent BUG on Android? for handle.getFile() silent fails.
                 // GrapheneOS
@@ -215,6 +249,121 @@ function getSchemaForRoot(rootHandle) {
     return "unknown";
 }
 
+// Detect long-press for mobile devices
+function addLongPress(element, callback) {
+    let timer = null;
+
+    element.addEventListener("touchstart", (e) => {
+        timer = setTimeout(() => {
+            const touch = e.touches[0];
+            callback(touch.pageX, touch.pageY);
+        }, 500);
+    });
+
+    element.addEventListener("touchend", () => clearTimeout(timer));
+    element.addEventListener("touchmove", () => clearTimeout(timer));
+}
+
+function showStorageDirMenu(entry, dirName, x, y) {
+    // Remove existing menu
+    const existing = document.querySelector(".context-menu");
+    if (existing) existing.remove();
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+
+    menu.innerHTML = `
+        <div class="menu-item" data-action="add">Add to Playlist</div>
+        <div class="menu-item" data-action="rename">Rename</div>
+        <div class="menu-item danger" data-action="delete">Delete</div>
+        <div class="menu-item" data-action="close">Close</div>
+    `;
+
+    document.body.appendChild(menu);
+
+    const closeMenu = () => menu.remove();
+
+    // Auto-close when clicking outside
+    setTimeout(() => {
+        document.addEventListener("mousedown", (e) => {
+            if (!menu.contains(e.target)) closeMenu();
+        }, { once: true });
+    }, 0);
+
+    // Menu actions
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const action = item.dataset.action;
+
+            const root = await navigator.storage.getDirectory();
+            const parent = await root.getDirectoryHandle(entry.dirName);
+
+            if (action === "add") {
+                await choosePlaylistAndAdd(parent, entry, dirName);
+            }
+
+            if (action === "rename") {
+                const newName = prompt("New folder name:", dirName);
+                if (newName && newName.trim()) {
+                    await parent.renameEntry(dirName, newName.trim());
+                }
+            }
+
+            if (action === "delete") {
+                const ok = confirm(`Delete folder "${dirName}"?`);
+                if (ok) {
+                    await parent.removeEntry(dirName, { recursive: true });
+                }
+            }
+
+            closeMenu();
+            renderStorage();
+        });
+    });
+}
+
+async function loadStorageSubdirs(subList, dirHandle, entry) {
+    subList.innerHTML = "";
+
+    for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind !== "directory") continue;
+
+        const li = document.createElement("li");
+        li.className = "storage-sub-item";
+
+        li.innerHTML = `
+            <div class="storage-sub-header">
+                <span class="sub-name">${name}</span>
+                <button class="quick-add">+</button>
+            </div>
+        `;
+
+        const header = li.querySelector(".storage-sub-header");
+        const addBtn = li.querySelector(".quick-add");
+
+        // Right-click menu
+        header.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            showStorageDirMenu(entry, name, e.pageX, e.pageY);
+        });
+
+        // Long-press menu
+        addLongPress(header, (x, y) => {
+            showStorageDirMenu(entry, name, x, y);
+        });
+
+        // Quick add to playlist
+        addBtn.addEventListener("click", async () => {
+            await choosePlaylistAndAdd(dirHandle, entry, name);
+        });
+
+        subList.appendChild(li);
+    }
+}
+/*
+
 async function renderStorageEntry(list, dirHandle, entry) {
     const schema = entry.schema;
 
@@ -239,8 +388,7 @@ async function renderStorageEntry(list, dirHandle, entry) {
         list.appendChild(li);
     }
 }
-
-
+*/
 // ============================================================
 // Render all import roots and their subdirectories
 // ============================================================
@@ -248,6 +396,7 @@ async function renderStorage() {
     const list = document.getElementById("storageList");
     list.innerHTML = "";
 
+    // Ensure root exists
     if (!window.navigatorStorageRoot) {
         window.navigatorStorageRoot = await navigator.storage.getDirectory();
     }
@@ -261,15 +410,45 @@ async function renderStorage() {
         try {
             rootDir = await root.getDirectoryHandle(entry.dirName);
         } catch {
-            continue;
+            continue; // Skip missing roots
         }
 
-        await renderStorageEntry(list, rootDir, entry, root);
+        const li = document.createElement("li");
+        li.className = "storage-node";
+
+        li.innerHTML = `
+            <div class="storage-header">
+                <button class="toggle">+</button>
+                <span class="storage-name">${entry.schema}://${entry.rootName}</span>
+            </div>
+            <ul class="storage-sub hidden"></ul>
+        `;
+
+        const header = li.querySelector(".storage-header");
+        const toggleBtn = li.querySelector(".toggle");
+        const subList = li.querySelector(".storage-sub");
+
+        // Click to expand/collapse
+        header.addEventListener("click", () => {
+            const hidden = subList.classList.toggle("hidden");
+            toggleBtn.textContent = hidden ? "+" : "−";
+            if (!hidden) loadStorageSubdirs(subList, rootDir, entry);
+        });
+
+        // Right-click menu
+        header.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            showStorageDirMenu(entry, null, e.pageX, e.pageY);
+        });
+
+        // Long-press menu
+        addLongPress(header, (x, y) => {
+            showStorageDirMenu(entry, null, x, y);
+        });
+
+        list.appendChild(li);
     }
 }
-
-
-
 
 // ============================================================
 // Import directory (showDirectoryPicker)
@@ -369,6 +548,10 @@ document.getElementById("filePicker").addEventListener("change", async (event) =
 
     for (const file of files) {
         try {
+            if (!isAllowedFile(name))
+            {
+                continue;
+            }
             const targetFileHandle = await targetDir.getFileHandle(file.name, { create: true });
             const writable = await targetFileHandle.createWritable();
             await writable.write(await file.arrayBuffer());
