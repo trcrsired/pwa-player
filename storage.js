@@ -522,18 +522,24 @@ document.getElementById("filePicker").addEventListener("change", async (event) =
     const errors = [];
 
     for (const file of files) {
+        const filename = file.name;
+        if (!filename)
+        {
+            errors.push(`Failed to import a file`);
+            continue;
+        }
         try {
-            if (!isAllowedFile(name))
+            if (!isAllowedFile(filename))
             {
                 continue;
             }
-            const targetFileHandle = await targetDir.getFileHandle(file.name, { create: true });
+            const targetFileHandle = await targetDir.getFileHandle(filename, { create: true });
             const writable = await targetFileHandle.createWritable();
             await writable.write(await file.arrayBuffer());
             await writable.close();
             ++count;
         } catch (err) {
-            errors.push(`Failed to import ${file.name}: ${err.message}`);
+            errors.push(`Failed to import ${filename}: ${err.message}`);
         }
     }
 
