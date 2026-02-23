@@ -352,7 +352,7 @@ function updatePlayModeButton() {
             btn.textContent = "🔁";
             break;
         case "repeat-one":
-            btn.textContent = "🔂1";
+            btn.textContent = "🔂";
             break;
         case "shuffle":
             btn.textContent = "🔀";
