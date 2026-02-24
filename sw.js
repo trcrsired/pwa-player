@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-player-cache-v40";
+const CACHE_NAME = "pwa-player-cache-v40.1";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

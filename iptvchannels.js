@@ -9,6 +9,9 @@ export const iptvChannels = [
   { name: "PBS Nature",
     urls: [ "https://amg01597-wnetnewyorkpubl-pbsnature-xumo-8xorq.amagi.tv/playlist.m3u8" ]
   },
+  { name: "RT",
+    urls: [ "https://rumble.com/live-hls-dvr/33aw1a/playlist.m3u8" ]
+  },
   {
     name: "CCTV-4 America",
     urls: [
