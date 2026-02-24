@@ -330,11 +330,10 @@ video.addEventListener("timeupdate", () => {
 
 function fullscreencallback()
 {
-  const container = document.getElementById("playerContainer");
   if (document.fullscreenElement) {
     document.exitFullscreen();
   } else {
-    container.requestFullscreen();
+    document.documentElement.requestFullscreen();
     controls.classList.toggle('hidden');
   }
 }
