@@ -10,10 +10,17 @@ function nop() {}
 
 async function verifyPermission(fileHandle, mode = "read") {
   const opts = { mode };
-  if ((await fileHandle.queryPermission(opts)) === "granted") {
+
+  if (typeof fileHandle.queryPermission !== "function") {
     return true;
   }
-  return (await fileHandle.requestPermission(opts)) === "granted";
+
+  const permission = await fileHandle.queryPermission(opts);
+  if (permission === "granted") {
+    return true;
+  }
+  const request = await fileHandle.requestPermission(opts);
+  return request === "granted";
 }
 
 async function getMediaMetadataFromSource(sourceobject) {
