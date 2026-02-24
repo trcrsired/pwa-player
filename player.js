@@ -51,6 +51,7 @@ async function getMediaMetadataFromSource(sourceobject) {
   ];
 }
 
+const playerWrapper = document.getElementById("playerWrapper");
 const video = document.getElementById("player");
 const playBtn = document.getElementById("playBtn");
 const npPlayBtn = document.getElementById("npPlayBtn");
@@ -407,11 +408,16 @@ document.addEventListener("keydown", (e) => {
   let hideTimeout;
 
   function showControlsTemporarily() {
+    // Show controls and cursor
     controls.classList.remove("hidden");
+    playerWrapper.classList.remove("hide-cursor");
+
     clearTimeout(hideTimeout);
+
     hideTimeout = setTimeout(() => {
       controls.classList.add("hidden");
-    }, 3000); // Hide after 3 seconds
+      playerWrapper.classList.add("hide-cursor");
+    }, 3000);
   }
 /*
   document.addEventListener("click", (e) => {

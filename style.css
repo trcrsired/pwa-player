@@ -42,6 +42,10 @@ html, body {
   background-color: var(--color-bg);
 }
 
+#playerWrapper.hide-cursor {
+  cursor: none;
+}
+
 /* Controls Container */
 #controls {
   position: absolute;
