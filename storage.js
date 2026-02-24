@@ -534,9 +534,25 @@ document.getElementById("filePicker").addEventListener("change", async (event) =
                 continue;
             }
             const targetFileHandle = await targetDir.getFileHandle(filename, { create: true });
-            const writable = await targetFileHandle.createWritable();
-            await writable.write(await file.arrayBuffer());
-            await writable.close();
+            if (typeof targetFileHandle.createWritable === "function") {
+                // Modern browsers
+                const writable = await targetFileHandle.createWritable();
+                try {
+                    await writable.write(await file.arrayBuffer());
+                } finally {
+                    await writable.close(); // always close, even on error
+                }
+            } else {
+                // Safari fallback (no createWritable)
+                const access = await targetFileHandle.createSyncAccessHandle();
+
+                try {
+                    const buffer = await file.arrayBuffer();
+                    access.write(new Uint8Array(buffer));
+                } finally {
+                    access.close(); // always close
+                }
+            }
             ++count;
         } catch (err) {
             errors.push(`Failed to import ${filename}: ${err.message}`);
