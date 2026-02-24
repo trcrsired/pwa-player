@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-player-cache-v39";
+const CACHE_NAME = "pwa-player-cache-v40";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -12,6 +12,8 @@ self.addEventListener("install", (event) => {
         "/player.js",  // JS logic
         "/storage.js",  // JS logic
         "/playlist.js",
+        "/iptvchannels.js",
+        "/iptv.js",
         "/settings.js",
         "/sw-register.js",
         "/manifest.json",

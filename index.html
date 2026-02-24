@@ -61,6 +61,7 @@
                         <button class="config-item" id="nowPlayingBtn" title="Now Playing">▶️ Now Playing</button>
                         <button class="config-item" id="playlistBtn" title="Playlist">🎵 Playlist</button>
                         <button class="config-item" id="storageBtn" title="Storage">🗂️ Storage</button>
+                        <button class="config-item" id="iptvBtn" title="IPTV">📺 IPTV</button>
                         <button class="config-item" id="settingsBtn" title="Settings">⚙️ Settings</button>
                         <!--button class="config-item" id="aboutBtn" title="About">ℹ️ About</button-->
                     </div>
@@ -134,6 +135,16 @@
                 <ul id="playlistTree" class="playlist-tree"></ul>
             </main>
         </div>
+        <div id="iptvView" class="overlay-view hidden">
+            <header class="topbar">
+                <button id="iptvBackBtn" class="back-btn">←</button>
+                <h1 class="title">IPTV Channels</h1>
+            </header>
+
+            <main class="content">
+                <ul id="iptvList" class="list"></ul>
+            </main>
+        </div>
         <div id="settingsView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="settingsCloseBtn" class="back-btn">←</button>
@@ -187,6 +198,7 @@
         <script src="playlist.js"></script>
         <script src="storage.js"></script>
         <script src="player.js"></script>
+        <script src="iptv.js" type="module"></script>
         <script src="settings.js"></script>
         <script src="sw-register.js"></script>
     </body>
