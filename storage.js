@@ -534,24 +534,11 @@ document.getElementById("filePicker").addEventListener("change", async (event) =
                 continue;
             }
             const targetFileHandle = await targetDir.getFileHandle(filename, { create: true });
-            if (typeof targetFileHandle.createWritable === "function") {
-                // Modern browsers
-                const writable = await targetFileHandle.createWritable();
-                try {
-                    await writable.write(await file.arrayBuffer());
-                } finally {
-                    await writable.close(); // always close, even on error
-                }
-            } else {
-                // Safari fallback (no createWritable)
-                const access = await targetFileHandle.createSyncAccessHandle();
-
-                try {
-                    const buffer = await file.arrayBuffer();
-                    access.write(new Uint8Array(buffer));
-                } finally {
-                    access.close(); // always close
-                }
+            const writable = await targetFileHandle.createWritable();
+            try {
+                await writable.write(await file.arrayBuffer());
+            } finally {
+                await writable.close(); // always close, even on error
             }
             ++count;
         } catch (err) {
