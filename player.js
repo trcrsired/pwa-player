@@ -88,7 +88,7 @@ async function play_source(sourceobject, playlist) {
     const mediametadata = result[2];
 
     video.src = blobURL;
-    controls.classList.remove("hidden");
+    controls.classList.add('hidden');
     video.play();
     playBtn.textContent = "⏸️";
 
@@ -169,11 +169,9 @@ async function togglePlayBtn()
         npPlayBtn.textContent = playBtn.textContent;
         return;
     }
-
     // Try to restore last playlist or last file
     const restored = await restoreLastPlayback();
     if (restored) return;
-
     // Nothing to restore → open picker
     pickerBtn.click();
 }
@@ -196,21 +194,40 @@ async function toggleStopBtn()
 stopBtn.onclick = toggleStopBtn;
 npStopBtn.onclick = toggleStopBtn;
 
+function pickFileSafariFallback(accept = "*/*") {
+  return new Promise(resolve => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+
+    input.onchange = () => resolve(input.files[0]);
+    input.click();
+  });
+}
+
 pickerBtn.onclick = async (e) => {
   try {
-      const [handle] = await window.showOpenFilePicker(
-        {
-          startIn: 'videos'
-        }
-      );
-      play_source(handle).catch(nop);
-  }
-  catch (err) {
-      if (video.src && video.currentTime > 0) {
-          toggleStopBtn(); // Only stop if something's playing
-      }
+    let file;
+
+    if (typeof window.showOpenFilePicker === "function") {
+      // Modern browsers (Chrome / Edge)
+      const [handle] = await window.showOpenFilePicker({
+        startIn: 'videos'
+      });
+      file = handle; // pass handle to your existing logic
+    } else {
+      // Safari / Firefox fallback
+      file = await pickFileSafariFallback("video/*");
+    }
+
+    play_source(file).catch(nop);
+  } catch (err) {
+    if (video.src && video.currentTime > 0) {
+      toggleStopBtn(); // Only stop if something's playing
+    }
   }
 };
+
 webBtn.onclick = () => {
   try {
     const url = prompt("Enter web URL:");
