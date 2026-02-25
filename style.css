@@ -71,6 +71,15 @@ html, body {
   pointer-events: none; /* disable all clicks */
 }
 
+
+#advancedControls {
+    transition: opacity .3s ease;
+}
+#advancedControls.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* Control Rows */
 .control-row {
   display: flex;
