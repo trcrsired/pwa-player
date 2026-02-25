@@ -79,52 +79,74 @@ function updateTimeDisplay(txtct)
   npTimeDisplay.textContent = txtct;
 }
 
-async function play_source(sourceobject, playlist) {
+async function play_source_internal(blobURL, mediametadata, sourceobject, playlist) {
   try {
-    const result = await getMediaMetadataFromSource(sourceobject);
-    if (!result) {
-      return;
-    }
-
-    const blobURL = result[1];
-    const mediametadata = result[2];
-
     video.src = blobURL;
     controls.classList.add('hidden');
-    video.play();
+
+    // 🔥 Fix: wait for metadata before playing
+    video.onloadedmetadata = () => {
+      video.play().catch(err => console.warn("Play failed:", err));
+    };
+
     playBtn.textContent = "⏸️";
 
     navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
     document.title = `PWA Player ▶️ ${mediametadata.title}`;
 
-    // Build entry for Now Playing UI
     const entry = {
-        name: mediametadata.title,
-        artist: mediametadata.artist || "",
-        path: playlist?.entryPath || blobURL
+      name: mediametadata.title,
+      artist: mediametadata.artist || "",
+      path: playlist?.entryPath || blobURL
     };
 
-    // Update Now Playing UI
     updateNowPlayingInfo(entry);
 
-    // Save playback state
     if (playlist) {
-        // Playing from a playlist:
-        // - clear lastplayed
-        // - save lastplaylist
-        kv_delete("lastplayed").catch(() => {});
-        kv_set("lastplaylist", playlist).catch(() => {});
+      kv_delete("lastplayed").catch(() => {});
+      kv_set("lastplaylist", playlist).catch(() => {});
     } else {
-        // Playing a single file:
-        // Only save lastplayed if there is no existing lastplaylist.
-        // This prevents overwriting playlist resume state.
       const lp = await kv_get("lastplaylist");
       if (!lp) {
-          kv_set("lastplayed", sourceobject).catch(() => {});
+        kv_set("lastplayed", sourceobject).catch(() => {});
       }
     }
+  } catch (err) {
+    console.warn(err);
   }
-  catch (err) {
+}
+
+async function play_source_title(sourceobject, customTitle, playlist) {
+  try {
+    // Get metadata as usual
+    const result = await getMediaMetadataFromSource(sourceobject);
+    if (!result) return;
+
+    const blobURL = result[1];
+    const mediametadata = result[2];
+
+    // Override the title
+    mediametadata.title = customTitle;
+
+    // Now call the internal playback handler
+    await play_source_internal(blobURL, mediametadata, sourceobject, playlist);
+  } catch (err) {
+    console.warn(err);
+  }
+}
+
+async function play_source(sourceobject, playlist) {
+  try {
+    const result = await getMediaMetadataFromSource(sourceobject);
+    if (!result) return;
+
+    const blobURL = result[1];
+    const mediametadata = result[2];
+
+    // Call the shared internal logic
+    await play_source_internal(blobURL, mediametadata, sourceobject, playlist);
+
+  } catch (err) {
     console.warn(err);
   }
 }

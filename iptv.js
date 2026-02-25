@@ -28,37 +28,49 @@ function renderIPTVList() {
         const li = document.createElement("li");
         li.className = "list-item";
 
-        // Main row container
         const row = document.createElement("div");
         row.className = "iptv-row";
 
-        // Channel name (click → play first URL)
         const nameSpan = document.createElement("span");
         nameSpan.textContent = channel.name;
         nameSpan.className = "iptv-name";
 
+        // Main click → play first URL
         nameSpan.addEventListener("click", () => {
-            play_source(channel.urls[0]);
+            const url = channel.url || (channel.urls && channel.urls[0]);
+            if (!url) return;
+
+            play_source_title(url, channel.name, null);
             iptvView.classList.add("hidden");
             playerContainer.classList.remove("hidden");
         });
 
-        // "+" button to expand sources
+        row.appendChild(nameSpan);
+
+        // Always create expand button
         const expandBtn = document.createElement("button");
-        expandBtn.textContent = "+";
         expandBtn.className = "iptv-expand-btn";
 
-        // Sub-list for multiple URLs
+        // Normalize URLs into an array
+        const urlList = channel.url ? [channel.url] : channel.urls;
+
+        // Show count only if > 1
+        if (urlList.length > 1) {
+            expandBtn.textContent = `+ (${urlList.length})`;
+        } else {
+            expandBtn.textContent = "+";
+        }
+
         const subList = document.createElement("ul");
         subList.className = "iptv-sublist hidden";
 
-        channel.urls.forEach(url => {
+        urlList.forEach(url => {
             const subLi = document.createElement("li");
             subLi.className = "iptv-subitem";
             subLi.textContent = url;
 
             subLi.addEventListener("click", () => {
-                play_source(url);
+                play_source_title(url, channel.name, null);
                 iptvView.classList.add("hidden");
                 playerContainer.classList.remove("hidden");
             });
@@ -70,12 +82,9 @@ function renderIPTVList() {
             subList.classList.toggle("hidden");
         });
 
-        row.appendChild(nameSpan);
         row.appendChild(expandBtn);
-
         li.appendChild(row);
         li.appendChild(subList);
-
         iptvList.appendChild(li);
     });
 }
