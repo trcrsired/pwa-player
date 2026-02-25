@@ -514,3 +514,28 @@ document.getElementById("nowPlayingBackBtn").addEventListener("click", () => {
     document.getElementById("playerContainer").classList.remove("hidden");
 });
 
+// Store reconnect timer so we can cancel it if needed
+let reconnectTimer = null;
+
+// Triggered when the video element encounters a playback error
+video.addEventListener("error", () => {
+    console.warn("Stream error detected. Attempting to reconnect in 2 seconds...");
+
+    // Clear any previous reconnect attempts
+    clearTimeout(reconnectTimer);
+
+    // Try reconnecting after a short delay
+    reconnectTimer = setTimeout(() => {
+        if (video.src) {
+            const oldSrc = video.src;
+
+            // Force the browser to reload the stream
+            video.src = "";      // Reset source to force refresh
+            video.load();        // Reload the video element
+            video.src = oldSrc;  // Restore the original stream URL
+
+            // Try playing again
+            video.play().catch(() => {});
+        }
+    }, 2000);
+});
