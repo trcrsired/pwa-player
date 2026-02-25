@@ -480,3 +480,12 @@ button:hover,
 }
 
 #playerWrapper { width: 100%; height: 100%; display: flex; }
+
+.iptv-nsfw-badge {
+    margin-left: 6px;
+    padding: 2px 4px;
+    font-size: 10px;
+    background: #b30000;
+    color: white;
+    border-radius: 3px;
+}

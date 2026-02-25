@@ -21,7 +21,6 @@ export const iptvChannels = [
   { name: "NBC Comedy Vault", url: "https://xumo-xumoent-vc-105-z0vpm.fast.nbcuni.com/live/master.m3u8" },
   { name: "CCTV-4 America", url: "https://global.cgtn.cicc.media.caton.cloud/master/cgtn-america.m3u8" },
   { name: "CCTV-4 Europe", url: "https://dash2.antik.sk/live/test_cctv_tizen/playlist.m3u8" },
-
   {
     name: "CCTV-13 News",
     urls: [
@@ -36,6 +35,13 @@ export const iptvChannels = [
       "https://english-livebkali.cgtn.com/live/encgtn.m3u8",
       "https://dash4.antik.sk/live/test_cgtn/playlist.m3u8",
       "https://news.cgtn.com/resource/live/english/cgtn-news.m3u8"
+    ]
+  },
+  {
+    name: "CGTN CCTV+",
+    urls: [
+      "https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL1.smil/playlist.m3u8",
+      "https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL2.smil/playlist.m3u8"
     ]
   },
   {
@@ -255,5 +261,416 @@ export const iptvChannels = [
     name: "Wujin News (武进新闻)",
     nameLocalized: { zhcn: "武进新闻" },
     url: "https://live.wjyanghu.com/live/CH1.m3u8"
-  }
+  },
+  {
+    name: "FOX 2 Detroit MI (WJBK) (720p)",
+    url: "https://aegis-cloudfront-1.tubi.video/5689247c-331e-4444-92e1-f7cc21377360/index.m3u8"
+  },
+  {
+    name: "FOX 2 San Francisco CA (KTVU) (720p)",
+    url: "https://aegis-cloudfront-1.tubi.video/8d9284ec-c451-4e51-a1d4-d16e5c8972af/index.m3u8"
+  },
+  {
+    name: "FOX Sports [Geo-blocked]",
+    url: "https://amg02855-foxsports-amg02855c1-xumo-us-1755.playouts.now.amagi.tv/Fox-Sports-AmazonNews/playlist.m3u8"
+  },
+  {
+    name: "Fox News Channel (720p)",
+    url: "https://stream.livenewsplay.com:9443/hls/foxnews/foxsd.m3u8"
+  },
+  {
+    name: "Fox Weather (720p)",
+    urls: [
+      "https://foxweather-xumo.amagi.tv/playlist.m3u8",
+      "https://247wlive.foxweather.com/stream/index.m3u8",
+      "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00488-foxdigital-fox4dallaskdfw-vizious/playlist.m3u8",
+      "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00488-foxdigital-kmsp-lgus/playlist.m3u8",
+      "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00488-foxdigital-kriv-lgus/playlist.m3u8",
+      "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00488-foxdigital-ksaz-lgus/playlist.m3u8",
+      "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00488-foxdigital-ktbc-lgus/playlist.m3u8",
+      "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00488-foxdigital-fox11losangeleskttv-vizious/playlist.m3u8"
+    ]
+  },
+  {
+    name: "Fox News Radio (720p)",
+    url: "https://radiovid.foxnews.com/hls/live/661547/RADIOVID/index.m3u8"
+  },
+  {
+    name: "Free Speech TV (720p)",
+    url: "https://edge.fstv-live-linear-channel.top.comcast.net/Content/HLS_HLSv3/Live/channel(b168a609-19c1-2203-ae1d-6b9726f05e67)/index.m3u8"
+  },
+  {
+    name: "LiveNOW from FOX (720p)",
+    urls: [
+      "https://fox-foxnewsnow-vizio.amagi.tv/playlist.m3u8",
+      "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00488-foxdigital-livenowbyfox-lgus/playlist.m3u8"
+    ]
+  },
+  {
+    name: "NBC 5 Chicago Live News (1080p)",
+    url: "https://d368vp0qqzvkid.cloudfront.net/11603/88889704/hls/master.m3u8?ads.xumo_channelId=88889704a&ads.xumo_ifaType=&ads.xumo_providerId=3818&ads.xumo_providerName=NBCNCHI"
+  },
+  {
+    name: "NBC News NOW (1080p)",
+    urls: [
+      "https://d1bl6tskrpq9ze.cloudfront.net/hls/master.m3u8?ads.xumo_channelId=99984003",
+      "https://livehub-voidnet.onrender.com/cluster/streamcore/us/NBC_REDIS.m3u8"
+    ]
+  },
+  {
+    name: "NBC Sports NOW (1080p)",
+    url: "https://d4whmvwm0rdvi.cloudfront.net/10007/99993008/hls/master.m3u8?ads.xumo_channelId=99993008"
+  },
+  {
+    name: "NBC West (San Diego) (1080p) [Not 24/7]",
+    url: "https://nbculocallive.akamaized.net/hls/live/2037098/sandiego/stream1/master.m3u8"
+  },
+  {
+    name: "NBCLX",
+    url: "https://nbculocallive.akamaized.net/hls/live/2037096/lx/use1.m3u8"
+  },
+  {
+    name: "CGNTV Japan (1080p)",
+    url: "https://d2p4mrcwl6ly4.cloudfront.net/out/v1/8d50f69fdbbf411a8d302743e4263716/CGNWebLiveJP.m3u8"
+  },
+  {
+    name: "Babes TV",
+    nsfw: true,
+    url: "https://cdn4.skygo.mn/live/disk1/Babes/HLSv3-FTA/Babes.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Anal (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/anal.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Anal (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/anal.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Asian (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/asian.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Big Ass (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/bigass.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Big Dick (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/bigdick.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Big Tits (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/bigtits.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Blonde (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/blonde.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Blowjob (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/blowjob.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Brunette (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/brunette.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Compilation (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/compilation.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Cuckold (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/cuckold.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Fetish (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/fetish.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Gangbang (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/gangbang.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Gay (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/gay.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Hardcore (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/hardcore.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Interracial (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/interracial.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Latina (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/latina.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Lesbian (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/lesbian.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Live Cams (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/livecams.m3u8"
+  },
+  {
+    name: "AdultIPTV.net MILF (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/milf.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Pornstar (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/pornstar.m3u8"
+  },
+  {
+    name: "AdultIPTV.net POV (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/pov.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Rough (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/rough.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Russian (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/russian.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Teen (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/teen.m3u8"
+  },
+  {
+    name: "AdultIPTV.net Threesome (720p)",
+    nsfw: true,
+    url: "https://cdn.adultiptv.net/threesome.m3u8"
+  },
+  {
+    name: "MyCamTV MILF",
+    nsfw: true,
+    url: "https://live.mycamtv.com/milf.m3u8"
+  },
+  {
+    name: "MyCamTV Young Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/young.m3u8"
+  },
+  {
+    name: "MyCamTV Mature",
+    nsfw: true,
+    url: "https://live.mycamtv.com/bigtits.m3u8"
+  },
+  {
+    name: "MyCamTV Arab Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/arab.m3u8"
+  },
+  {
+    name: "MyCamTV Ebony Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/ebony.m3u8"
+  },
+  {
+    name: "MyCamTV Asian Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/asian.m3u8"
+  },
+  {
+    name: "MyCamTV Brunette Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/brunette.m3u8"
+  },
+  {
+    name: "MyCamTV Latina Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/latina.m3u8"
+  },
+  {
+    name: "MyCamTV White Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/white.m3u8"
+  },
+  {
+    name: "MyCamTV Blonde Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/blonde.m3u8"
+  },
+  {
+    name: "MyCamTV Anal",
+    nsfw: true,
+    url: "https://live.mycamtv.com/anal.m3u8"
+  },
+  {
+    name: "MyCamTV Big Ass Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/bigass.m3u8"
+  },
+  {
+    name: "MyCamTV Girls Squirt",
+    nsfw: true,
+    url: "https://live.mycamtv.com/squirt.m3u8"
+  },
+  {
+    name: "MyCamTV Big Tits Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/bigtits.m3u8"
+  },
+  {
+    name: "MyCamTV Skinny Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/skinny.m3u8"
+  },
+  {
+    name: "MyCamTV Medium Girls",
+    nsfw: true,
+    url: "https://live.mycamtv.com/medium.m3u8"
+  },
+  {
+    name: "MyCamTV Blowjob",
+    nsfw: true,
+    url: "https://live.mycamtv.com/blowjob.m3u8"
+  },
+  {
+    name: "XXX Live Cams",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/livecams.m3u8"
+  },
+  {
+    name: "XXX MILF",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/milf.m3u8"
+  },
+  {
+    name: "XXX Big Dick",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/bigdick.m3u8"
+  },
+  {
+    name: "XXX Big Tits",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/bigtits.m3u8"
+  },
+  {
+    name: "XXX Fetish",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/fetish.m3u8"
+  },
+  {
+    name: "XXX Pornstar",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/pornstar.m3u8"
+  },
+  {
+    name: "XXX Big Ass",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/bigass.m3u8"
+  },
+  {
+    name: "XXX Interracial",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/interracial.m3u8"
+  },
+  {
+    name: "XXX Latina",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/latina.m3u8"
+  },
+  {
+    name: "XXX POV",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/pov.m3u8"
+  },
+  {
+    name: "XXX Blowjob",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/blowjob.m3u8"
+  },
+  {
+    name: "XXX Teen",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/teen.m3u8"
+  },
+  {
+    name: "XXX Hardcore",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/hardcore.m3u8"
+  },
+  {
+    name: "XXX Cuckold",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/cuckold.m3u8"
+  },
+  {
+    name: "XXX Threesome",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/threesome.m3u8"
+  },
+  {
+    name: "XXX Russian",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/russian.m3u8"
+  },
+  {
+    name: "XXX Lesbian",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/lesbian.m3u8"
+  },
+  {
+    name: "XXX Rough",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/rough.m3u8"
+  },
+  {
+    name: "XXX Gangbang",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/gangbang.m3u8"
+  },
+  {
+    name: "XXX Anal",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/anal.m3u8"
+  },
+  {
+    name: "XXX Compilation",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/compilation.m3u8"
+  },
+  {
+    name: "XXX Brunette",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/brunette.m3u8"
+  },
+  {
+    name: "XXX Blonde",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/blonde.m3u8"
+  },
+  {
+    name: "XXX Gay",
+    nsfw: true,
+    url: "https://cdn.redtraffic.net/gay.m3u8"
+  },
 ];

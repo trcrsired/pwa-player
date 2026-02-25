@@ -25,6 +25,13 @@ function renderIPTVList() {
     iptvList.innerHTML = "";
 
     iptvChannels.forEach(channel => {
+
+        // Skip NSFW channels unless unlocked
+        const isUnlocked = localStorage.hiddenfeatures === "true";
+        if (channel.nsfw && !isUnlocked) {
+            return;
+        }
+
         const li = document.createElement("li");
         li.className = "list-item";
 
@@ -35,7 +42,14 @@ function renderIPTVList() {
         nameSpan.textContent = channel.name;
         nameSpan.className = "iptv-name";
 
-        // Main click → play first URL
+        // 🔥 Add NSFW badge only when unlocked
+        if (channel.nsfw && isUnlocked) {
+            const badge = document.createElement("span");
+            badge.textContent = "NSFW";
+            badge.className = "iptv-nsfw-badge";
+            nameSpan.appendChild(badge);
+        }
+
         nameSpan.addEventListener("click", () => {
             const url = channel.url || (channel.urls && channel.urls[0]);
             if (!url) return;
@@ -47,19 +61,14 @@ function renderIPTVList() {
 
         row.appendChild(nameSpan);
 
-        // Always create expand button
         const expandBtn = document.createElement("button");
         expandBtn.className = "iptv-expand-btn";
 
-        // Normalize URLs into an array
         const urlList = channel.url ? [channel.url] : channel.urls;
 
-        // Show count only if > 1
-        if (urlList.length > 1) {
-            expandBtn.textContent = `+ (${urlList.length})`;
-        } else {
-            expandBtn.textContent = "+";
-        }
+        expandBtn.textContent = urlList.length > 1
+            ? `+ (${urlList.length})`
+            : "+";
 
         const subList = document.createElement("ul");
         subList.className = "iptv-sublist hidden";
