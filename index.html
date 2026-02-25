@@ -66,6 +66,20 @@
                         <!--button class="config-item" id="aboutBtn" title="About">ℹ️ About</button-->
                     </div>
                 </div>
+                <!-- Row 3: System / Advanced -->
+                <div class="control-row">
+                    <div class="control-group left-controls">
+                        <button id="pipBtn" title="Picture in Picture">🪟</button>
+                        <button id="remoteBtn" title="Remote Playback">📡</button>
+                        <button id="screenCaptureBtn" title="Capture Screen">🖥️</button>
+                        <button id="mediaRecordBtn" title="Record Media">⏺️</button>
+                    </div>
+
+                    <div class="control-group right-controls">
+                        <span id="batteryStatus" title="Battery Status">🔋 --%</span>
+                        <span id="networkStatus" title="Network Status">🌐</span>
+                    </div>
+                </div>
                 <input type="range" id="progressBar" min="0" max="100" value="0" title="Seek Timeline" />
             </div>
 
@@ -199,6 +213,7 @@
         <script src="storage.js"></script>
         <script src="player.js"></script>
         <script src="iptv.js" type="module"></script>
+        <script src="extrafeatures.js"></script>
         <script src="settings.js"></script>
         <script src="sw-register.js"></script>
     </body>
