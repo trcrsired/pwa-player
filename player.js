@@ -71,6 +71,7 @@ const volumeToggleBtn = document.getElementById("volumeToggle");
 const npVolumeToggleBtn = document.getElementById("npVolumeToggle");
 const burgerBtn = document.getElementById('burgerBtn');
 const configOptions = document.getElementById('configOptions');
+const advancedControls = document.getElementById('advancedControls');
 
 function updateTimeDisplay(txtct)
 {
@@ -444,6 +445,11 @@ document.addEventListener("keydown", (e) => {
       configOptions.classList.remove('hidden');
     } else {
       configOptions.classList.add('hidden');
+    }
+    if (advancedControls.classList.contains('hidden')) {
+      advancedControls.classList.remove('hidden');
+    } else {
+      advancedControls.classList.add('hidden');
     }
   });
 
