@@ -191,6 +191,10 @@ function saveVideoRecording() {
     a.click();
 
     URL.revokeObjectURL(url);
+// Reset recorder state
+    mediaRecorder = null;
+    videoStream = null;
+    recordedChunks = [];
 }
 
 // Stop recording
