@@ -462,18 +462,25 @@ document.addEventListener("keydown", (e) => {
     }
   });
 
-  burgerBtn.addEventListener('click', () => {
-    if (configOptions.classList.contains('hidden')) {
-      configOptions.classList.remove('hidden');
-    } else {
-      configOptions.classList.add('hidden');
-    }
-    if (advancedControls.classList.contains('hidden')) {
-      advancedControls.classList.remove('hidden');
-    } else {
-      advancedControls.classList.add('hidden');
-    }
+  function expandCollapseBurgerMenu(hide) {
+      if (hide) {
+          configOptions.classList.add("hidden");
+          advancedControls.classList.add("hidden");
+      } else {
+          configOptions.classList.remove("hidden");
+          advancedControls.classList.remove("hidden");
+      }
+      localStorage.setItem("burgerMenuHidden", hide ? "true" : "false");
+  }
+
+  burgerBtn.addEventListener("click", () => {
+      const currentlyHidden = configOptions.classList.contains("hidden");
+      expandCollapseBurgerMenu(!currentlyHidden);
   });
+
+  {
+    expandCollapseBurgerMenu(localStorage.getItem("burgerMenuHidden") === "true");
+  }
 
   if ('launchQueue' in window) {
     launchQueue.setConsumer(async (launchParams) => {
