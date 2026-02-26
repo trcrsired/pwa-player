@@ -1,16 +1,16 @@
-const CACHE_NAME = "pwa-player-cache-v48";
+const CACHE_NAME = "pwa-player-cache-v50";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
-        "/", // Entry file
-        "/style.css",  // Styles
-        "/settings.css",  // Settings Styles
-        "/indexeddb.js",  // JS logic
+        "/",
+        "/style.css",
+        "/settings.css",
+        "/indexeddb.js",
         "/nowplaying.js",
-        "/player.js",  // JS logic
-        "/storage.js",  // JS logic
+        "/player.js",
+        "/storage.js",
         "/playlist.js",
         "/iptvchannels.js",
         "/iptv.js",
@@ -19,7 +19,6 @@ self.addEventListener("install", (event) => {
         "/sw-register.js",
         "/manifest.json",
         "/icons/icon.webp"
-        // You could add default video or fallback assets too
       ]);
     })
   );

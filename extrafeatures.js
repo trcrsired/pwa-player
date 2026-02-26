@@ -42,113 +42,68 @@ remoteBtn.addEventListener("click", async () => {
     }
 });
 
+// ===============================
+// Screen Capture
+// ===============================
 
-// ===============================
-// Screen Capture + Auto Recording
-// ===============================
 const screenCaptureBtn = document.getElementById("screenCaptureBtn");
-const mediaRecordBtn = document.getElementById("mediaRecordBtn");
 
-let captureStream = null;
-let mediaRecorder = null;
-let recordedChunks = [];
+let screenCaptureStream = null;
+let screenRecorder = null;
+let screenChunks = [];
 
 screenCaptureBtn.addEventListener("click", async () => {
     try {
-        captureStream = await navigator.mediaDevices.getDisplayMedia({
+        screenCaptureStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
             audio: true
         });
 
-        video.srcObject = captureStream;
+        video.srcObject = screenCaptureStream;
         await video.play();
 
-        startRecording(captureStream);
+        startScreenRecording(screenCaptureStream);
 
-        captureStream.getTracks().forEach(track => {
+        screenCaptureStream.getTracks().forEach(track => {
             track.onended = () => {
-                alert("Screen sharing stopped. Saving recording...");
-                stopRecordingAndSave();
+                stopScreenRecording();
             };
         });
 
     } catch (e) {
-        if (e.name === "NotAllowedError") {
-            alert("Screen capture was cancelled.");
-        } else {
-            alert("Screen capture failed.");
-            console.error("Screen capture error:", e);
-        }
+        alert("Screen capture failed or was cancelled.");
+        console.error(e);
     }
 });
 
+function startScreenRecording(stream) {
+    screenChunks = [];
+    screenRecorder = new MediaRecorder(stream);
 
-// Manual record toggle
-mediaRecordBtn.addEventListener("click", () => {
-    if (!mediaRecorder) {
-        alert("Start screen capture before recording.");
-        return;
-    }
-
-    if (mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-        mediaRecordBtn.textContent = "⏺️";
-        alert("Recording stopped.");
-    } else {
-        startRecording(captureStream);
-        mediaRecordBtn.textContent = "⏹️";
-        alert("Recording started.");
-    }
-});
-
-
-// Start recording helper
-function startRecording(stream) {
-    try {
-        recordedChunks = [];
-        mediaRecorder = new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = e => {
-            if (e.data.size > 0) recordedChunks.push(e.data);
-        };
-
-        mediaRecorder.start();
-        mediaRecordBtn.textContent = "⏹️";
-    } catch (e) {
-        alert("Unable to start recording.");
-        console.error("Recording error:", e);
-    }
-}
-
-
-// Stop + save helper
-function stopRecordingAndSave() {
-    if (!mediaRecorder) return;
-
-    mediaRecorder.onstop = () => {
-        try {
-            const blob = new Blob(recordedChunks, { type: "video/webm" });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `screen-recording-${Date.now()}.webm`;
-            a.click();
-
-            URL.revokeObjectURL(url);
-        } catch (e) {
-            alert("Failed to save recording.");
-            console.error("Save error:", e);
-        }
+    screenRecorder.ondataavailable = e => {
+        if (e.data.size > 0) screenChunks.push(e.data);
     };
 
-    if (mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-    }
+    screenRecorder.onstop = () => {
+        const blob = new Blob(screenChunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
 
-    mediaRecordBtn.textContent = "⏺️";
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `screen-recording-${Date.now()}.webm`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    };
+
+    screenRecorder.start();
 }
 
+function stopScreenRecording() {
+    if (screenRecorder && screenRecorder.state === "recording") {
+        screenRecorder.stop();
+    }
+}
 
 // ===============================
 // Battery Status
@@ -176,6 +131,140 @@ if (navigator.getBattery) {
 
 
 // ===============================
+// Record
+// ===============================
+
+const mediaRecordBtn = document.getElementById("mediaRecordBtn");
+
+let mediaRecorder = null;
+let recordedChunks = [];
+let videoStream = null;
+
+// Start recording the <video> element
+function startVideoRecording() {
+
+    // Check if video is ready
+    if (video.readyState < 2) {
+        alert("Video is not ready yet. Please start playing the video first.");
+        return;
+    }
+
+    // Check if captureStream is supported
+    if (!video.captureStream && !video.mozCaptureStream) {
+        alert("Your browser does not support video recording.");
+        return;
+    }
+
+    // Try to get stream
+    videoStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+
+    // Check if stream has tracks
+    if (!videoStream || videoStream.getTracks().length === 0) {
+        alert("Unable to record this video. It may be cross-origin or not allowed.");
+        return;
+    }
+
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(videoStream, {
+        mimeType: "video/webm; codecs=vp9"
+    });
+
+    mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = saveVideoRecording;
+
+    mediaRecorder.start();
+    mediaRecordBtn.textContent = "⏹️";
+    alert("Recording started.");
+}
+
+// Save the recorded file
+function saveVideoRecording() {
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `video-recording-${Date.now()}.webm`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+// Stop recording
+function stopVideoRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+    }
+    mediaRecordBtn.textContent = "⏺️";
+    alert("Recording stopped.");
+}
+
+// Toggle button
+mediaRecordBtn.addEventListener("click", () => {
+    if (!mediaRecorder) {
+        startVideoRecording();
+        return;
+    }
+
+    if (mediaRecorder.state === "recording") {
+        stopVideoRecording();
+    } else {
+        mediaRecorder.start();
+        mediaRecordBtn.textContent = "⏹️";
+        alert("Recording started.");
+    }
+});
+
+// ===============================
+// Video Screenshot (WebP, safe)
+// ===============================
+
+const screenshotBtn = document.getElementById("screenshotBtn");
+
+screenshotBtn.addEventListener("click", async () => {
+
+    // Ensure video is ready
+    if (video.readyState < 2) {
+        alert("Video is not ready yet. Please start playing the video first.");
+        return;
+    }
+
+    // Prepare canvas
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+
+    try {
+        // Try drawing the video frame
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    } catch (err) {
+        alert("Unable to capture screenshot. The video source may be cross-origin without CORS.");
+        console.error(err);
+        return;
+    }
+
+    // Try exporting WebP
+    canvas.toBlob(blob => {
+        if (!blob) {
+            alert("Screenshot failed. The video source may not allow capturing.");
+            return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `screenshot-${Date.now()}.webp`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+    }, "image/webp");
+});
+
+// ===============================
 // Network Information
 // ===============================
 const networkStatus = document.getElementById("networkStatus");
@@ -198,3 +287,4 @@ if (connection) {
 } else {
     networkStatus.textContent = "🌐 n/a";
 }
+
