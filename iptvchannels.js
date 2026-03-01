@@ -337,6 +337,75 @@ export const iptvChannels = [
     url: "https://d2p4mrcwl6ly4.cloudfront.net/out/v1/8d50f69fdbbf411a8d302743e4263716/CGNWebLiveJP.m3u8"
   },
   {
+    name: "CBS News 24/7",
+    url: "https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8"
+  },
+  {
+    name: "CBS News Baltimore",
+    urls: [
+      "https://cbsnews.akamaized.net/hls/live/2099390/cbsnbal_11/master.m3u8",
+      "https://lineup.cbsivideo.com/playout/8877a7d5-b094-4ac8-bc72-75a5fed68e5b/index.m3u8"
+    ]
+  },
+  {
+    name: "CBS News Bay Area",
+    url: "https://cbsn-sf.cbsnstream.cbsnews.com/out/v1/dac63c1abb3f4a2dac9f508f44bb072a/master.m3u8"
+  },
+  {
+    name: "CBS News Boston",
+    urls: [
+      "https://cbsn-bos.cbsnstream.cbsnews.com/out/v1/589d66ec6eb8434c96c28de0370d1326/master.m3u8",
+      "https://dai.google.com/linear/hls/event/dHA193vxQ_WqZNVoC-W5MA/master.m3u8"
+    ]
+  },
+  {
+    name: "CBS News Chicago",
+    url: "https://cbsn-chi.cbsnstream.cbsnews.com/out/v1/b2fc0d5715d54908adf07f97d2616646/master.m3u8"
+  },
+  {
+    name: "CBS News Colorado",
+    url: "https://cbsn-den.cbsnstream.cbsnews.com/out/v1/2e49baf2906244ecb01b07d9885fbe7a/master.m3u8"
+  },
+  {
+    name: "CBS News Detroit",
+    url: "https://cbsn-det.cbsnstream.cbsnews.com/out/v1/169f5c001bc74fa7a179b19c20fea069/master.m3u8"
+  },
+  {
+    name: "CBS News Los Angeles",
+    url: "https://cbsn-la.cbsnstream.cbsnews.com/out/v1/57b6c4534a164accb6b1872b501e0028/master.m3u8"
+  },
+  {
+    name: "CBS News Miami",
+    urls: [
+      "https://cbsn-mia.cbsnstream.cbsnews.com/out/v1/ac174b7938264d24ae27e56f6584bca0/master.m3u8",
+      "https://lineup.cbsivideo.com/playout/8796731e-7ce7-4bcf-bb04-41ef5a969c62/master.m3u8"
+    ]
+  },
+  {
+    name: "CBS News Minnesota",
+    url: "https://cbsn-min.cbsnstream.cbsnews.com/out/v1/76518f06941246ba810c8d175600bf74/master.m3u8"
+  },
+  {
+    name: "CBS News New York",
+    url: "https://cbsn-ny.cbsnstream.cbsnews.com/out/v1/ec3897d58a9b45129a77d67aa247d136/master.m3u8"
+  },
+  {
+    name: "CBS News Philadelphia",
+    url: "https://cbsn-phi.cbsnstream.cbsnews.com/out/v1/5c9ad3e215984b0e9ad845b335216b72/master.m3u8"
+  },
+  {
+    name: "CBS News Pittsburgh",
+    url: "https://cbsn-pit.cbsnstream.cbsnews.com/out/v1/6966dabf8150405ab26f854e3cd6a2b8/master.m3u8"
+  },
+  {
+    name: "CBS News Sacramento",
+    url: "https://lineup.cbsivideo.com/playout/c1ed69db-6b71-4581-a937-a70ab4089f8a/index.m3u8"
+  },
+  {
+    name: "CBS News Texas",
+    url: "https://cbsn-dal.cbsnstream.cbsnews.com/out/v1/ffa98bbf7d2b4c038c229bd4d9122708/master.m3u8"
+  },
+  {
     name: "Babes TV",
     nsfw: true,
     url: "https://cdn4.skygo.mn/live/disk1/Babes/HLSv3-FTA/Babes.m3u8"
