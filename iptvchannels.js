@@ -3,8 +3,8 @@ export const iptvChannels = [
   { name: "Yahoo Finance", url: "https://d1ewctnvcwvvvu.cloudfront.net/playlist.m3u8" },
   { name: "RT", url: "https://rumble.com/live-hls-dvr/33aw1a/playlist.m3u8" },
   { name: "PressTV",
-    urls: { "https://live.presstv.ir/hls/presstv.m3u8",
-    "https://lenz.splus.ir/PLTV/88888888/224/3221226156/index.m3u8" }
+    urls: [ "https://live.presstv.ir/hls/presstv.m3u8",
+    "https://lenz.splus.ir/PLTV/88888888/224/3221226156/index.m3u8" ]
   },
   { name: "Baywatch (1080p)", url: "https://amg00145-fremantlemedian-baywatch-samsungnz-5bfqe.amagi.tv/playlist/amg00145-fremantlemedian-baywatch-samsungnz/playlist.m3u8" },
   { name: "Breaking News by LeadStory (1080p)", url: "https://amg02703-leadstory-leadstory-samsungnz-vc7nn.amagi.tv/playlist/amg02703-leadstory-leadstory-samsungnz/playlist.m3u8" },
