@@ -11,6 +11,11 @@
     {
       "src": "icons/icon.webp",
       "type": "image/webp",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/icon.webp",
+      "type": "image/webp",
       "sizes": "512x512"
     },
     {
