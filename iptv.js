@@ -27,7 +27,7 @@ function renderIPTVList() {
     iptvChannels.forEach(channel => {
 
         // Skip NSFW channels unless unlocked
-        const isUnlocked = localStorage.hiddenfeatures === "true";
+        const isUnlocked = localStorage.getItem("hiddenfeatures") === "true";
         if (channel.nsfw && !isUnlocked) {
             return;
         }

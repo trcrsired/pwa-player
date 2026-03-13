@@ -1,5 +1,5 @@
 function getAllViews() {
-  return Array.from(document.querySelectorAll(".view"));
+  return Array.from(document.querySelectorAll(".overlay-view"));
 }
 
 function getActiveView() {
@@ -37,7 +37,7 @@ async function getMediaMetadataFromSource(sourceobject) {
     mediasource.title = sourceobject.name || null;
   } else if (typeof sourceobject === "string") {
     blobURL = sourceobject;
-    fileName = sourceobject.split("/").pop()?.split("?")[0] || null;
+    const fileName = sourceobject.split("/").pop()?.split("?")[0] || null;
     mediasource.title = fileName;
   } else {
     console.warn("Unsupported sourceobject type:", sourceobject);
@@ -53,6 +53,8 @@ async function getMediaMetadataFromSource(sourceobject) {
 
 const playerWrapper = document.getElementById("playerWrapper");
 const video = document.getElementById("player");
+let hasActiveSource = false;
+let currentBlobURL = null;
 const playBtn = document.getElementById("playBtn");
 const npPlayBtn = document.getElementById("npPlayBtn");
 const stopBtn = document.getElementById("stopBtn");
@@ -81,7 +83,14 @@ function updateTimeDisplay(txtct)
 
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist) {
   try {
+    // Revoke previous blob URL to prevent memory leak
+    if (currentBlobURL && currentBlobURL.startsWith("blob:")) {
+      URL.revokeObjectURL(currentBlobURL);
+    }
+    currentBlobURL = blobURL;
+
     video.src = blobURL;
+    hasActiveSource = true;
     controls.classList.add('hidden');
 
     // 🔥 Fix: wait for metadata before playing
@@ -186,11 +195,18 @@ window.addEventListener("drop", e => {
 async function togglePlayBtn()
 {
     // If a video is already loaded → toggle play/pause
-    if (video.src) {
+    if (hasActiveSource) {
         if (video.readyState < 3) return;
-        video.paused ? video.play() : video.pause();
-        playBtn.textContent = video.paused ? "▶️" : "⏸️";
-        npPlayBtn.textContent = playBtn.textContent;
+        if (video.paused) {
+            video.play().then(() => {
+                playBtn.textContent = "⏸️";
+                npPlayBtn.textContent = "⏸️";
+            }).catch(nop);
+        } else {
+            video.pause();
+            playBtn.textContent = "▶️";
+            npPlayBtn.textContent = "▶️";
+        }
         return;
     }
     // Try to restore last playlist or last file
@@ -209,6 +225,11 @@ async function toggleStopBtn()
   video.currentTime = 0;
   video.removeAttribute("src");
   video.load();
+  hasActiveSource = false;
+  if (currentBlobURL && currentBlobURL.startsWith("blob:")) {
+    URL.revokeObjectURL(currentBlobURL);
+  }
+  currentBlobURL = null;
   playBtn.textContent = "▶️";
   npPlayBtn.textContent = playBtn.textContent;
   navigator.mediaSession.metadata = new MediaMetadata({});
@@ -246,9 +267,7 @@ pickerBtn.onclick = async (e) => {
 
     play_source(file).catch(nop);
   } catch (err) {
-    if (video.src && video.currentTime > 0) {
-      toggleStopBtn(); // Only stop if something's playing
-    }
+    // User cancelled the picker — do nothing
   }
 };
 
@@ -263,9 +282,6 @@ webBtn.onclick = () => {
   }
   catch (err) {
       console.warn("web picker cancelled or failed:", err);
-      if (video.src && video.currentTime > 0) {
-          toggleStopBtn(); // Only stop if something's playing
-      }
   }
 };
 
@@ -355,9 +371,10 @@ function fullscreencallback()
 {
   if (document.fullscreenElement) {
     document.exitFullscreen();
+    controls.classList.remove('hidden');
   } else {
     document.documentElement.requestFullscreen();
-    controls.classList.toggle('hidden');
+    controls.classList.add('hidden');
   }
 }
 
@@ -381,28 +398,26 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  const video = document.getElementById("player");
-
   switch (e.code) {
     case "Enter":
     case "Space":
-      togglePlay(video);
+      togglePlayBtn();
       e.preventDefault(); // prevent scroll or default behavior
       break;
 
     case "ArrowRight":
-      if (video.readyState >= 3 && video.src) {
+      if (video.readyState >= 3 && hasActiveSource) {
         video.currentTime = Math.min(video.duration, video.currentTime + 5);
       }
       break;
 
     case "ArrowLeft":
-      if (video.readyState >= 3 && video.src) {
+      if (video.readyState >= 3 && hasActiveSource) {
         video.currentTime = Math.max(0, video.currentTime - 5);
       }
       break;
-      case "KeyF":
-        fullscreencallback();
+    case "KeyF":
+      fullscreencallback();
       break;
     // optional: Esc to exit fullscreen
     case "Escape":
@@ -414,17 +429,13 @@ document.addEventListener("keydown", (e) => {
 });
 
   function formatTime(seconds) {
-    const min = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const hrs = Math.floor(seconds / 3600);
+    const min = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
     const sec = Math.floor(seconds % 60).toString().padStart(2, "0");
+    if (hrs > 0) {
+      return `${hrs}:${min}:${sec}`;
+    }
     return `${min}:${sec}`;
-  }
-
-  // Toggle play/pause logic
-  function togglePlay(video) {
-    if (video.readyState < 3 || !video.src) return;
-    video.paused ? video.play() : video.pause();
-    playBtn.textContent = video.paused ? "▶️" : "⏸️";
-    npPlayBtn.textContent = playBtn.textContent;
   }
 
   let hideTimeout;
@@ -533,7 +544,7 @@ video.addEventListener("error", () => {
 
     // Try reconnecting after a short delay
     reconnectTimer = setTimeout(() => {
-        if (video.src) {
+        if (hasActiveSource && video.src && !video.srcObject) {
             const oldSrc = video.src;
 
             // Force the browser to reload the stream

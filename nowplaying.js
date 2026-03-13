@@ -62,15 +62,10 @@ async function playPrevious() {
     switch (playMode) {
 
         case "shuffle":
-            let prev;
-            if (nowPlayingQueue.length === 1) {
-                prev = nowPlayingIndex;
-            } else {
-                do {
-                    prev = Math.floor(Math.random() * nowPlayingQueue.length);
-                } while (prev === nowPlayingIndex);
+            // Go backwards in shuffled order
+            if (--nowPlayingIndex < 0) {
+                nowPlayingIndex = shuffledQueue.length - 1;
             }
-            nowPlayingIndex = prev;
             break;
 
         case "repeat-one":
@@ -187,9 +182,19 @@ function updateNowPlayingInfo(entry) {
 
 function removeFromNowPlaying(index) {
     const queue = getActiveQueue();
+    const removedEntry = queue[index];
 
-    // Remove the selected item
+    // Remove from active queue
     queue.splice(index, 1);
+
+    // Also remove from the other queue to keep them in sync
+    if (playMode === "shuffle") {
+        const otherIndex = nowPlayingQueue.findIndex(e => e === removedEntry);
+        if (otherIndex !== -1) nowPlayingQueue.splice(otherIndex, 1);
+    } else {
+        const otherIndex = shuffledQueue.findIndex(e => e === removedEntry);
+        if (otherIndex !== -1) shuffledQueue.splice(otherIndex, 1);
+    }
 
     // If the removed item is the currently playing one
     if (index === nowPlayingIndex) {
@@ -322,7 +327,7 @@ function renderNowPlayingQueue() {
 
         // Display track name only
         li.innerHTML = `
-            <span class="np-item-title">${entry.name || entry.path}</span>
+            <span class="np-item-title">${escapeHTML(entry.name || entry.path)}</span>
         `;
 
         // Left-click → play
@@ -391,7 +396,8 @@ loadPlayMode();
 function showNowPlayingView() {
     renderNowPlayingQueue();
 
-    switchView("nowPlayingView");
+    document.getElementById("nowPlayingView").classList.remove("hidden");
+    document.getElementById("playerContainer").classList.add("hidden");
 }
 
 document.getElementById("player").addEventListener("ended", () => {
