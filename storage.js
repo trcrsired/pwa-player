@@ -192,6 +192,9 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirName, 
         }
 
         const playlists = await playlists_load();
+        if (!playlists[playlistName]) {
+            playlists[playlistName] = [];
+        }
         playlists[playlistName].push(...pointers);
         await playlists_save(playlists);
 
@@ -291,8 +294,12 @@ function showStorageDirMenu(entry, dirName, x, y) {
 
             if (action === "rename") {
                 const newName = prompt("New folder name:", dirName);
-                if (newName && newName.trim()) {
-                    await parent.renameEntry(dirName, newName.trim());
+                if (newName && newName.trim() && newName.trim() !== dirName) {
+                    const trimmed = newName.trim();
+                    const sourceDir = await parent.getDirectoryHandle(dirName);
+                    const destDir = await parent.getDirectoryHandle(trimmed, { create: true });
+                    await copyDirectoryToPrivateStorage(sourceDir, destDir);
+                    await parent.removeEntry(dirName, { recursive: true });
                 }
             }
 
@@ -320,7 +327,7 @@ async function loadStorageSubdirs(subList, dirHandle, entry) {
 
         li.innerHTML = `
             <div class="storage-sub-header">
-                <span class="sub-name">${name}</span>
+                <span class="sub-name">${escapeHTML(name)}</span>
                 <button class="quick-add">+</button>
             </div>
         `;
@@ -497,8 +504,7 @@ document.getElementById("clearImports").addEventListener("click", async () => {
 // Back button
 // ============================================================
 document.getElementById("backBtn").addEventListener("click", () => {
-    document.getElementById("storageView").classList.add("hidden");
-    document.getElementById("playerContainer").classList.remove("hidden");
+    closeActiveView();
 });
 
 // ============================================================

@@ -28,11 +28,9 @@ settingsYearEl.addEventListener("click", () => {
 });
 
 document.getElementById("settingsBtn").addEventListener("click", () => {
-    document.getElementById("playerContainer").classList.add("hidden");
-    document.getElementById("settingsView").classList.remove("hidden");
+    switchView("settingsView");
 });
 
 document.getElementById("settingsCloseBtn").addEventListener("click", () => {
-    document.getElementById("settingsView").classList.add("hidden");
-    document.getElementById("playerContainer").classList.remove("hidden");
+    closeActiveView();
 });

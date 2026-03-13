@@ -246,20 +246,6 @@ button:hover,
   width: 100%;
 }
 
-.config-item {
-  font-size: 16px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--color-fg);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.config-item:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
 /* Mobile Tuning */
 @media (max-width: 600px) {
   :root {

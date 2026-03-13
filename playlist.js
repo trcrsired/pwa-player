@@ -13,97 +13,6 @@ async function playlists_save(all) {
     await kv_set("playlists", all);
 }
 
-async function playlist_render() {
-    const list = await playlist_load();
-    const ul = document.getElementById("playlistList");
-    ul.innerHTML = "";
-
-    list.forEach((item, index) => {
-        const li = document.createElement("li");
-        li.className = "list-item";
-        li.innerHTML = `
-            <span>${item.name}</span>
-            <button class="remove-btn" data-index="${index}">✖</button>
-        `;
-        ul.appendChild(li);
-    });
-
-    // Remove item
-    ul.querySelectorAll(".remove-btn").forEach(btn => {
-        btn.addEventListener("click", async () => {
-            const idx = parseInt(btn.dataset.index, 10);
-            const list = await playlist_load();
-            list.splice(idx, 1);
-            await playlist_save(list);
-            playlist_render();
-        });
-    });
-}
-
-
-async function addToPlaylist(name) {
-    alert(`TODO: add items to playlist "${name}"`);
-}
-
-function showPlaylistHeaderMenu(playlistName, x, y) {
-    const menu = document.createElement("div");
-    menu.className = "context-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
-
-    menu.innerHTML = `
-        <div class="menu-item" data-action="rename">Rename</div>
-        <div class="menu-item" data-action="duplicate">Duplicate</div>
-        <div class="menu-item" data-action="export">Export</div>
-        <div class="menu-item danger" data-action="delete">Delete</div>
-        <div class="menu-item" data-action="close">Close</div>
-    `;
-
-    document.body.appendChild(menu);
-
-    const closeMenu = () => menu.remove();
-    setTimeout(() => document.addEventListener("click", closeMenu, { once: true }), 0);
-
-    menu.querySelectorAll(".menu-item").forEach(item => {
-        item.addEventListener("click", async () => {
-            const action = item.dataset.action;
-            const playlists = await playlists_load();
-
-            if (action === "rename") {
-                const newName = prompt("New playlist name:", playlistName);
-                if (newName && newName.trim()) {
-                    playlists[newName.trim()] = playlists[playlistName];
-                    delete playlists[playlistName];
-                }
-            }
-
-            if (action === "duplicate") {
-                const copyName = playlistName + " Copy";
-                playlists[copyName] = JSON.parse(JSON.stringify(playlists[playlistName]));
-            }
-
-            if (action === "export") {
-                const json = JSON.stringify(playlists[playlistName], null, 2);
-                console.log("EXPORT PLAYLIST:", json);
-                alert("Playlist exported to console.");
-            }
-
-            if (action === "delete") {
-                const confirmDelete = confirm(`Delete playlist "${playlistName}"?`);
-                if (confirmDelete) {
-                    delete playlists[playlistName];
-                }
-            }
-
-            if (action === "close")
-            {
-                closeMenu(); return;
-            }
-            await playlists_save(playlists);
-            playlist_renderTree();
-        });
-    });
-}
 
 // Resolve a path inside a given root directory.
 // Example: resolveUnderRoot(rootHandle, "imports/Anime/1.webm")
@@ -231,7 +140,7 @@ async function playlist_renderTree() {
         li.innerHTML = `
             <div class="playlist-header">
                 <button class="toggle" aria-label="Toggle playlist">+</button>
-                <span class="playlist-name">${playlistName}</span>
+                <span class="playlist-name">${escapeHTML(playlistName)}</span>
             </div>
             <ul class="playlist-items hidden"></ul>
         `;
@@ -255,7 +164,7 @@ async function playlist_renderTree() {
             itemLi.className = "playlist-item";
 
             itemLi.innerHTML = `
-                <span class="item-origin">${item.path}</span>
+                <span class="item-origin">${escapeHTML(item.path)}</span>
             `;
 
             itemLi.addEventListener("click", async () => {
@@ -357,15 +266,13 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
 
 // Open Playlist view
 document.getElementById("playlistBtn").addEventListener("click", () => {
-    document.getElementById("playlistView").classList.remove("hidden");
-    document.getElementById("playerContainer").classList.add("hidden");
+    switchView("playlistView");
     playlist_renderTree();
 });
 
 // Back from Playlist to player
 document.getElementById("playlistBackBtn").addEventListener("click", () => {
-    document.getElementById("playlistView").classList.add("hidden");
-    document.getElementById("playerContainer").classList.remove("hidden");
+    closeActiveView();
 });
 
 document.getElementById("newPlaylistBtn").addEventListener("click", async () => {

@@ -62,15 +62,10 @@ async function playPrevious() {
     switch (playMode) {
 
         case "shuffle":
-            let prev;
-            if (nowPlayingQueue.length === 1) {
-                prev = nowPlayingIndex;
-            } else {
-                do {
-                    prev = Math.floor(Math.random() * nowPlayingQueue.length);
-                } while (prev === nowPlayingIndex);
+            // Go backwards in shuffled order
+            if (--nowPlayingIndex < 0) {
+                nowPlayingIndex = shuffledQueue.length - 1;
             }
-            nowPlayingIndex = prev;
             break;
 
         case "repeat-one":
@@ -187,9 +182,12 @@ function updateNowPlayingInfo(entry) {
 
 function removeFromNowPlaying(index) {
     const queue = getActiveQueue();
+    const otherQueue = (playMode === "shuffle") ? nowPlayingQueue : shuffledQueue;
+    const removed = queue.splice(index, 1)[0];
 
-    // Remove the selected item
-    queue.splice(index, 1);
+    // Keep the other queue in sync
+    const otherIndex = otherQueue.indexOf(removed);
+    if (otherIndex !== -1) otherQueue.splice(otherIndex, 1);
 
     // If the removed item is the currently playing one
     if (index === nowPlayingIndex) {
@@ -322,7 +320,7 @@ function renderNowPlayingQueue() {
 
         // Display track name only
         li.innerHTML = `
-            <span class="np-item-title">${entry.name || entry.path}</span>
+            <span class="np-item-title">${escapeHTML(entry.name || entry.path)}</span>
         `;
 
         // Left-click → play
