@@ -266,15 +266,13 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
 
 // Open Playlist view
 document.getElementById("playlistBtn").addEventListener("click", () => {
-    document.getElementById("playlistView").classList.remove("hidden");
-    document.getElementById("playerContainer").classList.add("hidden");
+    switchView("playlistView");
     playlist_renderTree();
 });
 
 // Back from Playlist to player
 document.getElementById("playlistBackBtn").addEventListener("click", () => {
-    document.getElementById("playlistView").classList.add("hidden");
-    document.getElementById("playerContainer").classList.remove("hidden");
+    closeActiveView();
 });
 
 document.getElementById("newPlaylistBtn").addEventListener("click", async () => {

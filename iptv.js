@@ -2,22 +2,18 @@ import { iptvChannels } from "/iptvchannels.js";
 
 // Elements
 const iptvBtn = document.getElementById("iptvBtn");
-const iptvView = document.getElementById("iptvView");
 const iptvBackBtn = document.getElementById("iptvBackBtn");
 const iptvList = document.getElementById("iptvList");
-const playerContainer = document.getElementById("playerContainer");
 
 // Open IPTV menu
 iptvBtn.addEventListener("click", () => {
     renderIPTVList();
-    iptvView.classList.remove("hidden");
-    playerContainer.classList.add("hidden");
+    switchView("iptvView");
 });
 
 // Back button
 iptvBackBtn.addEventListener("click", () => {
-    iptvView.classList.add("hidden");
-    playerContainer.classList.remove("hidden");
+    closeActiveView();
 });
 
 // Render IPTV channels
@@ -55,8 +51,7 @@ function renderIPTVList() {
             if (!url) return;
 
             play_source_title(url, channel.name, null);
-            iptvView.classList.add("hidden");
-            playerContainer.classList.remove("hidden");
+            closeActiveView();
         });
 
         row.appendChild(nameSpan);
@@ -80,8 +75,7 @@ function renderIPTVList() {
 
             subLi.addEventListener("click", () => {
                 play_source_title(url, channel.name, null);
-                iptvView.classList.add("hidden");
-                playerContainer.classList.remove("hidden");
+                closeActiveView();
             });
 
             subList.appendChild(subLi);

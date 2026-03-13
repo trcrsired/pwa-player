@@ -504,8 +504,7 @@ document.getElementById("clearImports").addEventListener("click", async () => {
 // Back button
 // ============================================================
 document.getElementById("backBtn").addEventListener("click", () => {
-    document.getElementById("storageView").classList.add("hidden");
-    document.getElementById("playerContainer").classList.remove("hidden");
+    closeActiveView();
 });
 
 // ============================================================

@@ -6,6 +6,19 @@ function getActiveView() {
   return getAllViews().find(v => !v.classList.contains("hidden")) || null;
 }
 
+function switchView(viewId) {
+  document.getElementById(viewId).classList.remove("hidden");
+  document.getElementById("playerContainer").classList.add("hidden");
+}
+
+function closeActiveView() {
+  const view = getActiveView();
+  if (view) {
+    view.classList.add("hidden");
+    document.getElementById("playerContainer").classList.remove("hidden");
+  }
+}
+
 function nop() {}
 
 async function verifyPermission(fileHandle, mode = "read") {
@@ -333,7 +346,7 @@ rotationBtn.addEventListener("click", () => {
 
 video.addEventListener("timeupdate", () => {
   const duration = video.duration;
-  if (!video.src || Number.isNaN(duration))
+  if (!hasActiveSource || Number.isNaN(duration))
   {
     updateTimeDisplay("00:00 / 00:00");
     progressBar.max = 0;
@@ -386,8 +399,7 @@ document.addEventListener("keydown", (e) => {
 
   if (activeView) {
     if (e.code === "Escape") {
-      activeView.classList.add("hidden");
-      document.getElementById("playerContainer").classList.remove("hidden");
+      closeActiveView();
     }
     return;
   }
@@ -499,31 +511,16 @@ document.addEventListener("keydown", (e) => {
   }
 
 document.getElementById('storageBtn').addEventListener('click', () => {
-  document.getElementById("storageView").classList.remove("hidden");
-  document.getElementById("playerContainer").classList.add("hidden");
+  switchView("storageView");
 });
 
 document.getElementById('nowPlayingBtn').addEventListener('click', () => {
-  document.getElementById("nowPlayingView").classList.remove("hidden");
-  document.getElementById("playerContainer").classList.add("hidden");
+  switchView("nowPlayingView");
 });
-
-/*
-
-// Open Now Playing view
-document.getElementById("nowPlayingBtn").addEventListener("click", () => {
-    document.getElementById("nowPlayingView").classList.remove("hidden");
-    document.getElementById("playerContainer").classList.add("hidden");
-
-    nowPlaying_load();
-    nowPlaying_renderQueue();
-});
-*/
 
 // Back button
 document.getElementById("nowPlayingBackBtn").addEventListener("click", () => {
-    document.getElementById("nowPlayingView").classList.add("hidden");
-    document.getElementById("playerContainer").classList.remove("hidden");
+    closeActiveView();
 });
 
 // Store reconnect timer so we can cancel it if needed

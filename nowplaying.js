@@ -389,8 +389,7 @@ loadPlayMode();
 function showNowPlayingView() {
     renderNowPlayingQueue();
 
-    document.getElementById("nowPlayingView").classList.remove("hidden");
-    document.getElementById("playerContainer").classList.add("hidden");
+    switchView("nowPlayingView");
 }
 
 document.getElementById("player").addEventListener("ended", () => {
