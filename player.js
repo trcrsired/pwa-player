@@ -55,6 +55,13 @@ const playerWrapper = document.getElementById("playerWrapper");
 const video = document.getElementById("player");
 let hasActiveSource = false;
 let currentBlobURL = null;
+
+function revokeBlobURL() {
+  if (currentBlobURL && currentBlobURL.startsWith("blob:")) {
+    URL.revokeObjectURL(currentBlobURL);
+  }
+  currentBlobURL = null;
+}
 const playBtn = document.getElementById("playBtn");
 const npPlayBtn = document.getElementById("npPlayBtn");
 const stopBtn = document.getElementById("stopBtn");
@@ -83,10 +90,7 @@ function updateTimeDisplay(txtct)
 
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist) {
   try {
-    // Revoke previous blob URL to prevent memory leak
-    if (currentBlobURL && currentBlobURL.startsWith("blob:")) {
-      URL.revokeObjectURL(currentBlobURL);
-    }
+    revokeBlobURL();
     currentBlobURL = blobURL;
 
     video.src = blobURL;
@@ -197,16 +201,9 @@ async function togglePlayBtn()
     // If a video is already loaded → toggle play/pause
     if (hasActiveSource) {
         if (video.readyState < 3) return;
-        if (video.paused) {
-            video.play().then(() => {
-                playBtn.textContent = "⏸️";
-                npPlayBtn.textContent = "⏸️";
-            }).catch(nop);
-        } else {
-            video.pause();
-            playBtn.textContent = "▶️";
-            npPlayBtn.textContent = "▶️";
-        }
+        video.paused ? video.play() : video.pause();
+        playBtn.textContent = video.paused ? "▶️" : "⏸️";
+        npPlayBtn.textContent = playBtn.textContent;
         return;
     }
     // Try to restore last playlist or last file
@@ -226,10 +223,7 @@ async function toggleStopBtn()
   video.removeAttribute("src");
   video.load();
   hasActiveSource = false;
-  if (currentBlobURL && currentBlobURL.startsWith("blob:")) {
-    URL.revokeObjectURL(currentBlobURL);
-  }
-  currentBlobURL = null;
+  revokeBlobURL();
   playBtn.textContent = "▶️";
   npPlayBtn.textContent = playBtn.textContent;
   navigator.mediaSession.metadata = new MediaMetadata({});

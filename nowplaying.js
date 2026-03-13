@@ -182,19 +182,12 @@ function updateNowPlayingInfo(entry) {
 
 function removeFromNowPlaying(index) {
     const queue = getActiveQueue();
-    const removedEntry = queue[index];
+    const otherQueue = (playMode === "shuffle") ? nowPlayingQueue : shuffledQueue;
+    const removed = queue.splice(index, 1)[0];
 
-    // Remove from active queue
-    queue.splice(index, 1);
-
-    // Also remove from the other queue to keep them in sync
-    if (playMode === "shuffle") {
-        const otherIndex = nowPlayingQueue.findIndex(e => e === removedEntry);
-        if (otherIndex !== -1) nowPlayingQueue.splice(otherIndex, 1);
-    } else {
-        const otherIndex = shuffledQueue.findIndex(e => e === removedEntry);
-        if (otherIndex !== -1) shuffledQueue.splice(otherIndex, 1);
-    }
+    // Keep the other queue in sync
+    const otherIndex = otherQueue.indexOf(removed);
+    if (otherIndex !== -1) otherQueue.splice(otherIndex, 1);
 
     // If the removed item is the currently playing one
     if (index === nowPlayingIndex) {
