@@ -690,6 +690,9 @@ document.getElementById("addExternalBtn").addEventListener("click", async () => 
         dirs[name] = dir;
         await kv_set("external_dirs", dirs);
 
+        // Update in-memory cache
+        window.externalStorageRoot = dirs;
+
         alert(`External directory "${name}" added.`);
         renderStorage();
 
