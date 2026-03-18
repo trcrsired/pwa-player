@@ -19,7 +19,6 @@ async function playlists_save(all) {
 async function resolveUnderRoot(rootHandle, path) {
     const parts = path.split("/");
     let current = rootHandle;
-
     for (let i = 0; i != parts.length; ++i) {
         const name = parts[i];
 
@@ -46,7 +45,7 @@ async function externalStorage_setRoot(handle) {
 
 async function storage_resolvePath(pointer) {
 
-    // navigator.storage://
+    // navigator_storage://
     if (pointer.startsWith("navigator_storage://")) {
         const path = pointer.slice("navigator_storage://".length);
         const root = await navigator.storage.getDirectory();
@@ -57,15 +56,43 @@ async function storage_resolvePath(pointer) {
     if (pointer.startsWith("external_storage://")) {
         const path = pointer.slice("external_storage://".length);
 
-        if (!window.externalStorageRoot) {
-            throw new Error("external_storage:// root not set");
+        // Split into: <rootName>/<dirName>/sub/path/file
+        const parts = path.split("/");
+        const rootName = parts.shift();   // e.g. "external"
+        const dirName = parts.shift();    // e.g. "Music"
+
+        // Load external directory handles
+        const externalDirs = await loadExternalDirs();
+
+        // Only handle the "external" pseudo-root for now
+        if (rootName === "external") {
+
+            const rootHandle = externalDirs[dirName];
+            console.log(`rootHandle, dirName=${dirName}`);
+            if (!rootHandle) {
+                throw new Error(`External directory "${dirName}" not found`);
+            }
+
+            // Ensure permission
+            const ok = await verifyPermission(rootHandle);
+            if (!ok) {
+                throw new Error("Permission denied for external directory");
+            }
+
+            // Resolve remaining path
+            const remainingPath = parts.join("/");
+            return await resolveUnderRoot(rootHandle, remainingPath);
         }
 
-        return await resolveUnderRoot(window.externalStorageRoot, path);
+        // Unknown external pseudo-root → ignore for now
+        console.warn(`Unknown external root "${rootName}", ignoring.`);
+        return pointer;
     }
 
+    // Unknown schema → return as-is
     return pointer;
 }
+
 
 function showPlaylistItemMenu(playlistName, index, x, y) {
     // Close any existing menu

@@ -95,11 +95,27 @@
 
             <main class="content">
                 <section class="actions">
-                    <button id="addImportBtn" class="btn primary">Import Directory</button>
-                    <button id="addFilesBtn" class="btn primary">Import Files</button>
+                    <button id="addImportBtn" class="btn primary"
+                            title="Copy an entire folder into private app storage (OPFS). No future permission prompts.">
+                        Import Directory
+                    </button>
+
+                    <button id="addExternalBtn" class="btn primary"
+                            title="Link an external folder without copying. Requires permission and may need re‑authorization.">
+                        Import External
+                    </button>
+
+                    <button id="addFilesBtn" class="btn primary"
+                            title="Import individual media files using the standard file picker.">
+                        Import Files
+                    </button>
+
                     <input id="filePicker" type="file" multiple webkitdirectory directory style="display:none">
-                    <!--button id="addExternalBtn" class="btn primary">Add External Directory</button-->
-                    <button id="clearImports" class="btn danger">Clear All Imports</button>
+
+                    <button id="clearImports" class="btn danger"
+                            title="Remove all imported directories and reset storage configuration.">
+                        Clear All Imports
+                    </button>
                 </section>
                 <ul id="storageList" class="list"></ul>
             </main>

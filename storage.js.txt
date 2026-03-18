@@ -19,12 +19,6 @@ const IMPORT_ROOTS = [
         rootName: "files",
         dirName: "files",
         enabled: true
-    },
-    {
-        schema: "external_storage",
-        rootName: "external",
-        dirName: "external",
-        enabled: true
     }
 ];
 
@@ -168,10 +162,6 @@ async function collectPointers(dirHandle, schema, basePath) {
 
     for await (const [name, handle] of dirHandle.entries()) {
         if (handle.kind === "file") {
-
-            // Skip non-media files
-            if (!isAllowedFile(name)) continue;
-
             result.push({
                 name,
                 path: `${schema}://${basePath}/${name}`
@@ -191,34 +181,9 @@ async function collectPointers(dirHandle, schema, basePath) {
 // ============================================================
 async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirName, playlistName) {
     try {
-        let targetDir;
-
-        if (schema === "navigator_storage") {
-            // navigator_storage: rootDirHandle is a real directory handle
-            targetDir = await rootDirHandle.getDirectoryHandle(dirName, { create: false });
-
-        } else if (schema === "external_storage") {
-            // external_storage: rootDirHandle is a map of name → handle
-            targetDir = rootDirHandle[dirName];
-
-            if (!targetDir) {
-                alert(`External directory "${dirName}" not found.`);
-                return;
-            }
-
-            // Ensure permission is granted
-            const ok = await verifyPermission(targetDir);
-            if (!ok) {
-                alert("Permission denied for external directory.");
-                return;
-            }
-
-        } else {
-            alert("Unknown storage schema.");
-            return;
-        }
-
+        const targetDir = await rootDirHandle.getDirectoryHandle(dirName, { create: false });
         const basePath = `${rootName}/${dirName}`;
+
         const pointers = await collectPointers(targetDir, schema, basePath);
 
         if (pointers.length === 0) {
@@ -230,7 +195,6 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirName, 
         if (!playlists[playlistName]) {
             playlists[playlistName] = [];
         }
-
         playlists[playlistName].push(...pointers);
         await playlists_save(playlists);
 
@@ -240,7 +204,6 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirName, 
         alert("Failed to add directory to playlist.");
     }
 }
-
 
 // ============================================================
 // Choose playlist and add directory contents
@@ -352,71 +315,39 @@ function showStorageDirMenu(entry, dirName, x, y) {
         });
     });
 }
-function renderSubdirItem(subList, name, handle, parentHandle, entry) {
-    const li = document.createElement("li");
-    li.className = "storage-sub-item";
-
-    li.innerHTML = `
-        <div class="storage-sub-header">
-            <span class="sub-name">${escapeHTML(name)}</span>
-            <button class="quick-add">+</button>
-        </div>
-    `;
-
-    const header = li.querySelector(".storage-sub-header");
-    const addBtn = li.querySelector(".quick-add");
-
-    // Right-click context menu
-    header.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        showStorageDirMenu(entry, name, e.pageX, e.pageY);
-    });
-
-    // Quick add to playlist
-    addBtn.addEventListener("click", async () => {
-        await choosePlaylistAndAdd(parentHandle, entry, name);
-    });
-
-    // Click to expand/collapse subdirectories (recursive)
-    header.addEventListener("click", async () => {
-        let sub = li.querySelector("ul");
-        if (!sub) {
-            sub = document.createElement("ul");
-            sub.className = "storage-sub hidden";
-            li.appendChild(sub);
-        }
-
-        const hidden = sub.classList.toggle("hidden");
-        if (!hidden) {
-            await loadStorageSubdirs(sub, handle, entry);
-        }
-    });
-
-    subList.appendChild(li);
-}
 
 async function loadStorageSubdirs(subList, dirHandle, entry) {
-    // Clear previous content
     subList.innerHTML = "";
 
-    // Case 1: navigator_storage → real FileSystemDirectoryHandle
-    if (dirHandle && typeof dirHandle.entries === "function") {
-        for await (const [name, handle] of dirHandle.entries()) {
-            if (handle.kind !== "directory") continue;
-            renderSubdirItem(subList, name, handle, dirHandle, entry);
-        }
-        return;
-    }
+    for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind !== "directory") continue;
 
-    // Case 2: external_storage → dirHandle is a map of name → FileSystemDirectoryHandle
-    if (entry.schema === "external_storage" && dirHandle && typeof dirHandle === "object") {
-        for (const [name, handle] of Object.entries(dirHandle)) {
-            renderSubdirItem(subList, name, handle, dirHandle, entry);
-        }
-        return;
-    }
+        const li = document.createElement("li");
+        li.className = "storage-sub-item";
 
-    console.warn("Unknown dirHandle type in loadStorageSubdirs:", dirHandle);
+        li.innerHTML = `
+            <div class="storage-sub-header">
+                <span class="sub-name">${escapeHTML(name)}</span>
+                <button class="quick-add">+</button>
+            </div>
+        `;
+
+        const header = li.querySelector(".storage-sub-header");
+        const addBtn = li.querySelector(".quick-add");
+
+        // Right-click menu
+        header.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            showStorageDirMenu(entry, name, e.pageX, e.pageY);
+        });
+
+        // Quick add to playlist
+        addBtn.addEventListener("click", async () => {
+            await choosePlaylistAndAdd(dirHandle, entry, name);
+        });
+
+        subList.appendChild(li);
+    }
 }
 /*
 
@@ -464,22 +395,11 @@ async function renderStorage() {
 
         let rootDir;
         try {
-            if (entry.schema === "navigator_storage") {
-                rootDir = await root.getDirectoryHandle(entry.dirName);
-            } else if (entry.schema === "external_storage") {
-                rootDir = await loadExternalDirs();
-                // Skip if no external directories exist
-                if (!rootDir || Object.keys(rootDir).length === 0) {
-                    continue;
-                }
-            }
-            else
-            {
-                continue;
-            }
+            rootDir = await root.getDirectoryHandle(entry.dirName);
         } catch {
             continue; // Skip missing roots
         }
+
         const li = document.createElement("li");
         li.className = "storage-node";
 
@@ -565,23 +485,8 @@ document.getElementById("clearImports").addEventListener("click", async () => {
             if (!entry.enabled) continue;
 
             try {
-                if (entry.schema === "external_storage")
-                {
-                    const externalDirs = window.externalStorageRoot;
-
-                    // Only delete if it exists and contains at least one directory
-                    if (externalDirs && Object.keys(externalDirs).length != 0) {
-                        await kv_delete("external_dirs");
-                        removedAny = true;
-                        window.externalStorageRoot = null;
-                    }
-                    continue;
-                }
-                else
-                {
-                    await rootDir.removeEntry(entry.dirName, { recursive: true });
-                    removedAny = true;
-                }
+                await rootDir.removeEntry(entry.dirName, { recursive: true });
+                removedAny = true;
             } catch {
                 // ignore missing directories
             }
@@ -660,56 +565,3 @@ document.getElementById("filePicker").addEventListener("change", async (event) =
 // Initial render
 // ============================================================
 renderStorage();
-
-async function saveExternalDir(name, handle) {
-    // Load existing dirs from IndexedDB
-    let dirs = await kv_get("external_dirs") || {};
-
-    // Update the persistent store
-    dirs[name] = handle;
-    await kv_set("external_dirs", dirs);
-
-    window.externalStorageRoot = dirs;
-}
-
-async function loadExternalDirs() {
-    if (!window.externalStorageRoot) {
-        window.externalStorageRoot = await kv_get("external_dirs") || {};
-    }
-    return window.externalStorageRoot;
-}
-
-
-document.getElementById("addExternalBtn").addEventListener("click", async () => {
-    try {
-        const dir = await window.showDirectoryPicker();
-        const ok = await verifyPermission(dir);
-        if (!ok) return;
-
-        const name = dir.name;
-
-        await saveExternalDir(name, dir);
-
-        alert(`External directory "${name}" added.`);
-        renderStorage();
-    } catch (err) {
-        console.error(err);
-        alert("Failed to import external directory.");
-    }
-});
-
-function supportsExternalDirectoryAccess() {
-    return typeof window.showDirectoryPicker === "function";
-}
-
-function updateImportButtonsVisibility() {
-    const btnImportDir = document.getElementById("addImportBtn");
-    const btnImportExternal = document.getElementById("addExternalBtn");
-
-    if (!supportsExternalDirectoryAccess()) {
-        btnImportDir.style.display = "none";
-        btnImportExternal.style.display = "none";
-    }
-}
-
-updateImportButtonsVisibility();
