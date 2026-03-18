@@ -499,17 +499,6 @@ document.addEventListener("keydown", (e) => {
     expandCollapseBurgerMenu(localStorage.getItem("burgerMenuHidden") === "true");
   }
 
-  if ('launchQueue' in window) {
-    launchQueue.setConsumer(async (launchParams) => {
-      for (const fileHandle of launchParams.files) {
-        const file = await fileHandle.getFile();
-        play_source(file);
-        return;
-        // Route to appropriate player logic
-      }
-    });
-  }
-
 document.getElementById('storageBtn').addEventListener('click', () => {
   switchView("storageView");
 });
@@ -548,3 +537,38 @@ video.addEventListener("error", () => {
         }
     }, 2000);
 });
+
+let launchedWithFile = false;
+
+if ('launchQueue' in window) {
+  launchQueue.setConsumer(async (launchParams) => {
+    for (const fileHandle of launchParams.files) {
+      const file = await fileHandle.getFile();
+      launchedWithFile = true;
+      play_source(file);
+      return;
+      // Route to appropriate player logic
+    }
+  });
+}
+/*
+async function maybeAutoplayOnStart() {
+    if (launchedWithFile) return; // skip autoplay
+
+    const autoplay = localStorage.getItem("autoplay_on_start") === "true";
+    if (autoplay) {
+      try
+      {
+        togglePlayBtn(); // your existing play/pause logic
+      }
+      catch
+      {
+      }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () =>
+{
+  maybeAutoplayOnStart();
+});
+*/

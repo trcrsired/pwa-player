@@ -27,7 +27,19 @@ settingsYearEl.addEventListener("click", () => {
     }
 });
 
+/*
+function loadAutoplaySetting() {
+    const value = localStorage.getItem("autoplay_on_start");
+    document.getElementById("autoplayToggle").checked = value === "true";
+}
+
+document.getElementById("autoplayToggle").addEventListener("change", (e) => {
+    localStorage.setItem("autoplay_on_start", e.target.checked ? "true" : "false");
+});
+*/
+
 document.getElementById("settingsBtn").addEventListener("click", () => {
+//    loadAutoplaySetting();
     switchView("settingsView");
 });
 
