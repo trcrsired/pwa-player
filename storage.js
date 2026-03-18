@@ -661,17 +661,6 @@ document.getElementById("filePicker").addEventListener("change", async (event) =
 // ============================================================
 renderStorage();
 
-async function saveExternalDir(name, handle) {
-    // Load existing dirs from IndexedDB
-    let dirs = await kv_get("external_dirs") || {};
-
-    // Update the persistent store
-    dirs[name] = handle;
-    await kv_set("external_dirs", dirs);
-
-    window.externalStorageRoot = dirs;
-}
-
 async function loadExternalDirs() {
     if (!window.externalStorageRoot) {
         window.externalStorageRoot = await kv_get("external_dirs") || {};
@@ -688,10 +677,22 @@ document.getElementById("addExternalBtn").addEventListener("click", async () => 
 
         const name = dir.name;
 
-        await saveExternalDir(name, dir);
+        // Load existing external dirs
+        let dirs = await kv_get("external_dirs") || {};
+
+        // Prevent overwriting an existing entry
+        if (dirs[name]) {
+            alert(`External directory "${name}" already exists.`);
+            return;
+        }
+
+        // Save new entry
+        dirs[name] = dir;
+        await kv_set("external_dirs", dirs);
 
         alert(`External directory "${name}" added.`);
         renderStorage();
+
     } catch (err) {
         console.error(err);
         alert("Failed to import external directory.");
