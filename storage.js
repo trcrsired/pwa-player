@@ -12,19 +12,22 @@ const IMPORT_ROOTS = [
         schema: "navigator_storage",
         rootName: "imports",
         dirName: "imports",
-        enabled: true
+        enabled: true,
+        showSubdirs: false
     },
     {
         schema: "navigator_storage",
         rootName: "files",
         dirName: "files",
-        enabled: true
+        enabled: true,
+        showSubdirs: false
     },
     {
         schema: "external_storage",
         rootName: "external",
         dirName: "external",
-        enabled: true
+        enabled: true,
+        showSubdirs: false
     }
 ];
 
@@ -241,7 +244,6 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirName, 
     }
 }
 
-
 // ============================================================
 // Choose playlist and add directory contents
 // ============================================================
@@ -322,8 +324,19 @@ function showStorageDirMenu(entry, dirName, x, y) {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
 
-            const root = await navigator.storage.getDirectory();
-            const parent = await root.getDirectoryHandle(entry.dirName);
+            let parent;
+
+            if (entry.schema === "navigator_storage") {
+                const root = await navigator.storage.getDirectory();
+                parent = await root.getDirectoryHandle(entry.dirName);
+            }
+            else if (entry.schema === "external_storage") {
+                parent = await loadExternalDirs();
+            }
+            else {
+                alert("Unknown storage schema.");
+                return;
+            }
 
             if (action === "add") {
                 await choosePlaylistAndAdd(parent, entry, dirName);
@@ -364,7 +377,6 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry) {
     `;
 
     const header = li.querySelector(".storage-sub-header");
-    const addBtn = li.querySelector(".quick-add");
 
     // Right-click context menu
     header.addEventListener("contextmenu", (e) => {
@@ -372,25 +384,30 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry) {
         showStorageDirMenu(entry, name, e.pageX, e.pageY);
     });
 
+
+    const addBtn = li.querySelector(".quick-add");
     // Quick add to playlist
     addBtn.addEventListener("click", async () => {
         await choosePlaylistAndAdd(parentHandle, entry, name);
     });
 
-    // Click to expand/collapse subdirectories (recursive)
-    header.addEventListener("click", async () => {
-        let sub = li.querySelector("ul");
-        if (!sub) {
-            sub = document.createElement("ul");
-            sub.className = "storage-sub hidden";
-            li.appendChild(sub);
-        }
+    if (entry.showSubdirs)
+    {
+        // Click to expand/collapse subdirectories (recursive)
+        header.addEventListener("click", async () => {
+            let sub = li.querySelector("ul");
+            if (!sub) {
+                sub = document.createElement("ul");
+                sub.className = "storage-sub hidden";
+                li.appendChild(sub);
+            }
 
-        const hidden = sub.classList.toggle("hidden");
-        if (!hidden) {
-            await loadStorageSubdirs(sub, handle, entry);
-        }
-    });
+            const hidden = sub.classList.toggle("hidden");
+            if (!hidden) {
+                await loadStorageSubdirs(sub, handle, entry);
+            }
+        });
+    }
 
     subList.appendChild(li);
 }
@@ -408,7 +425,7 @@ async function loadStorageSubdirs(subList, dirHandle, entry) {
         return;
     }
 
-    // Case 2: external_storage → dirHandle is a map of name → FileSystemDirectoryHandle
+    // Case 2: external_storage
     if (entry.schema === "external_storage" && dirHandle && typeof dirHandle === "object") {
         for (const [name, handle] of Object.entries(dirHandle)) {
             renderSubdirItem(subList, name, handle, dirHandle, entry);
@@ -418,33 +435,7 @@ async function loadStorageSubdirs(subList, dirHandle, entry) {
 
     console.warn("Unknown dirHandle type in loadStorageSubdirs:", dirHandle);
 }
-/*
 
-async function renderStorageEntry(list, dirHandle, entry) {
-    const schema = entry.schema;
-
-    for await (const [name, handle] of dirHandle.entries()) {
-        if (handle.kind !== "directory") continue;
-
-        const li = document.createElement("li");
-
-        const fullPath = `${schema}://${entry.rootName}/${name}`;
-
-        const span = document.createElement("span");
-        span.textContent = fullPath;
-
-        const btn = document.createElement("button");
-        btn.textContent = "+";
-        btn.addEventListener("click", async () => {
-            await choosePlaylistAndAdd(dirHandle, entry, name);
-        });
-
-        li.appendChild(span);
-        li.appendChild(btn);
-        list.appendChild(li);
-    }
-}
-*/
 // ============================================================
 // Render all import roots and their subdirectories
 // ============================================================
