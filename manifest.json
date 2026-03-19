@@ -2,7 +2,7 @@
   "id": "/",
   "name": "PWA Player",
   "short_name": "PWA Player",
-  "start_url": "/?source=pwa",
+  "start_url": "/",
   "background_color": "#000000",
   "theme_color": "#000000",
   "description": "A Progressive Web APP Media Player",

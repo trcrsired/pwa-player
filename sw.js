@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-player-cache-v77";
+const CACHE_NAME = "pwa-player-cache-v78";
 const urlsToCache = [
   "/",
   "/style.css",
@@ -39,6 +39,7 @@ self.addEventListener("fetch", event => {
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).catch(() => {
+        return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
       });
     })
   );
