@@ -356,7 +356,16 @@ function showStorageDirMenu(entry, dirName, x, y) {
             if (action === "delete") {
                 const ok = confirm(`Delete folder "${dirName}"?`);
                 if (ok) {
-                    await parent.removeEntry(dirName, { recursive: true });
+                    if (entry.schema === "external_storage") {
+                        // For external storage, parent is a plain object
+                        const dirs = await loadExternalDirs();
+                        delete dirs[dirName];
+                        await kv_set("external_dirs", dirs);
+                        window.externalStorageRoot = dirs;
+                    } else {
+                        // For navigator_storage, parent is a DirectoryHandle
+                        await parent.removeEntry(dirName, { recursive: true });
+                    }
                 }
             }
 
