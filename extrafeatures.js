@@ -8,6 +8,10 @@ pipBtn.addEventListener("click", async () => {
         if (document.pictureInPictureElement) {
             await document.exitPictureInPicture();
         } else if (document.pictureInPictureEnabled) {
+            // Reset subtitle position before entering PiP (no controls in PiP window)
+            if (typeof updateSubtitlePosition === 'function') {
+                updateSubtitlePosition(false);
+            }
             await video.requestPictureInPicture();
         } else {
             alert("Picture-in-Picture is not supported on this device.");
@@ -15,6 +19,13 @@ pipBtn.addEventListener("click", async () => {
     } catch (e) {
         alert("Unable to enter Picture-in-Picture.");
         console.error("PiP error:", e);
+    }
+});
+
+// Restore subtitle position when exiting PiP
+video.addEventListener('leavepictureinpicture', () => {
+    if (typeof updateSubtitlePosition === 'function' && !controls.classList.contains('hidden')) {
+        updateSubtitlePosition(true);
     }
 });
 

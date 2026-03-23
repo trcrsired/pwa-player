@@ -316,7 +316,16 @@ async function loadSubtitle(file) {
   video.appendChild(track);
 
   // Enable the track
-  video.textTracks[0].mode = 'showing';
+  const textTrack = video.textTracks[0];
+  textTrack.mode = 'showing';
+
+  // Update cue positions when track loads
+  track.addEventListener('load', () => {
+    if (!controls.classList.contains('hidden')) {
+      updateSubtitlePosition(true);
+    }
+  });
+
   subtitleBtn.textContent = '✅';
 }
 
@@ -523,16 +532,51 @@ document.addEventListener("keydown", (e) => {
 
   let hideTimeout;
 
-  function showControlsTemporarily() {
+// Adjust subtitle position to avoid overlap with controls
+function updateSubtitlePosition(controlsVisible) {
+  const tracks = video.textTracks;
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i];
+    if (track.kind === 'subtitles' || track.kind === 'captions') {
+      for (let j = 0; j < track.cues.length; j++) {
+        const cue = track.cues[j];
+        if (controlsVisible) {
+          // Calculate position relative to control bar
+          const videoRect = video.getBoundingClientRect();
+          const controlsRect = controls.getBoundingClientRect();
+
+          // Position subtitle just above the control bar
+          // Convert to percentage from top of video
+          const gap = 10; // 10px gap above controls
+          const subtitleBottom = videoRect.bottom - controlsRect.top + gap;
+          const percentageFromTop = ((videoRect.height - subtitleBottom) / videoRect.height) * 100;
+
+          cue.snapToLines = false;
+          cue.line = Math.max(0, Math.min(100, percentageFromTop));
+          cue.position = 50;
+          cue.align = 'center';
+        } else {
+          // Reset to default bottom positioning
+          cue.snapToLines = true;
+          cue.line = 'auto';
+        }
+      }
+    }
+  }
+}
+
+function showControlsTemporarily() {
     // Show controls and cursor
     controls.classList.remove("hidden");
     playerWrapper.classList.remove("hide-cursor");
+    updateSubtitlePosition(true);
 
     clearTimeout(hideTimeout);
 
     hideTimeout = setTimeout(() => {
       controls.classList.add("hidden");
       playerWrapper.classList.add("hide-cursor");
+      updateSubtitlePosition(false);
     }, 3000);
   }
 /*
@@ -548,6 +592,7 @@ document.addEventListener("keydown", (e) => {
     const target = e.target;
     if (controls.contains(target)) {
       controls.classList.remove("hidden");
+      updateSubtitlePosition(true);
       clearTimeout(hideTimeout);
     }
     else
