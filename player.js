@@ -351,12 +351,12 @@ subtitleBtn.onclick = async () => {
       const [handle] = await window.showOpenFilePicker({
         types: [{
           description: 'Subtitle Files',
-          accept: { 'text/vtt': ['.vtt'] }
+          accept: { 'text/vtt': ['.vtt', '.webvtt'] }
         }]
       });
       await loadSubtitle(handle);
     } else {
-      const file = await pickFileSafariFallback(".vtt");
+      const file = await pickFileSafariFallback(".vtt,.webvtt");
       if (file) await loadSubtitle(file);
     }
   } catch (err) {
