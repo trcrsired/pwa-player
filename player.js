@@ -545,9 +545,9 @@ function updateSubtitlePosition(controlsVisible) {
           const videoRect = video.getBoundingClientRect();
           const controlsRect = controls.getBoundingClientRect();
 
-          // Position subtitle just above the control bar
-          // Convert to percentage from top of video
-          const gap = 10; // 10px gap above controls
+          // Position subtitle above the control bar with room for multi-line
+          // gap includes space for potential 2-3 lines of subtitles
+          const gap = 80; // extra gap for multi-line subtitles
           const subtitleBottom = videoRect.bottom - controlsRect.top + gap;
           const percentageFromTop = ((videoRect.height - subtitleBottom) / videoRect.height) * 100;
 
