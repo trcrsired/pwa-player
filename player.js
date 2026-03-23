@@ -94,6 +94,7 @@ const npVolumeToggleBtn = document.getElementById("npVolumeToggle");
 const burgerBtn = document.getElementById('burgerBtn');
 const configOptions = document.getElementById('configOptions');
 const advancedControls = document.getElementById('advancedControls');
+const subtitleBtn = document.getElementById('subtitleBtn');
 
 function updateTimeDisplay(txtct)
 {
@@ -109,6 +110,14 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     video.src = blobURL;
     hasActiveSource = true;
     controls.classList.add('hidden');
+
+    // Clear previous subtitles
+    const existingTracks = video.querySelectorAll('track');
+    existingTracks.forEach(t => {
+      if (t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+      t.remove();
+    });
+    subtitleBtn.textContent = '📝';
 
     // 🔥 Fix: wait for metadata before playing
     video.onloadedmetadata = () => {
@@ -239,6 +248,13 @@ async function toggleStopBtn()
   revokeBlobURL();
   playBtn.textContent = "▶️";
   npPlayBtn.textContent = playBtn.textContent;
+  // Clear subtitles
+  const existingTracks = video.querySelectorAll('track');
+  existingTracks.forEach(t => {
+    if (t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+    t.remove();
+  });
+  subtitleBtn.textContent = '📝';
   navigator.mediaSession.metadata = new MediaMetadata({});
   document.title = `PWA Player`;
 }
@@ -275,6 +291,67 @@ pickerBtn.onclick = async (e) => {
     play_source(file).catch(nop);
   } catch (err) {
     // User cancelled the picker — do nothing
+  }
+};
+
+// Subtitle loader
+async function loadSubtitle(file) {
+  const blob = file instanceof FileSystemFileHandle ? await file.getFile() : file;
+  const url = URL.createObjectURL(blob);
+
+  // Remove existing subtitles
+  const existingTracks = video.querySelectorAll('track');
+  existingTracks.forEach(t => {
+    if (t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+    t.remove();
+  });
+
+  // Add new track
+  const track = document.createElement('track');
+  track.kind = 'subtitles';
+  track.label = 'Loaded Subtitles';
+  track.srclang = 'en';
+  track.src = url;
+  track.default = true;
+  video.appendChild(track);
+
+  // Enable the track
+  video.textTracks[0].mode = 'showing';
+  subtitleBtn.textContent = '✅';
+}
+
+subtitleBtn.onclick = async () => {
+  // If subtitles already loaded, toggle them
+  const tracks = video.textTracks;
+  if (tracks.length > 0) {
+    const track = tracks[0];
+    if (track.mode === 'showing') {
+      track.mode = 'hidden';
+      subtitleBtn.textContent = '📝';
+      return;
+    } else {
+      track.mode = 'showing';
+      subtitleBtn.textContent = '✅';
+      return;
+    }
+  }
+
+  // No subtitles loaded yet - pick a file
+  try {
+    if (typeof window.showOpenFilePicker === "function") {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{
+          description: 'Subtitle Files',
+          accept: { 'text/vtt': ['.vtt'] }
+        }]
+      });
+      await loadSubtitle(handle);
+    } else {
+      const file = await pickFileSafariFallback(".vtt");
+      if (file) await loadSubtitle(file);
+    }
+  } catch (err) {
+    // User cancelled
   }
 };
 
