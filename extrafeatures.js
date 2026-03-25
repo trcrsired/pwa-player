@@ -202,9 +202,10 @@ async function switchCaptureSource() {
             audio: true
         });
 
-        // Stop old screen capture tracks (but keep mic)
+        // Stop old screen capture video track (but keep mic and audio context)
         if (screenCaptureStream) {
-            screenCaptureStream.getTracks().forEach(track => track.stop());
+            screenCaptureStream.getVideoTracks().forEach(track => track.stop());
+            screenCaptureStream.getAudioTracks().forEach(track => track.stop());
         }
 
         screenCaptureStream = newStream;
@@ -212,6 +213,7 @@ async function switchCaptureSource() {
         // Reconnect screen audio to recording destination
         if (screenAudioSource) {
             screenAudioSource.disconnect();
+            screenAudioSource = null;
         }
         const screenAudioTracks = newStream.getAudioTracks();
         if (screenAudioTracks.length > 0) {
@@ -223,8 +225,14 @@ async function switchCaptureSource() {
 
         // Update video element
         video.srcObject = newStream;
+        await video.play();
 
-        // Update recording stream with new video track
+        // Stop current recorder and start new one with new stream
+        // Keep existing chunks
+        screenRecorder.onstop = null; // Prevent saving prematurely
+        screenRecorder.stop();
+
+        // Create new recording stream with new video track
         const newVideoTrack = newStream.getVideoTracks()[0];
         const audioTracks = recordingDestination.stream.getAudioTracks();
 
@@ -236,6 +244,14 @@ async function switchCaptureSource() {
         }
 
         currentRecordingStream = newRecordingStream;
+
+        // Start new recorder
+        screenRecorder = new MediaRecorder(newRecordingStream);
+        screenRecorder.ondataavailable = e => {
+            if (e.data.size > 0) screenChunks.push(e.data);
+        };
+        screenRecorder.onstop = saveScreenRecording;
+        screenRecorder.start();
 
         // Handle track ended
         newVideoTrack.onended = () => {
