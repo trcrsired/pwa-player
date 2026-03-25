@@ -117,24 +117,29 @@ function updateTimeDisplay(txtct)
   npTimeDisplay.textContent = txtct;
 }
 
-async function play_source_internal(blobURL, mediametadata, sourceobject, playlist) {
+async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, autoPlay = true) {
   try {
     revokeBlobURL();
     currentBlobURL = blobURL;
+
+    // Clear previous subtitles
+    clearSubtitles();
 
     video.src = blobURL;
     hasActiveSource = true;
     controls.classList.add('hidden');
 
-    // Clear previous subtitles
-    clearSubtitles();
-
     // 🔥 Fix: wait for metadata before playing
     video.onloadedmetadata = () => {
-      video.play().catch(err => console.warn("Play failed:", err));
+      if (autoPlay) {
+        video.play().catch(err => console.warn("Play failed:", err));
+      }
     };
 
-    playBtn.textContent = "⏸️";
+    // Ensure video loads the new source
+    video.load();
+
+    playBtn.textContent = autoPlay ? "⏸️" : "▶️";
 
     navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
     document.title = `PWA Player ▶️ ${mediametadata.title}`;
@@ -161,7 +166,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
   }
 }
 
-async function play_source_title(sourceobject, customTitle, playlist) {
+async function play_source_title(sourceobject, customTitle, playlist, autoPlay = true) {
   try {
     // Get metadata as usual
     const result = await getMediaMetadataFromSource(sourceobject);
@@ -174,13 +179,13 @@ async function play_source_title(sourceobject, customTitle, playlist) {
     mediametadata.title = customTitle;
 
     // Now call the internal playback handler
-    await play_source_internal(blobURL, mediametadata, sourceobject, playlist);
+    await play_source_internal(blobURL, mediametadata, sourceobject, playlist, autoPlay);
   } catch (err) {
     console.warn(err);
   }
 }
 
-async function play_source(sourceobject, playlist) {
+async function play_source(sourceobject, playlist, autoPlay = true) {
   try {
     const result = await getMediaMetadataFromSource(sourceobject);
     if (!result) return;
@@ -189,7 +194,7 @@ async function play_source(sourceobject, playlist) {
     const mediametadata = result[2];
 
     // Call the shared internal logic
-    await play_source_internal(blobURL, mediametadata, sourceobject, playlist);
+    await play_source_internal(blobURL, mediametadata, sourceobject, playlist, autoPlay);
 
   } catch (err) {
     console.warn(err);
@@ -353,7 +358,52 @@ subtitleBtn.onclick = async () => {
     }
   }
 
-  // No subtitles loaded yet - pick a file
+  // No subtitles loaded yet - check if video is playing
+  if (!hasActiveSource) {
+
+    // Pick video first (without auto-play), then subtitle
+    try {
+      let videoFile;
+      if (typeof window.showOpenFilePicker === "function") {
+        const [handle] = await window.showOpenFilePicker({
+          startIn: 'videos'
+        });
+        videoFile = handle;
+      } else {
+        videoFile = await pickFileSafariFallback("video/*");
+      }
+
+      // Now pick subtitle
+      try {
+        let subhd;
+        if (typeof window.showOpenFilePicker === "function") {
+          const [subHandle] = await window.showOpenFilePicker({
+            types: [{
+              description: 'Subtitle Files',
+              accept: { 'text/vtt': ['.vtt', '.webvtt'] }
+            }]
+          });
+          await play_source(videoFile, null);
+          await loadSubtitle(subHandle);
+        } else {
+          const subFile = await pickFileSafariFallback(".vtt,.webvtt");
+          if (subFile)
+          {
+            await play_source(videoFile, null);
+            await loadSubtitle(subFile);
+          }
+        }
+      } catch (err) {
+        // User cancelled subtitle picker - play video without subtitles
+      }
+
+    } catch (err) {
+      // User cancelled video picker
+    }
+    return;
+  }
+
+  // Video is playing - pick subtitle file
   try {
     if (typeof window.showOpenFilePicker === "function") {
       const [handle] = await window.showOpenFilePicker({

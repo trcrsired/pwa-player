@@ -58,34 +58,229 @@ remoteBtn.addEventListener("click", async () => {
 // ===============================
 
 const screenCaptureBtn = document.getElementById("screenCaptureBtn");
+let micToggleBtn = null;
+let switchCaptureBtn = null;
 
 let screenCaptureStream = null;
 let screenRecorder = null;
 let screenChunks = [];
+let micStream = null;
+let audioContext = null;
+let micGainNode = null;
+let screenAudioSource = null;
+let micAudioSource = null;
+let recordingDestination = null;
+let isMicEnabled = false;
+let currentRecordingStream = null;
+
+function getMicToggleBtn() {
+    if (!micToggleBtn) {
+        micToggleBtn = document.getElementById("micToggleBtn");
+    }
+    return micToggleBtn;
+}
+
+function getSwitchCaptureBtn() {
+    if (!switchCaptureBtn) {
+        switchCaptureBtn = document.getElementById("switchCaptureBtn");
+    }
+    return switchCaptureBtn;
+}
 
 screenCaptureBtn.addEventListener("click", async () => {
+    if (screenRecorder && screenRecorder.state === "recording") {
+        stopScreenRecording();
+        return;
+    }
+
     try {
         screenCaptureStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
             audio: true
         });
 
+        // Set up AudioContext for mixing (mic + screen audio for recording only)
+        audioContext = new AudioContext();
+        recordingDestination = audioContext.createMediaStreamDestination();
+
+        // Connect screen audio to recording destination
+        const screenAudioTracks = screenCaptureStream.getAudioTracks();
+        if (screenAudioTracks.length > 0) {
+            try {
+                screenAudioSource = audioContext.createMediaStreamSource(
+                    new MediaStream([screenAudioTracks[0]])
+                );
+                screenAudioSource.connect(recordingDestination);
+            } catch (audioErr) {
+                console.warn("Could not connect screen audio:", audioErr);
+            }
+        }
+
+        // Video element plays only screen (no mic playback)
         video.srcObject = screenCaptureStream;
         await video.play();
 
-        startScreenRecording(screenCaptureStream);
+        // Create recording stream: screen video + mixed audio (screen + mic)
+        const videoTrack = screenCaptureStream.getVideoTracks()[0];
+        const audioTracks = recordingDestination.stream.getAudioTracks();
 
-        screenCaptureStream.getTracks().forEach(track => {
-            track.onended = () => {
-                stopScreenRecording();
-            };
-        });
+        let recordingStream;
+        if (audioTracks.length > 0) {
+            recordingStream = new MediaStream([videoTrack, audioTracks[0]]);
+        } else {
+            recordingStream = new MediaStream([videoTrack]);
+        }
+
+        // Start recording the mixed stream
+        startScreenRecording(recordingStream);
+        currentRecordingStream = recordingStream;
+
+        // Show mic toggle and switch capture buttons
+        const micBtn = getMicToggleBtn();
+        if (micBtn) micBtn.style.display = "";
+        const switchBtn = getSwitchCaptureBtn();
+        if (switchBtn) switchBtn.style.display = "";
+        screenCaptureBtn.textContent = "⏹️";
+
+        videoTrack.onended = () => {
+            stopScreenRecording();
+        };
 
     } catch (e) {
-        alert("Screen capture failed or was cancelled.");
+        if (e.name === "NotAllowedError" || e.name === "AbortError") {
+            console.log("Screen capture cancelled by user");
+        } else {
+            alert("Screen capture failed: " + e.message);
+        }
         console.error(e);
     }
 });
+
+async function toggleMicInRecording() {
+    if (!screenRecorder || screenRecorder.state !== "recording") {
+        return;
+    }
+
+    const micBtn = getMicToggleBtn();
+
+    if (isMicEnabled) {
+        // Turn off mic
+        if (micGainNode) {
+            micGainNode.gain.value = 0;
+        }
+        isMicEnabled = false;
+        if (micBtn) micBtn.textContent = "🎤";
+    } else {
+        // Turn on mic - connects to recording destination only (not speakers)
+        try {
+            if (!micStream) {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micAudioSource = audioContext.createMediaStreamSource(micStream);
+                micGainNode = audioContext.createGain();
+                micAudioSource.connect(micGainNode);
+                micGainNode.connect(recordingDestination);
+            }
+            micGainNode.gain.value = 1;
+            isMicEnabled = true;
+            if (micBtn) micBtn.textContent = "🎙️";
+        } catch (micErr) {
+            console.warn("Could not get microphone:", micErr);
+            alert("Could not access microphone.");
+        }
+    }
+}
+
+async function switchCaptureSource() {
+    if (!screenRecorder || screenRecorder.state !== "recording") {
+        return;
+    }
+
+    try {
+        // Get new screen capture
+        const newStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true
+        });
+
+        // Stop old screen capture tracks (but keep mic)
+        if (screenCaptureStream) {
+            screenCaptureStream.getTracks().forEach(track => track.stop());
+        }
+
+        screenCaptureStream = newStream;
+
+        // Reconnect screen audio to recording destination
+        if (screenAudioSource) {
+            screenAudioSource.disconnect();
+        }
+        const screenAudioTracks = newStream.getAudioTracks();
+        if (screenAudioTracks.length > 0) {
+            screenAudioSource = audioContext.createMediaStreamSource(
+                new MediaStream([screenAudioTracks[0]])
+            );
+            screenAudioSource.connect(recordingDestination);
+        }
+
+        // Update video element
+        video.srcObject = newStream;
+
+        // Update recording stream with new video track
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        const audioTracks = recordingDestination.stream.getAudioTracks();
+
+        let newRecordingStream;
+        if (audioTracks.length > 0) {
+            newRecordingStream = new MediaStream([newVideoTrack, audioTracks[0]]);
+        } else {
+            newRecordingStream = new MediaStream([newVideoTrack]);
+        }
+
+        currentRecordingStream = newRecordingStream;
+
+        // Handle track ended
+        newVideoTrack.onended = () => {
+            stopScreenRecording();
+        };
+
+    } catch (e) {
+        if (e.name !== "NotAllowedError" && e.name !== "AbortError") {
+            alert("Failed to switch capture: " + e.message);
+        }
+        console.log("Switch capture cancelled or failed:", e);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const micBtn = getMicToggleBtn();
+    if (micBtn) {
+        micBtn.addEventListener("click", toggleMicInRecording);
+    }
+    const switchBtn = getSwitchCaptureBtn();
+    if (switchBtn) {
+        switchBtn.addEventListener("click", switchCaptureSource);
+    }
+});
+
+const micBtnImmediate = document.getElementById("micToggleBtn");
+if (micBtnImmediate) {
+    micBtnImmediate.addEventListener("click", toggleMicInRecording);
+}
+const switchBtnImmediate = document.getElementById("switchCaptureBtn");
+if (switchBtnImmediate) {
+    switchBtnImmediate.addEventListener("click", switchCaptureSource);
+}
+
+function saveScreenRecording() {
+    const blob = new Blob(screenChunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `screen-recording-${Date.now()}.webm`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
 
 function startScreenRecording(stream) {
     screenChunks = [];
@@ -95,17 +290,7 @@ function startScreenRecording(stream) {
         if (e.data.size > 0) screenChunks.push(e.data);
     };
 
-    screenRecorder.onstop = () => {
-        const blob = new Blob(screenChunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `screen-recording-${Date.now()}.webm`;
-        a.click();
-
-        URL.revokeObjectURL(url);
-    };
+    screenRecorder.onstop = saveScreenRecording;
 
     screenRecorder.start();
 }
@@ -113,6 +298,34 @@ function startScreenRecording(stream) {
 function stopScreenRecording() {
     if (screenRecorder && screenRecorder.state === "recording") {
         screenRecorder.stop();
+    }
+    if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+    }
+    if (screenCaptureStream) {
+        screenCaptureStream.getTracks().forEach(track => track.stop());
+        screenCaptureStream = null;
+    }
+    if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+    }
+    isMicEnabled = false;
+    micGainNode = null;
+    screenAudioSource = null;
+    micAudioSource = null;
+    recordingDestination = null;
+    currentRecordingStream = null;
+    screenCaptureBtn.textContent = "🖥️";
+    const micBtn = getMicToggleBtn();
+    if (micBtn) {
+        micBtn.style.display = "none";
+        micBtn.textContent = "🎤";
+    }
+    const switchBtn = getSwitchCaptureBtn();
+    if (switchBtn) {
+        switchBtn.style.display = "none";
     }
 }
 
