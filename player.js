@@ -96,6 +96,21 @@ const configOptions = document.getElementById('configOptions');
 const advancedControls = document.getElementById('advancedControls');
 const subtitleBtn = document.getElementById('subtitleBtn');
 
+// Clear all subtitles properly
+function clearSubtitles() {
+  // Disable and remove text tracks
+  for (let i = 0; i != video.textTracks.length; ++i) {
+    video.textTracks[i].mode = 'disabled';
+  }
+  // Remove track elements
+  const existingTracks = video.querySelectorAll('track');
+  existingTracks.forEach(t => {
+    if (t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+    t.remove();
+  });
+  subtitleBtn.textContent = '📝';
+}
+
 function updateTimeDisplay(txtct)
 {
   timeDisplay.textContent = txtct;
@@ -112,12 +127,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     controls.classList.add('hidden');
 
     // Clear previous subtitles
-    const existingTracks = video.querySelectorAll('track');
-    existingTracks.forEach(t => {
-      if (t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
-      t.remove();
-    });
-    subtitleBtn.textContent = '📝';
+    clearSubtitles();
 
     // 🔥 Fix: wait for metadata before playing
     video.onloadedmetadata = () => {
@@ -249,12 +259,7 @@ async function toggleStopBtn()
   playBtn.textContent = "▶️";
   npPlayBtn.textContent = playBtn.textContent;
   // Clear subtitles
-  const existingTracks = video.querySelectorAll('track');
-  existingTracks.forEach(t => {
-    if (t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
-    t.remove();
-  });
-  subtitleBtn.textContent = '📝';
+  clearSubtitles();
   navigator.mediaSession.metadata = new MediaMetadata({});
   document.title = `PWA Player`;
 }
@@ -299,7 +304,10 @@ async function loadSubtitle(file) {
   const blob = file instanceof FileSystemFileHandle ? await file.getFile() : file;
   const url = URL.createObjectURL(blob);
 
-  // Remove existing subtitles
+  // Remove existing subtitles (keep button state since we're adding new ones)
+  for (let i = 0; i != video.textTracks.length; ++i) {
+    video.textTracks[i].mode = 'disabled';
+  }
   const existingTracks = video.querySelectorAll('track');
   existingTracks.forEach(t => {
     if (t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
@@ -535,10 +543,10 @@ document.addEventListener("keydown", (e) => {
 // Adjust subtitle position to avoid overlap with controls
 function updateSubtitlePosition(controlsVisible) {
   const tracks = video.textTracks;
-  for (let i = 0; i < tracks.length; i++) {
+  for (let i = 0; i != tracks.length; ++i) {
     const track = tracks[i];
     if (track.kind === 'subtitles' || track.kind === 'captions') {
-      for (let j = 0; j < track.cues.length; j++) {
+      for (let j = 0; j != track.cues.length; ++j) {
         const cue = track.cues[j];
         if (controlsVisible) {
           // Calculate position relative to control bar

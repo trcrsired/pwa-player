@@ -25,6 +25,31 @@
                 <!-- Config Menu Panel -->
             <div id="controls">
 
+                <div class="control-row config-row" id="configOptions">
+                    <div class="control-group full-width">
+                        <button class="config-item" id="nowPlayingBtn" title="Now Playing">▶️ Now Playing</button>
+                        <button class="config-item" id="playlistBtn" title="Playlist">🎵 Playlist</button>
+                        <button class="config-item" id="storageBtn" title="Storage">🗂️ Storage</button>
+                        <button class="config-item" id="iptvBtn" title="IPTV">📺 IPTV</button>
+                        <button class="config-item" id="settingsBtn" title="Settings">⚙️ Settings</button>
+                        <!--button class="config-item" id="aboutBtn" title="About">ℹ️ About</button-->
+                    </div>
+                </div>
+                <!-- Row 3: System / Advanced -->
+                <div class="control-row" id="advancedControls">
+                    <div class="control-group left-controls">
+                        <button id="pipBtn" title="Picture in Picture">🪟</button>
+                        <button id="remoteBtn" title="Remote Playback">📡</button>
+                        <button id="screenCaptureBtn" title="Capture Screen">🖥️</button>
+                        <button id="mediaRecordBtn" title="Record Media">⏺️</button>
+                        <button id="screenshotBtn" title="Screenshot">📸</button>
+                    </div>
+
+                    <div class="control-group right-controls">
+                        <span id="batteryStatus" title="Battery Status">🔋</span>
+                        <span id="networkStatus" title="Network Status">🌐</span>
+                    </div>
+                </div>
                 <!-- Row 1: Playback & Timeline -->
                 <div class="control-row">
                     <div class="control-group left-controls">
@@ -55,32 +80,6 @@
                         <button id="rotationBtn" title="Rotate View">🌀</button>
                         <button id="wakeLockBtn" title="Keep Screen Awake">🔒</button>
                         <span id="timeDisplay" title="Current Time / Total Duration">00:00 / 00:00</span>
-                    </div>
-                </div>
-
-                <div class="control-row config-row" id="configOptions">
-                    <div class="control-group full-width">
-                        <button class="config-item" id="nowPlayingBtn" title="Now Playing">▶️ Now Playing</button>
-                        <button class="config-item" id="playlistBtn" title="Playlist">🎵 Playlist</button>
-                        <button class="config-item" id="storageBtn" title="Storage">🗂️ Storage</button>
-                        <button class="config-item" id="iptvBtn" title="IPTV">📺 IPTV</button>
-                        <button class="config-item" id="settingsBtn" title="Settings">⚙️ Settings</button>
-                        <!--button class="config-item" id="aboutBtn" title="About">ℹ️ About</button-->
-                    </div>
-                </div>
-                <!-- Row 3: System / Advanced -->
-                <div class="control-row" id="advancedControls">
-                    <div class="control-group left-controls">
-                        <button id="pipBtn" title="Picture in Picture">🪟</button>
-                        <button id="remoteBtn" title="Remote Playback">📡</button>
-                        <button id="screenCaptureBtn" title="Capture Screen">🖥️</button>
-                        <button id="mediaRecordBtn" title="Record Media">⏺️</button>
-                        <button id="screenshotBtn" title="Screenshot">📸</button>
-                    </div>
-
-                    <div class="control-group right-controls">
-                        <span id="batteryStatus" title="Battery Status">🔋</span>
-                        <span id="networkStatus" title="Network Status">🌐</span>
                     </div>
                 </div>
                 <input type="range" id="progressBar" min="0" max="100" value="0" title="Seek Timeline" />
