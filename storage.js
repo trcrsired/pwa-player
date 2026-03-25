@@ -84,7 +84,8 @@ async function promptForUniqueName(baseName, parentHandle) {
 // Allowed media extensions (same as file_handlers)
 const ALLOWED_EXTENSIONS = new Set([
     ".mp4", ".webm", ".mkv",
-    ".mp3", ".wav", ".flac"
+    ".mp3", ".wav", ".flac",
+    ".vtt" // webvtt subtitle
 ]);
 
 function isAllowedFile(name) {

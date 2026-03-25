@@ -117,6 +117,40 @@ function updateTimeDisplay(txtct)
   npTimeDisplay.textContent = txtct;
 }
 
+// Try to auto-load subtitle from storage path
+async function tryAutoLoadSubtitleFromPath(entryPath) {
+  if (!entryPath) return;
+
+  // Only for storage paths
+  if (!entryPath.startsWith('navigator_storage://') && !entryPath.startsWith('external_storage://')) {
+    return;
+  }
+
+  // Get the path without extension
+  const lastDot = entryPath.lastIndexOf('.');
+  if (lastDot === -1) return;
+
+  const basePath = entryPath.substring(0, lastDot);
+
+  // Try .vtt
+  const vttExtensions = ['.vtt'];
+
+  for (const ext of vttExtensions) {
+    const vttPath = basePath + ext;
+
+    try {
+      const vttHandle = await storage_resolvePath(vttPath);
+      if (vttHandle && vttHandle instanceof FileSystemFileHandle) {
+        const file = await vttHandle.getFile();
+        await loadSubtitle(file);
+        return; // Success, stop trying
+      }
+    } catch (err) {
+      // Subtitle file doesn't exist - try next extension
+    }
+  }
+}
+
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, autoPlay = true) {
   try {
     revokeBlobURL();
@@ -151,6 +185,11 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     };
 
     updateNowPlayingInfo(entry);
+
+    // Try to auto-load subtitle for storage paths
+    if (playlist?.entryPath) {
+      tryAutoLoadSubtitleFromPath(playlist.entryPath);
+    }
 
     if (playlist) {
       kv_delete("lastplayed").catch(() => {});
