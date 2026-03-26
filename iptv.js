@@ -23,7 +23,7 @@ iptvSearch.addEventListener("input", () => {
     renderIPTVList(iptvSearch.value.trim().toLowerCase());
 });
 
-// Context menu for IPTV channels
+// Context menu for IPTV channels (on + button)
 function showIPTVChannelMenu(channel, url, x, y) {
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
@@ -35,8 +35,8 @@ function showIPTVChannelMenu(channel, url, x, y) {
     menu.style.position = "fixed";
 
     menu.innerHTML = `
-        <div class="menu-item" data-action="add">Add to Playlist</div>
-        <div class="menu-item" data-action="close">Close</div>
+        <div class="menu-item" data-action="add">${window.i18n ? window.i18n.t('addToPlaylist') : 'Add to Playlist'}</div>
+        <div class="menu-item" data-action="close">${window.i18n ? window.i18n.t('close') : 'Close'}</div>
     `;
 
     document.body.appendChild(menu);
@@ -58,7 +58,7 @@ function showIPTVChannelMenu(channel, url, x, y) {
                 const names = Object.keys(playlists);
 
                 const choice = prompt(
-                    "Add to which playlist?\n" +
+                    window.i18n ? window.i18n.t('whichPlaylist') : "Add to which playlist?\n" +
                     names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
                     "1"
                 );
@@ -70,7 +70,7 @@ function showIPTVChannelMenu(channel, url, x, y) {
 
                 const index = parseInt(choice, 10) - 1;
                 if (index < 0 || index >= names.length) {
-                    alert("Invalid selection");
+                    alert(window.i18n ? window.i18n.t('invalidSelection') : "Invalid selection");
                     closeMenu();
                     return;
                 }
@@ -108,16 +108,37 @@ function renderIPTVList(searchFilter = "") {
         }
 
         const li = document.createElement("li");
-        li.className = "list-item";
+        li.className = "iptv-node";
 
-        const row = document.createElement("div");
-        row.className = "iptv-row";
+        const header = document.createElement("div");
+        header.className = "iptv-header";
+
+        const urlList = channel.url ? [channel.url] : channel.urls;
+
+        // Expand button (+) - on the left, no background
+        const expandBtn = document.createElement("button");
+        expandBtn.className = "iptv-toggle";
+
+        // Build the toggle content
+        const toggleText = document.createElement("span");
+        toggleText.className = "iptv-toggle-text";
+        toggleText.textContent = "+";
+
+        if (urlList.length > 1) {
+            const countBadge = document.createElement("span");
+            countBadge.className = "iptv-count-badge";
+            countBadge.textContent = `(${urlList.length})`;
+            expandBtn.appendChild(toggleText);
+            expandBtn.appendChild(countBadge);
+        } else {
+            expandBtn.textContent = "+";
+        }
 
         const nameSpan = document.createElement("span");
-        nameSpan.textContent = channel.name;
         nameSpan.className = "iptv-name";
+        nameSpan.textContent = channel.name;
 
-        // 🔥 Add NSFW badge only when unlocked
+        // Add NSFW badge only when unlocked
         if (channel.nsfw && isUnlocked) {
             const badge = document.createElement("span");
             badge.textContent = "NSFW";
@@ -127,71 +148,72 @@ function renderIPTVList(searchFilter = "") {
 
         const primaryUrl = channel.url || (channel.urls && channel.urls[0]);
 
-        // Click on name shows menu
-        nameSpan.addEventListener("click", (e) => {
-            if (!primaryUrl) return;
-            showIPTVChannelMenu(channel, primaryUrl, e.clientX, e.clientY);
-        });
-
-        row.appendChild(nameSpan);
-
-        // Play button
-        const playBtn = document.createElement("button");
-        playBtn.className = "iptv-play-btn";
-        playBtn.textContent = "▶";
-        playBtn.addEventListener("click", () => {
+        // Click on name plays the channel
+        nameSpan.addEventListener("click", () => {
             if (!primaryUrl) return;
             play_source_title(primaryUrl, channel.name, null);
             closeActiveView();
         });
-        row.appendChild(playBtn);
-
-        const expandBtn = document.createElement("button");
-        expandBtn.className = "iptv-expand-btn";
-
-        const urlList = channel.url ? [channel.url] : channel.urls;
-
-        expandBtn.textContent = urlList.length > 1
-            ? `+ (${urlList.length})`
-            : "+";
 
         const subList = document.createElement("ul");
-        subList.className = "iptv-sublist hidden";
+        subList.className = "iptv-sub hidden";
 
         urlList.forEach(url => {
             const subLi = document.createElement("li");
             subLi.className = "iptv-subitem";
 
+            // Add button for this URL
+            const addBtn = document.createElement("button");
+            addBtn.className = "iptv-sub-toggle";
+            addBtn.textContent = "+";
+            addBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                showIPTVChannelMenu(channel, url, e.clientX, e.clientY);
+            });
+            addBtn.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showIPTVChannelMenu(channel, url, e.clientX, e.clientY);
+            });
+            subLi.appendChild(addBtn);
+
             const urlSpan = document.createElement("span");
             urlSpan.className = "iptv-url-text";
             urlSpan.textContent = url;
 
-            // Click on URL shows menu
-            urlSpan.addEventListener("click", (e) => {
-                showIPTVChannelMenu(channel, url, e.clientX, e.clientY);
+            // Click on URL plays it
+            urlSpan.addEventListener("click", () => {
+                play_source_title(url, channel.name, null);
+                closeActiveView();
             });
 
             subLi.appendChild(urlSpan);
 
-            // Play button for this URL
-            const subPlayBtn = document.createElement("button");
-            subPlayBtn.className = "iptv-play-btn";
-            subPlayBtn.textContent = "▶";
-            subPlayBtn.addEventListener("click", () => {
-                play_source_title(url, channel.name, null);
-                closeActiveView();
-            });
-            subLi.appendChild(subPlayBtn);
-
             subList.appendChild(subLi);
         });
 
+        // Click on + expands/collapses
         expandBtn.addEventListener("click", () => {
-            subList.classList.toggle("hidden");
+            const hidden = subList.classList.toggle("hidden");
+            if (urlList.length > 1) {
+                expandBtn.querySelector(".iptv-toggle-text").textContent = hidden ? "+" : "−";
+            } else {
+                expandBtn.textContent = hidden ? "+" : "−";
+            }
         });
 
-        row.appendChild(expandBtn);
-        li.appendChild(row);
+        // Right-click on + shows menu
+        expandBtn.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (primaryUrl) {
+                showIPTVChannelMenu(channel, primaryUrl, e.clientX, e.clientY);
+            }
+        });
+
+        header.appendChild(expandBtn);
+        header.appendChild(nameSpan);
+        li.appendChild(header);
         li.appendChild(subList);
         iptvList.appendChild(li);
     });
