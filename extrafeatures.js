@@ -58,6 +58,12 @@ remoteBtn.addEventListener("click", async () => {
 // ===============================
 
 const screenCaptureBtn = document.getElementById("screenCaptureBtn");
+
+// Hide screen capture button if not supported
+if (!navigator.mediaDevices?.getDisplayMedia) {
+    screenCaptureBtn.style.display = 'none';
+}
+
 let micToggleBtn = null;
 let switchCaptureBtn = null;
 
