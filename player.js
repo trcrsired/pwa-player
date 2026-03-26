@@ -255,9 +255,33 @@ window.addEventListener("dragleave", () => {
     container.style.outline = "none";
 });
 
-window.addEventListener("drop", e => {
+window.addEventListener("drop", async e => {
     container.style.outline = "none";
 
+    // Check for directory drag (using DataTransferItem)
+    const items = e.dataTransfer.items;
+    if (items && items.length > 0) {
+        for (const item of items) {
+            if (item.kind === "file") {
+                const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+                if (entry && entry.isDirectory) {
+                    // It's a directory - add to external storage
+                    try {
+                        const dirHandle = await item.getAsFileSystemHandle();
+                        if (dirHandle && dirHandle.kind === "directory") {
+                            await addDirectoryToExternalStorage(dirHandle);
+                        }
+                    } catch (err) {
+                        console.error("Failed to add directory:", err);
+                        alert("Failed to add directory to external storage.");
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    // Fall back to file handling
     const file = e.dataTransfer.files[0];
     if (!file) return;
 
@@ -265,12 +289,43 @@ window.addEventListener("drop", e => {
         !file.type.startsWith("video/") &&
         !file.type.startsWith("audio/")
     ) {
-        alert("Please drop a video or audio file");
+        alert("Please drop a video, audio file, or directory");
         return;
     }
 
     play_source(file);
 });
+
+// Add directory to external storage (like Import External button)
+async function addDirectoryToExternalStorage(dirHandle) {
+    const ok = await verifyPermission(dirHandle);
+    if (!ok) return;
+
+    const name = dirHandle.name;
+
+    // Load existing external dirs
+    let dirs = await kv_get("external_dirs") || {};
+
+    // Prevent overwriting an existing entry
+    if (dirs[name]) {
+        alert(`External directory "${name}" already exists.`);
+        return;
+    }
+
+    // Save new entry
+    dirs[name] = dirHandle;
+    await kv_set("external_dirs", dirs);
+
+    // Update in-memory cache
+    window.externalStorageRoot = dirs;
+
+    alert(`External directory "${name}" added.`);
+
+    // Re-render storage if the function exists
+    if (typeof renderStorage === 'function') {
+        renderStorage();
+    }
+}
 
 async function togglePlayBtn()
 {

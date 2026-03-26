@@ -297,17 +297,23 @@ function showStorageDirMenu(entry, dirName, x, y) {
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
 
+    // Determine which menu items to show
+    const isRoot = !dirName;
+    const menuItems = [];
+
+    if (!isRoot) {
+        menuItems.push(`<div class="menu-item" data-action="add">Add to Playlist</div>`);
+        menuItems.push(`<div class="menu-item" data-action="rename">Rename</div>`);
+    }
+    menuItems.push(`<div class="menu-item danger" data-action="delete">Delete</div>`);
+    menuItems.push(`<div class="menu-item" data-action="close">Close</div>`);
+
     const menu = document.createElement("div");
     menu.className = "context-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
 
-    menu.innerHTML = `
-        <div class="menu-item" data-action="add">Add to Playlist</div>
-        <div class="menu-item" data-action="rename">Rename</div>
-        <div class="menu-item danger" data-action="delete">Delete</div>
-        <div class="menu-item" data-action="close">Close</div>
-    `;
+    menu.innerHTML = menuItems.join("");
 
     document.body.appendChild(menu);
 
@@ -355,17 +361,37 @@ function showStorageDirMenu(entry, dirName, x, y) {
             }
 
             if (action === "delete") {
-                const ok = confirm(`Delete folder "${dirName}"?`);
+                let ok;
+                if (dirName) {
+                    ok = confirm(`Delete folder "${dirName}"?`);
+                } else {
+                    ok = confirm(`Delete entire "${entry.rootName}" storage? This will remove all items in this category.`);
+                }
+
                 if (ok) {
                     if (entry.schema === "external_storage") {
-                        // For external storage, parent is a plain object
-                        const dirs = await loadExternalDirs();
-                        delete dirs[dirName];
-                        await kv_set("external_dirs", dirs);
-                        window.externalStorageRoot = dirs;
+                        if (dirName) {
+                            // Delete specific external directory entry (just the reference)
+                            const dirs = await loadExternalDirs();
+                            delete dirs[dirName];
+                            await kv_set("external_dirs", dirs);
+                            window.externalStorageRoot = dirs;
+                        } else {
+                            // Delete all external directory references (not actual directories)
+                            await kv_delete("external_dirs");
+                            window.externalStorageRoot = {};
+                        }
                     } else {
-                        // For navigator_storage, parent is a DirectoryHandle
-                        await parent.removeEntry(dirName, { recursive: true });
+                        // navigator_storage - delete actual folder from OPFS
+                        const root = await navigator.storage.getDirectory();
+                        if (dirName) {
+                            // Delete subdirectory within the root folder
+                            const parentDir = await root.getDirectoryHandle(entry.dirName);
+                            await parentDir.removeEntry(dirName, { recursive: true });
+                        } else {
+                            // Delete the entire root folder (e.g., imports, files)
+                            await root.removeEntry(entry.dirName, { recursive: true });
+                        }
                     }
                 }
             }
