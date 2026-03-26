@@ -175,7 +175,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     video.src = blobURL;
     hasActiveSource = true;
-    controls.classList.add('hidden');
+    toggleControls(false);
 
     // 🔥 Fix: wait for metadata before playing
     video.onloadedmetadata = () => {
@@ -697,10 +697,10 @@ function fullscreencallback()
 {
   if (document.fullscreenElement) {
     document.exitFullscreen();
-    controls.classList.remove('hidden');
+    toggleControls(true);
   } else {
     document.documentElement.requestFullscreen();
-    controls.classList.add('hidden');
+    toggleControls(false);
   }
 }
 
@@ -798,33 +798,37 @@ function updateSubtitlePosition(controlsVisible) {
   }
 }
 
-function showControlsTemporarily() {
-    // Show controls and cursor
-    controls.classList.remove("hidden");
-    playerWrapper.classList.remove("hide-cursor");
-    updateSubtitlePosition(true);
+// Toggle controls visibility on click
+function toggleControls(show) {
+    if (show) {
+        controls.classList.remove("hidden");
+        playerWrapper.classList.remove("hide-cursor");
+        updateSubtitlePosition(true);
+    } else {
+        controls.classList.add("hidden");
+        playerWrapper.classList.add("hide-cursor");
+        updateSubtitlePosition(false);
+    }
+}
 
-    clearTimeout(hideTimeout);
-
-    hideTimeout = setTimeout(() => {
-      controls.classList.add("hidden");
-      playerWrapper.classList.add("hide-cursor");
-      updateSubtitlePosition(false);
-    }, 3000);
-  }
-
-  player.addEventListener("pointermove", (e) => {
+// Click on player wrapper to toggle controls
+playerWrapper.addEventListener("click", (e) => {
     const target = e.target;
-    if (controls.contains(target)) {
-      controls.classList.remove("hidden");
-      updateSubtitlePosition(true);
-      clearTimeout(hideTimeout);
+    const controlsHidden = controls.classList.contains("hidden");
+
+    if (controlsHidden) {
+        // Show controls when clicking anywhere
+        toggleControls(true);
+    } else if (!controls.contains(target)) {
+        // Hide controls when clicking outside controls
+        toggleControls(false);
     }
-    else
-    {
-      showControlsTemporarily();
-    }
-  });
+});
+
+// Prevent clicks on controls from bubbling to playerWrapper
+controls.addEventListener("click", (e) => {
+    e.stopPropagation();
+});
 
   function expandCollapseBurgerMenu(hide) {
       if (hide) {
