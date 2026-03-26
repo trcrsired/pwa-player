@@ -4,9 +4,11 @@ import { iptvChannels } from "/iptvchannels.js";
 const iptvBtn = document.getElementById("iptvBtn");
 const iptvBackBtn = document.getElementById("iptvBackBtn");
 const iptvList = document.getElementById("iptvList");
+const iptvSearch = document.getElementById("iptvSearch");
 
 // Open IPTV menu
 iptvBtn.addEventListener("click", () => {
+    iptvSearch.value = "";
     renderIPTVList();
     switchView("iptvView");
 });
@@ -14,6 +16,11 @@ iptvBtn.addEventListener("click", () => {
 // Back button
 iptvBackBtn.addEventListener("click", () => {
     closeActiveView();
+});
+
+// Search input
+iptvSearch.addEventListener("input", () => {
+    renderIPTVList(iptvSearch.value.trim().toLowerCase());
 });
 
 // Context menu for IPTV channels
@@ -84,7 +91,7 @@ function showIPTVChannelMenu(channel, url, x, y) {
 }
 
 // Render IPTV channels
-function renderIPTVList() {
+function renderIPTVList(searchFilter = "") {
     iptvList.innerHTML = "";
 
     iptvChannels.forEach(channel => {
@@ -92,6 +99,11 @@ function renderIPTVList() {
         // Skip NSFW channels unless unlocked
         const isUnlocked = localStorage.getItem("hiddenfeatures") === "true";
         if (channel.nsfw && !isUnlocked) {
+            return;
+        }
+
+        // Filter by search
+        if (searchFilter && !channel.name.toLowerCase().includes(searchFilter)) {
             return;
         }
 
