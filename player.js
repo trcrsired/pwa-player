@@ -115,8 +115,7 @@ function clearSubtitles() {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: currentMediaMetadata.title,
       artist: currentMediaMetadata.artist || '',
-      album: currentMediaMetadata.album || '',
-      artwork: TRANSPARENT_ARTWORK
+      album: currentMediaMetadata.album || ''
     });
   }
 }
@@ -191,8 +190,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     navigator.mediaSession.metadata = new MediaMetadata({
       title: mediametadata.title,
       artist: mediametadata.artist || '',
-      album: mediametadata.album || '',
-      artwork: TRANSPARENT_ARTWORK
+      album: mediametadata.album || ''
     });
     document.title = `PWA Player ▶️ ${mediametadata.title}`;
 
@@ -417,11 +415,6 @@ pickerBtn.onclick = async (e) => {
   }
 };
 
-// Transparent 1x1 PNG for MediaSession artwork (forces transparent background)
-const TRANSPARENT_ARTWORK = [
-  { src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', sizes: '1x1', type: 'image/png' }
-];
-
 // Decode HTML entities in subtitle text (e.g., &gt; → >, &amp; → &)
 function decodeHtmlEntities(text) {
   const textarea = document.createElement('textarea');
@@ -442,8 +435,7 @@ function updateMediaSessionSubtitle(subtitleText) {
     const updatedMetadata = {
       title: currentMediaMetadata.title,
       artist: cleanText,
-      album: currentMediaMetadata.album || '',
-      artwork: TRANSPARENT_ARTWORK
+      album: currentMediaMetadata.album || ''
     };
     navigator.mediaSession.metadata = new MediaMetadata(updatedMetadata);
   } else {
@@ -451,8 +443,7 @@ function updateMediaSessionSubtitle(subtitleText) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: currentMediaMetadata.title,
       artist: currentMediaMetadata.artist || '',
-      album: currentMediaMetadata.album || '',
-      artwork: TRANSPARENT_ARTWORK
+      album: currentMediaMetadata.album || ''
     });
   }
 }
