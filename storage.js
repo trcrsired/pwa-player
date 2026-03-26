@@ -561,15 +561,18 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
 
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
     const canModify = entry.allowModification !== false;
     const menuItems = [];
 
-    menuItems.push(`<div class="menu-item" data-action="export">Export</div>`);
+    menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
+    menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
     if (canModify) {
-        menuItems.push(`<div class="menu-item" data-action="rename">Rename</div>`);
-        menuItems.push(`<div class="menu-item danger" data-action="delete">Delete</div>`);
+        menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
+        menuItems.push(`<div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>`);
     }
-    menuItems.push(`<div class="menu-item" data-action="close">Close</div>`);
+    menuItems.push(`<div class="menu-item" data-action="close">${t('close', 'Close')}</div>`);
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
@@ -593,6 +596,16 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
+
+            if (action === "play-keep-open") {
+                if (isPlaylistFile(name)) {
+                    await play_source(handle);
+                } else {
+                    alert("This file type cannot be played directly.");
+                }
+                closeMenu();
+                return;
+            }
 
             if (action === "export") {
                 try {
@@ -694,6 +707,9 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
         e.stopPropagation();
         if (isPlaylistFile(name)) {
             await play_source(handle);
+            if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                closeActiveView();
+            }
         } else {
             alert("This file type cannot be played directly.");
         }

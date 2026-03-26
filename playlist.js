@@ -96,6 +96,7 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
     menu.style.top = y + "px";
 
     menu.innerHTML = `
+        <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
         <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
         <div class="menu-item" data-action="move-up">${t('moveUp', 'Move Up')}</div>
         <div class="menu-item" data-action="move-down">${t('moveDown', 'Move Down')}</div>
@@ -118,6 +119,12 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
             const action = item.dataset.action;
             const playlists = await playlists_load();
             const list = playlists[playlistName];
+
+            if (action === "play-keep-open") {
+                await startNowPlayingFromPlaylist(playlistName, index);
+                closeMenu();
+                return;
+            }
 
             if (action === "delete") {
                 const ok = confirm(`${t('confirmRemoveItem', 'Remove this item from playlist')} "${playlistName}"?`);
@@ -187,6 +194,9 @@ async function playlist_renderTree() {
 
             itemLi.addEventListener("click", async () => {
                 await startNowPlayingFromPlaylist(playlistName, index);
+                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                    closeActiveView();
+                }
             });
 
             itemLi.addEventListener("contextmenu", (e) => {

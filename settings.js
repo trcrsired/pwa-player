@@ -78,3 +78,18 @@ autoLoadSubtitleCheckbox.addEventListener("change", () => {
 function isAutoLoadSubtitleEnabled() {
     return localStorage.getItem("autoLoadSubtitle") !== "false";
 }
+
+// Auto-hide panel toggle
+const autoHidePanelCheckbox = document.getElementById("autoHidePanel");
+
+// Load saved preference (default: true)
+autoHidePanelCheckbox.checked = localStorage.getItem("autoHidePanel") !== "false";
+
+autoHidePanelCheckbox.addEventListener("change", () => {
+    localStorage.setItem("autoHidePanel", autoHidePanelCheckbox.checked ? "true" : "false");
+});
+
+// Helper function to check if auto-hide panel is enabled
+function isAutoHidePanelEnabled() {
+    return localStorage.getItem("autoHidePanel") !== "false";
+}

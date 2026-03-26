@@ -291,12 +291,15 @@ function confirmRemoveFromNowPlaying(index) {
 function showNowPlayingItemMenu(index, x, y) {
     closeContextMenu();
 
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
     const menu = document.createElement("div");
     menu.className = "context-menu";
 
     menu.innerHTML = `
-        <div class="menu-item danger" data-action="remove">Remove from Queue</div>
-        <div class="menu-item" data-action="close">Close</div>
+        <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
+        <div class="menu-item danger" data-action="remove">${t('removeFromQueue', 'Remove from Queue')}</div>
+        <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
     // Step 1: append BEFORE measuring
@@ -313,6 +316,12 @@ function showNowPlayingItemMenu(index, x, y) {
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", () => {
             const action = item.dataset.action;
+
+            if (action === "play-keep-open") {
+                nowPlaying_playIndex(index);
+                closeContextMenu();
+                return;
+            }
 
             if (action === "remove") {
                 confirmRemoveFromNowPlaying(index);
@@ -346,6 +355,9 @@ function renderNowPlayingQueue() {
         // Left-click → play
         li.addEventListener("click", () => {
             nowPlaying_playIndex(i);
+            if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                closeActiveView();
+            }
         });
 
         // Right-click → context menu
