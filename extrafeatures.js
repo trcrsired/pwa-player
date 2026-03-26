@@ -71,8 +71,13 @@ let screenAudioSource = null;
 let micAudioSource = null;
 let recordingDestination = null;
 let isMicEnabled = false;
-let currentRecordingStream = null;
-let previousVideoMuted = false; // Store original mute state
+let previousVideoMuted = false;
+
+// Canvas-based recording for seamless source switching
+let captureCanvas = null;
+let captureCtx = null;
+let captureAnimationId = null;
+let currentCaptureVideo = null;
 
 function getMicToggleBtn() {
     if (!micToggleBtn) {
@@ -88,6 +93,25 @@ function getSwitchCaptureBtn() {
     return switchCaptureBtn;
 }
 
+// Draw captured video to canvas continuously
+function drawCaptureToCanvas() {
+    if (!captureCtx || !currentCaptureVideo) return;
+
+    const vw = currentCaptureVideo.videoWidth;
+    const vh = currentCaptureVideo.videoHeight;
+
+    if (vw > 0 && vh > 0) {
+        // Resize canvas to match video
+        if (captureCanvas.width !== vw || captureCanvas.height !== vh) {
+            captureCanvas.width = vw;
+            captureCanvas.height = vh;
+        }
+        captureCtx.drawImage(currentCaptureVideo, 0, 0, vw, vh);
+    }
+
+    captureAnimationId = requestAnimationFrame(drawCaptureToCanvas);
+}
+
 screenCaptureBtn.addEventListener("click", async () => {
     if (screenRecorder && screenRecorder.state === "recording") {
         stopScreenRecording();
@@ -100,7 +124,20 @@ screenCaptureBtn.addEventListener("click", async () => {
             audio: true
         });
 
-        // Set up AudioContext for mixing (mic + screen audio for recording only)
+        // Create canvas for recording (stays constant across source switches)
+        captureCanvas = document.createElement('canvas');
+        captureCtx = captureCanvas.getContext('2d');
+
+        // Create video element to feed the canvas
+        currentCaptureVideo = document.createElement('video');
+        currentCaptureVideo.srcObject = screenCaptureStream;
+        currentCaptureVideo.muted = true;
+        await currentCaptureVideo.play();
+
+        // Start drawing to canvas
+        drawCaptureToCanvas();
+
+        // Set up AudioContext for mixing
         audioContext = new AudioContext();
         recordingDestination = audioContext.createMediaStreamDestination();
 
@@ -121,12 +158,13 @@ screenCaptureBtn.addEventListener("click", async () => {
         previousVideoMuted = video.muted;
         video.muted = true;
 
-        // Video element plays only screen (muted so no audio playback)
+        // Show capture in main video element (muted)
         video.srcObject = screenCaptureStream;
         await video.play();
 
-        // Create recording stream: screen video + mixed audio (screen + mic)
-        const videoTrack = screenCaptureStream.getVideoTracks()[0];
+        // Create recording stream from canvas + mixed audio
+        const canvasStream = captureCanvas.captureStream(30); // 30fps
+        const videoTrack = canvasStream.getVideoTracks()[0];
         const audioTracks = recordingDestination.stream.getAudioTracks();
 
         let recordingStream;
@@ -136,9 +174,8 @@ screenCaptureBtn.addEventListener("click", async () => {
             recordingStream = new MediaStream([videoTrack]);
         }
 
-        // Start recording the mixed stream
+        // Start recording
         startScreenRecording(recordingStream);
-        currentRecordingStream = recordingStream;
 
         // Show mic toggle and switch capture buttons
         const micBtn = getMicToggleBtn();
@@ -147,7 +184,8 @@ screenCaptureBtn.addEventListener("click", async () => {
         if (switchBtn) switchBtn.style.display = "";
         screenCaptureBtn.textContent = "⏹️";
 
-        videoTrack.onended = () => {
+        // Handle track ended
+        screenCaptureStream.getVideoTracks()[0].onended = () => {
             stopScreenRecording();
         };
 
@@ -158,6 +196,7 @@ screenCaptureBtn.addEventListener("click", async () => {
             alert("Screen capture failed: " + e.message);
         }
         console.error(e);
+        cleanupCaptureResources();
     }
 });
 
@@ -176,7 +215,7 @@ async function toggleMicInRecording() {
         isMicEnabled = false;
         if (micBtn) micBtn.textContent = "🎤";
     } else {
-        // Turn on mic - connects to recording destination only (not speakers)
+        // Turn on mic
         try {
             if (!micStream) {
                 micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -207,7 +246,7 @@ async function switchCaptureSource() {
             audio: true
         });
 
-        // Stop old video and audio tracks (but keep mic stream)
+        // Stop old screen capture tracks
         if (screenCaptureStream) {
             screenCaptureStream.getVideoTracks().forEach(track => track.stop());
             screenCaptureStream.getAudioTracks().forEach(track => track.stop());
@@ -230,21 +269,17 @@ async function switchCaptureSource() {
             screenAudioSource.connect(recordingDestination);
         }
 
-        // Replace the video track in the existing recording stream
-        const newVideoTrack = newStream.getVideoTracks()[0];
-        const oldVideoTrack = currentRecordingStream.getVideoTracks()[0];
-        if (oldVideoTrack) {
-            currentRecordingStream.removeTrack(oldVideoTrack);
-        }
-        currentRecordingStream.addTrack(newVideoTrack);
+        // Switch the video that feeds the canvas (canvas stream stays the same)
+        currentCaptureVideo.srcObject = newStream;
+        await currentCaptureVideo.play();
 
-        // Keep video muted to prevent audio playback
+        // Keep main video muted
         video.muted = true;
         video.srcObject = newStream;
         await video.play();
 
         // Handle track ended
-        newVideoTrack.onended = () => {
+        newStream.getVideoTracks()[0].onended = () => {
             stopScreenRecording();
         };
 
@@ -254,6 +289,41 @@ async function switchCaptureSource() {
         }
         console.log("Switch capture cancelled or failed:", e);
     }
+}
+
+function cleanupCaptureResources() {
+    // Stop animation loop
+    if (captureAnimationId) {
+        cancelAnimationFrame(captureAnimationId);
+        captureAnimationId = null;
+    }
+
+    // Clean up video element
+    if (currentCaptureVideo) {
+        currentCaptureVideo.srcObject = null;
+        currentCaptureVideo = null;
+    }
+
+    captureCanvas = null;
+    captureCtx = null;
+
+    if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+    }
+    if (screenCaptureStream) {
+        screenCaptureStream.getTracks().forEach(track => track.stop());
+        screenCaptureStream = null;
+    }
+    if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+    }
+    isMicEnabled = false;
+    micGainNode = null;
+    screenAudioSource = null;
+    micAudioSource = null;
+    recordingDestination = null;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -288,11 +358,11 @@ function saveScreenRecording() {
     URL.revokeObjectURL(url);
 }
 
-function startScreenRecording(stream, resetChunks = true) {
-    if (resetChunks) {
-        screenChunks = [];
-    }
-    screenRecorder = new MediaRecorder(stream);
+function startScreenRecording(stream) {
+    screenChunks = [];
+    screenRecorder = new MediaRecorder(stream, {
+        mimeType: "video/webm; codecs=vp9"
+    });
 
     screenRecorder.ondataavailable = e => {
         if (e.data.size > 0) screenChunks.push(e.data);
@@ -307,24 +377,8 @@ function stopScreenRecording() {
     if (screenRecorder && screenRecorder.state === "recording") {
         screenRecorder.stop();
     }
-    if (micStream) {
-        micStream.getTracks().forEach(track => track.stop());
-        micStream = null;
-    }
-    if (screenCaptureStream) {
-        screenCaptureStream.getTracks().forEach(track => track.stop());
-        screenCaptureStream = null;
-    }
-    if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-    }
-    isMicEnabled = false;
-    micGainNode = null;
-    screenAudioSource = null;
-    micAudioSource = null;
-    recordingDestination = null;
-    currentRecordingStream = null;
+
+    cleanupCaptureResources();
 
     // Restore previous mute state
     video.muted = previousVideoMuted;
