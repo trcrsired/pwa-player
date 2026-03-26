@@ -110,9 +110,14 @@ function clearSubtitles() {
     t.remove();
   });
   subtitleBtn.textContent = '📝';
-  // Restore original metadata
+  // Restore original metadata with transparent artwork
   if (currentMediaMetadata) {
-    navigator.mediaSession.metadata = new MediaMetadata(currentMediaMetadata);
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentMediaMetadata.title,
+      artist: currentMediaMetadata.artist || '',
+      album: currentMediaMetadata.album || '',
+      artwork: TRANSPARENT_ARTWORK
+    });
   }
 }
 
@@ -182,7 +187,13 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     // Store original metadata for subtitle updates
     currentMediaMetadata = { ...mediametadata };
-    navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
+    // Set MediaSession with transparent artwork
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: mediametadata.title,
+      artist: mediametadata.artist || '',
+      album: mediametadata.album || '',
+      artwork: TRANSPARENT_ARTWORK
+    });
     document.title = `PWA Player ▶️ ${mediametadata.title}`;
 
     const entry = {
@@ -406,6 +417,11 @@ pickerBtn.onclick = async (e) => {
   }
 };
 
+// Transparent 1x1 PNG for MediaSession artwork (forces transparent background)
+const TRANSPARENT_ARTWORK = [
+  { src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', sizes: '1x1', type: 'image/png' }
+];
+
 // Decode HTML entities in subtitle text (e.g., &gt; → >, &amp; → &)
 function decodeHtmlEntities(text) {
   const textarea = document.createElement('textarea');
@@ -422,17 +438,22 @@ function updateMediaSessionSubtitle(subtitleText) {
     let cleanText = decodeHtmlEntities(subtitleText);
     // Replace line feeds with spaces
     cleanText = cleanText.replace(/[\r\n]+/g, ' ').trim();
-    // Update metadata with subtitle in artist field
+    // Update metadata with subtitle in artist field and transparent artwork
     const updatedMetadata = {
       title: currentMediaMetadata.title,
-      artist: cleanText, // Show subtitle as "artist" on lock screen
+      artist: cleanText,
       album: currentMediaMetadata.album || '',
-      artwork: currentMediaMetadata.artwork || []
+      artwork: TRANSPARENT_ARTWORK
     };
     navigator.mediaSession.metadata = new MediaMetadata(updatedMetadata);
   } else {
-    // No active subtitle - restore original metadata
-    navigator.mediaSession.metadata = new MediaMetadata(currentMediaMetadata);
+    // No active subtitle - restore original metadata with transparent artwork
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentMediaMetadata.title,
+      artist: currentMediaMetadata.artist || '',
+      album: currentMediaMetadata.album || '',
+      artwork: TRANSPARENT_ARTWORK
+    });
   }
 }
 
