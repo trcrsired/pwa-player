@@ -355,25 +355,41 @@ function renderNowPlayingQueue() {
             li.classList.add("active");
         }
 
-        // Display track name only
-        li.innerHTML = `
-            <span class="np-item-title">${escapeHTML(entry.name || entry.path)}</span>
-        `;
+        // Create + button for menu
+        const menuBtn = document.createElement("button");
+        menuBtn.className = "np-item-toggle";
+        menuBtn.textContent = "+";
+        menuBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showNowPlayingItemMenu(i, e.clientX, e.clientY);
+        });
+        menuBtn.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showNowPlayingItemMenu(i, e.clientX, e.clientY);
+        });
 
-        // Left-click → play
-        li.addEventListener("click", () => {
+        // Track title
+        const titleSpan = document.createElement("span");
+        titleSpan.className = "np-item-title";
+        titleSpan.textContent = entry.name || entry.path;
+
+        // Click on title → play
+        titleSpan.addEventListener("click", () => {
             nowPlaying_playIndex(i);
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
             }
         });
 
-        // Right-click → context menu
-        li.addEventListener("contextmenu", (e) => {
+        // Right-click on title → context menu
+        titleSpan.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             showNowPlayingItemMenu(i, e.pageX, e.pageY);
         });
 
+        li.appendChild(menuBtn);
+        li.appendChild(titleSpan);
         ul.appendChild(li);
     });
 }

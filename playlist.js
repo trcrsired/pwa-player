@@ -196,22 +196,41 @@ async function playlist_renderTree() {
             const itemLi = document.createElement("li");
             itemLi.className = "playlist-item";
 
-            itemLi.innerHTML = `
-                <span class="item-origin">${escapeHTML(item.path)}</span>
-            `;
+            // Create + button for menu
+            const menuBtn = document.createElement("button");
+            menuBtn.className = "playlist-item-toggle";
+            menuBtn.textContent = "+";
+            menuBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                showPlaylistItemMenu(playlistName, index, e.clientX, e.clientY);
+            });
+            menuBtn.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showPlaylistItemMenu(playlistName, index, e.clientX, e.clientY);
+            });
 
-            itemLi.addEventListener("click", async () => {
+            // Item path/title
+            const pathSpan = document.createElement("span");
+            pathSpan.className = "item-origin";
+            pathSpan.textContent = item.path;
+
+            // Click on path → play
+            pathSpan.addEventListener("click", async () => {
                 await startNowPlayingFromPlaylist(playlistName, index);
                 if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                     closeActiveView();
                 }
             });
 
-            itemLi.addEventListener("contextmenu", (e) => {
+            // Right-click on path → context menu
+            pathSpan.addEventListener("contextmenu", (e) => {
                 e.preventDefault();
                 showPlaylistItemMenu(playlistName, index, e.pageX, e.pageY);
             });
 
+            itemLi.appendChild(menuBtn);
+            itemLi.appendChild(pathSpan);
             itemsContainer.appendChild(itemLi);
         });
 

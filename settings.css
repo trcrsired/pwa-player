@@ -177,13 +177,28 @@ html, body {
     line-height: 1.4;
     cursor: pointer;
     user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.playlist-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+.playlist-item-toggle {
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    min-width: 16px;
+    flex-shrink: 0;
+}
+
+.playlist-item-toggle:hover {
+    color: var(--primary-bg);
 }
 
 .playlist-item .item-origin {
+    flex: 1;
     display: block;
     word-break: break-all;
 }
@@ -478,4 +493,34 @@ html, body {
     height: 18px;
     cursor: pointer;
     accent-color: var(--primary-bg);
+}
+
+/* Now Playing item */
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.np-item-toggle {
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    min-width: 16px;
+    flex-shrink: 0;
+}
+
+.np-item-toggle:hover {
+    color: var(--primary-bg);
+}
+
+.np-item-title {
+    flex: 1;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
