@@ -81,30 +81,55 @@ async function promptForUniqueName(baseName, parentHandle) {
     return null;
 }
 
-// Allowed media extensions (same as file_handlers)
-const ALLOWED_EXTENSIONS = new Set([
+// Media extensions for playlist items
+const PLAYLIST_EXTENSIONS = new Set([
     ".mp4", ".webm", ".mkv",
-    ".mp3", ".wav", ".flac",
+    ".mp3", ".wav", ".flac"
+]);
+
+// Allowed extensions for import (media + subtitles)
+const ALLOWED_EXTENSIONS = new Set([
+    ...PLAYLIST_EXTENSIONS,
     ".vtt" // webvtt subtitle
 ]);
 
 function isAllowedFile(name) {
-    // Ensure name is a non-empty string
+    // Check if file should be imported to storage (media + subtitles)
     try
     {
         if (typeof name !== "string") return false;
 
-        // Normalize
         const lower = name.trim().toLowerCase();
         if (!lower) return false;
 
-        // Extract extension safely
         const dotIndex = lower.lastIndexOf(".");
         if (dotIndex === -1) return false;
 
         const ext = lower.slice(dotIndex);
 
         return ALLOWED_EXTENSIONS.has(ext);
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+function isPlaylistFile(name) {
+    // Check if file should be added to playlists (media only)
+    try
+    {
+        if (typeof name !== "string") return false;
+
+        const lower = name.trim().toLowerCase();
+        if (!lower) return false;
+
+        const dotIndex = lower.lastIndexOf(".");
+        if (dotIndex === -1) return false;
+
+        const ext = lower.slice(dotIndex);
+
+        return PLAYLIST_EXTENSIONS.has(ext);
     }
     catch
     {
@@ -173,8 +198,8 @@ async function collectPointers(dirHandle, schema, basePath) {
     for await (const [name, handle] of dirHandle.entries()) {
         if (handle.kind === "file") {
 
-            // Skip non-media files
-            if (!isAllowedFile(name)) continue;
+            // Skip non-playlist files (media only, no subtitles)
+            if (!isPlaylistFile(name)) continue;
 
             result.push({
                 name,
