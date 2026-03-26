@@ -59,9 +59,7 @@ function showIPTVChannelMenu(channel, url, x, y) {
 
             if (action === "play") {
                 play_source_title(url, channel.name, null);
-                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
-                    closeActiveView();
-                }
+                closeActiveView();
                 closeMenu();
                 return;
             }

@@ -320,9 +320,7 @@ function showNowPlayingItemMenu(index, x, y) {
 
             if (action === "play") {
                 nowPlaying_playIndex(index);
-                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
-                    closeActiveView();
-                }
+                closeActiveView();
                 closeContextMenu();
                 return;
             }

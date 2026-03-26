@@ -601,9 +601,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
             if (action === "play") {
                 if (isPlaylistFile(name)) {
                     await play_source(handle);
-                    if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
-                        closeActiveView();
-                    }
+                    closeActiveView();
                 } else {
                     alert("This file type cannot be played directly.");
                 }

@@ -123,9 +123,7 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
 
             if (action === "play") {
                 await startNowPlayingFromPlaylist(playlistName, index);
-                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
-                    closeActiveView();
-                }
+                closeActiveView();
                 closeMenu();
                 return;
             }
