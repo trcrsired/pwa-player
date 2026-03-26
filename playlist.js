@@ -96,6 +96,7 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
     menu.style.top = y + "px";
 
     menu.innerHTML = `
+        <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
         <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
         <div class="menu-item" data-action="move-up">${t('moveUp', 'Move Up')}</div>
@@ -119,6 +120,15 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
             const action = item.dataset.action;
             const playlists = await playlists_load();
             const list = playlists[playlistName];
+
+            if (action === "play") {
+                await startNowPlayingFromPlaylist(playlistName, index);
+                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                    closeActiveView();
+                }
+                closeMenu();
+                return;
+            }
 
             if (action === "play-keep-open") {
                 await startNowPlayingFromPlaylist(playlistName, index);

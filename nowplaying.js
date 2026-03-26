@@ -297,6 +297,7 @@ function showNowPlayingItemMenu(index, x, y) {
     menu.className = "context-menu";
 
     menu.innerHTML = `
+        <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
         <div class="menu-item danger" data-action="remove">${t('removeFromQueue', 'Remove from Queue')}</div>
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
@@ -316,6 +317,15 @@ function showNowPlayingItemMenu(index, x, y) {
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", () => {
             const action = item.dataset.action;
+
+            if (action === "play") {
+                nowPlaying_playIndex(index);
+                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                    closeActiveView();
+                }
+                closeContextMenu();
+                return;
+            }
 
             if (action === "play-keep-open") {
                 nowPlaying_playIndex(index);

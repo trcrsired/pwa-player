@@ -566,6 +566,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
     const canModify = entry.allowModification !== false;
     const menuItems = [];
 
+    menuItems.push(`<div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
     if (canModify) {
@@ -596,6 +597,19 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
+
+            if (action === "play") {
+                if (isPlaylistFile(name)) {
+                    await play_source(handle);
+                    if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                        closeActiveView();
+                    }
+                } else {
+                    alert("This file type cannot be played directly.");
+                }
+                closeMenu();
+                return;
+            }
 
             if (action === "play-keep-open") {
                 if (isPlaylistFile(name)) {
