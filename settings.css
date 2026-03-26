@@ -206,3 +206,191 @@ html, body {
 .toast.show {
   opacity: 1;
 }
+
+/* Storage node styles */
+.storage-node {
+    margin-bottom: 8px;
+}
+
+.storage-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: var(--card-bg);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.storage-header:hover {
+    background: var(--btn-hover);
+}
+
+.storage-header .toggle {
+    background: var(--btn-bg);
+    border: none;
+    color: var(--fg);
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.storage-header .storage-name {
+    font-weight: 500;
+}
+
+.storage-sub {
+    margin-top: 4px;
+    padding-left: 16px;
+    list-style: none;
+}
+
+.storage-sub.hidden {
+    display: none;
+}
+
+.storage-sub-item {
+    padding: 2px 0;
+}
+
+.storage-sub-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--card-bg);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+
+.storage-sub-header:hover {
+    background: var(--btn-hover);
+}
+
+.storage-sub-header .sub-name {
+    flex: 1;
+    font-size: 14px;
+}
+
+.storage-sub-header .quick-add {
+    background: var(--primary-bg);
+    color: var(--primary-fg);
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.storage-sub-header .quick-add:hover {
+    background: var(--primary-hover);
+}
+
+/* Storage file item styles */
+.storage-file-item {
+    padding: 2px 0;
+    margin-bottom: 4px;
+}
+
+.storage-file-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--card-bg);
+    border-radius: 4px;
+}
+
+.storage-file-header .file-name {
+    flex: 1;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.storage-file-header button {
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.storage-file-header button:hover {
+    background: var(--btn-hover);
+}
+
+/* IPTV styles */
+.iptv-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.iptv-name {
+    flex: 1;
+    cursor: pointer;
+}
+
+.iptv-play-btn {
+    background: var(--primary-bg);
+    color: var(--primary-fg);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.iptv-play-btn:hover {
+    background: var(--primary-hover);
+}
+
+.iptv-expand-btn {
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.iptv-expand-btn:hover {
+    background: var(--btn-hover);
+}
+
+.iptv-sublist {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0 0;
+}
+
+.iptv-sublist.hidden {
+    display: none;
+}
+
+.iptv-subitem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--card-bg);
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.iptv-url-text {
+    flex: 1;
+    cursor: pointer;
+    font-size: 12px;
+    word-break: break-all;
+}

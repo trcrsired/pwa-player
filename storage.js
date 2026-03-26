@@ -6,6 +6,7 @@
 // - rootName: logical name used in pointer paths
 // - dirName: actual directory name inside private storage
 // - enabled: allows future toggling or feature flags
+// - allowModification: if false, prevents delete/rename operations
 //
 const IMPORT_ROOTS = [
     {
@@ -13,21 +14,24 @@ const IMPORT_ROOTS = [
         rootName: "imports",
         dirName: "imports",
         enabled: true,
-        showSubdirs: false
+        showSubdirs: true,
+        allowModification: true
     },
     {
         schema: "navigator_storage",
         rootName: "files",
         dirName: "files",
         enabled: true,
-        showSubdirs: false
+        showSubdirs: true,
+        allowModification: true
     },
     {
         schema: "external_storage",
         rootName: "external",
         dirName: "external",
         enabled: true,
-        showSubdirs: false
+        showSubdirs: true,
+        allowModification: false
     }
 ];
 
@@ -218,20 +222,29 @@ async function collectPointers(dirHandle, schema, basePath) {
 // ============================================================
 // Add all pointers from a directory (any root) to a playlist
 // ============================================================
-async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirName, playlistName) {
+async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, playlistName) {
     try {
         let targetDir;
 
         if (schema === "navigator_storage") {
             // navigator_storage: rootDirHandle is a real directory handle
-            targetDir = await rootDirHandle.getDirectoryHandle(dirName, { create: false });
+            // dirPath might be nested like "MyMusic/Album1"
+            const parts = dirPath.split("/");
+            targetDir = rootDirHandle;
+            for (const part of parts) {
+                targetDir = await targetDir.getDirectoryHandle(part, { create: false });
+            }
 
         } else if (schema === "external_storage") {
             // external_storage: rootDirHandle is a map of name → handle
-            targetDir = rootDirHandle[dirName];
+            // dirPath might be nested like "Videos/kanojo"
+            const parts = dirPath.split("/");
+            const topLevelName = parts[0];
+
+            targetDir = rootDirHandle[topLevelName];
 
             if (!targetDir) {
-                alert(`External directory "${dirName}" not found.`);
+                alert(`External directory "${topLevelName}" not found.`);
                 return;
             }
 
@@ -242,16 +255,21 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirName, 
                 return;
             }
 
+            // Traverse nested path if any
+            for (let i = 1; i < parts.length; ++i) {
+                targetDir = await targetDir.getDirectoryHandle(parts[i], { create: false });
+            }
+
         } else {
             alert("Unknown storage schema.");
             return;
         }
 
-        const basePath = `${rootName}/${dirName}`;
+        const basePath = `${rootName}/${dirPath}`;
         const pointers = await collectPointers(targetDir, schema, basePath);
 
         if (pointers.length === 0) {
-            alert(`No files found in "${dirName}".`);
+            alert(`No files found in "${dirPath}".`);
             return;
         }
 
@@ -317,6 +335,103 @@ function getSchemaForRoot(rootHandle) {
     return "unknown";
 }
 
+// Export/Download files from a directory
+async function exportDirectory(entry, dirPath, parent) {
+    try {
+        let targetDir;
+
+        // Navigate to the target directory
+        if (entry.schema === "navigator_storage") {
+            const parts = dirPath.split("/");
+            targetDir = parent;
+            for (const part of parts) {
+                targetDir = await targetDir.getDirectoryHandle(part, { create: false });
+            }
+        } else if (entry.schema === "external_storage") {
+            const parts = dirPath.split("/");
+            const topLevelName = parts[0];
+            targetDir = parent[topLevelName];
+
+            if (!targetDir) {
+                alert(`External directory "${topLevelName}" not found.`);
+                return;
+            }
+
+            // Ensure permission
+            const ok = await verifyPermission(targetDir);
+            if (!ok) {
+                alert("Permission denied for external directory.");
+                return;
+            }
+
+            // Traverse nested path
+            for (let i = 1; i < parts.length; ++i) {
+                targetDir = await targetDir.getDirectoryHandle(parts[i], { create: false });
+            }
+        } else {
+            alert("Unknown storage schema.");
+            return;
+        }
+
+        // Collect all files recursively
+        const files = await collectFilesForExport(targetDir, "");
+
+        if (files.length === 0) {
+            alert("No files found to export.");
+            return;
+        }
+
+        // Ask user confirmation
+        const ok = confirm(`Export all files from "${dirPath}"?\n\nFound ${files.length} file(s).`);
+        if (!ok) return;
+
+        // Download each file
+        let downloaded = 0;
+        for (const file of files) {
+            try {
+                const blob = await file.handle.getFile();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = file.name;
+                a.click();
+                URL.revokeObjectURL(url);
+                ++downloaded;
+                // Small delay between downloads
+                await new Promise(r => setTimeout(r, 100));
+            } catch (err) {
+                console.warn("Failed to export:", file.name, err);
+            }
+        }
+
+        alert(`Exported ${downloaded} file(s).`);
+
+    } catch (err) {
+        console.error(err);
+        alert("Failed to export directory.");
+    }
+}
+
+// Collect all files in a directory recursively for export
+async function collectFilesForExport(dirHandle, basePath) {
+    const files = [];
+
+    for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === "file") {
+            files.push({
+                name: basePath ? `${basePath}/${name}` : name,
+                handle: handle
+            });
+        } else if (handle.kind === "directory") {
+            const subPath = basePath ? `${basePath}/${name}` : name;
+            const subFiles = await collectFilesForExport(handle, subPath);
+            files.push(...subFiles);
+        }
+    }
+
+    return files;
+}
+
 function showStorageDirMenu(entry, dirName, x, y) {
     // Remove existing menu
     const existing = document.querySelector(".context-menu");
@@ -324,13 +439,19 @@ function showStorageDirMenu(entry, dirName, x, y) {
 
     // Determine which menu items to show
     const isRoot = !dirName;
+    const canModify = entry.allowModification !== false;
     const menuItems = [];
 
     if (!isRoot) {
         menuItems.push(`<div class="menu-item" data-action="add">Add to Playlist</div>`);
-        menuItems.push(`<div class="menu-item" data-action="rename">Rename</div>`);
+        menuItems.push(`<div class="menu-item" data-action="export">Export</div>`);
+        if (canModify) {
+            menuItems.push(`<div class="menu-item" data-action="rename">Rename</div>`);
+        }
     }
-    menuItems.push(`<div class="menu-item danger" data-action="delete">Delete</div>`);
+    if (canModify) {
+        menuItems.push(`<div class="menu-item danger" data-action="delete">Delete</div>`);
+    }
     menuItems.push(`<div class="menu-item" data-action="close">Close</div>`);
 
     const menu = document.createElement("div");
@@ -374,14 +495,30 @@ function showStorageDirMenu(entry, dirName, x, y) {
                 await choosePlaylistAndAdd(parent, entry, dirName);
             }
 
+            if (action === "export") {
+                await exportDirectory(entry, dirName, parent);
+            }
+
             if (action === "rename") {
-                const newName = prompt("New folder name:", dirName);
-                if (newName && newName.trim() && newName.trim() !== dirName) {
+                // For nested paths, get just the folder name
+                const parts = dirName.split("/");
+                const oldName = parts.pop();
+                const pathToParent = parts.join("/");
+
+                const newName = prompt("New folder name:", oldName);
+                if (newName && newName.trim() && newName.trim() !== oldName) {
                     const trimmed = newName.trim();
-                    const sourceDir = await parent.getDirectoryHandle(dirName);
-                    const destDir = await parent.getDirectoryHandle(trimmed, { create: true });
+
+                    // Navigate to the parent directory
+                    let targetParent = parent;
+                    for (const part of pathToParent.split("/").filter(p => p)) {
+                        targetParent = await targetParent.getDirectoryHandle(part);
+                    }
+
+                    const sourceDir = await targetParent.getDirectoryHandle(oldName);
+                    const destDir = await targetParent.getDirectoryHandle(trimmed, { create: true });
                     await copyDirectoryToPrivateStorage(sourceDir, destDir);
-                    await parent.removeEntry(dirName, { recursive: true });
+                    await targetParent.removeEntry(oldName, { recursive: true });
                 }
             }
 
@@ -396,7 +533,7 @@ function showStorageDirMenu(entry, dirName, x, y) {
                 if (ok) {
                     if (entry.schema === "external_storage") {
                         if (dirName) {
-                            // Delete specific external directory entry (just the reference)
+                            // For external, dirName should be top-level only (no nesting)
                             const dirs = await loadExternalDirs();
                             delete dirs[dirName];
                             await kv_set("external_dirs", dirs);
@@ -410,9 +547,17 @@ function showStorageDirMenu(entry, dirName, x, y) {
                         // navigator_storage - delete actual folder from OPFS
                         const root = await navigator.storage.getDirectory();
                         if (dirName) {
-                            // Delete subdirectory within the root folder
-                            const parentDir = await root.getDirectoryHandle(entry.dirName);
-                            await parentDir.removeEntry(dirName, { recursive: true });
+                            // Navigate through nested path to find the parent directory
+                            const parts = dirName.split("/");
+                            const folderToDelete = parts.pop();
+                            let targetParent = await root.getDirectoryHandle(entry.dirName);
+
+                            // Traverse to the parent of the folder to delete
+                            for (const part of parts) {
+                                targetParent = await targetParent.getDirectoryHandle(part);
+                            }
+
+                            await targetParent.removeEntry(folderToDelete, { recursive: true });
                         } else {
                             // Delete the entire root folder (e.g., imports, files)
                             await root.removeEntry(entry.dirName, { recursive: true });
@@ -426,30 +571,222 @@ function showStorageDirMenu(entry, dirName, x, y) {
         });
     });
 }
-function renderSubdirItem(subList, name, handle, parentHandle, entry) {
+function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
+    // Remove existing menu
+    const existing = document.querySelector(".context-menu");
+    if (existing) existing.remove();
+
+    const canModify = entry.allowModification !== false;
+    const menuItems = [];
+
+    menuItems.push(`<div class="menu-item" data-action="export">Export</div>`);
+    if (canModify) {
+        menuItems.push(`<div class="menu-item" data-action="rename">Rename</div>`);
+        menuItems.push(`<div class="menu-item danger" data-action="delete">Delete</div>`);
+    }
+    menuItems.push(`<div class="menu-item" data-action="close">Close</div>`);
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+
+    menu.innerHTML = menuItems.join("");
+
+    document.body.appendChild(menu);
+
+    const closeMenu = () => menu.remove();
+
+    // Auto-close when clicking outside
+    setTimeout(() => {
+        document.addEventListener("mousedown", (e) => {
+            if (!menu.contains(e.target)) closeMenu();
+        }, { once: true });
+    }, 0);
+
+    // Menu actions
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const action = item.dataset.action;
+
+            if (action === "export") {
+                try {
+                    const file = await handle.getFile();
+                    const url = URL.createObjectURL(file);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = name;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    console.error("Failed to export file:", err);
+                    alert("Failed to export file.");
+                }
+            }
+
+            if (action === "rename" && canModify) {
+                const newName = prompt("New file name:", name);
+                if (newName && newName.trim() && newName.trim() !== name) {
+                    const trimmed = newName.trim();
+                    try {
+                        // Get parent directory
+                        const parts = fullPath.split("/");
+                        const fileName = parts.pop();
+                        const parentPath = parts.join("/");
+
+                        const root = await navigator.storage.getDirectory();
+                        let parent = await root.getDirectoryHandle(entry.dirName);
+
+                        // Navigate to parent directory
+                        for (const part of parentPath.split("/").filter(p => p)) {
+                            parent = await parent.getDirectoryHandle(part);
+                        }
+
+                        // Read old file
+                        const oldFile = await handle.getFile();
+                        const newHandle = await parent.getFileHandle(trimmed, { create: true });
+                        const writable = await newHandle.createWritable();
+                        await writable.write(await oldFile.arrayBuffer());
+                        await writable.close();
+
+                        // Delete old file
+                        await parent.removeEntry(name);
+
+                        renderStorage();
+                    } catch (err) {
+                        console.error("Rename failed:", err);
+                        alert("Failed to rename file.");
+                    }
+                }
+            }
+
+            if (action === "delete" && canModify) {
+                const ok = confirm(`Delete file "${name}"?`);
+                if (ok) {
+                    try {
+                        const parts = fullPath.split("/");
+                        const fileName = parts.pop();
+                        const parentPath = parts.join("/");
+
+                        const root = await navigator.storage.getDirectory();
+                        let parent = await root.getDirectoryHandle(entry.dirName);
+
+                        // Navigate to parent directory
+                        for (const part of parentPath.split("/").filter(p => p)) {
+                            parent = await parent.getDirectoryHandle(part);
+                        }
+
+                        await parent.removeEntry(name);
+                        renderStorage();
+                    } catch (err) {
+                        console.error("Delete failed:", err);
+                        alert("Failed to delete file.");
+                    }
+                }
+            }
+
+            closeMenu();
+        });
+    });
+}
+
+function renderFileItem(subList, name, handle, entry, currentPath = "") {
+    const li = document.createElement("li");
+    li.className = "storage-file-item";
+
+    const fullPath = currentPath ? `${currentPath}/${name}` : name;
+
+    li.innerHTML = `
+        <div class="storage-file-header">
+            <span class="file-name">📄 ${escapeHTML(name)}</span>
+            <button class="file-play" title="Play">▶</button>
+            <button class="file-add" title="Add to Playlist">+</button>
+        </div>
+    `;
+
+    // Play button
+    li.querySelector(".file-play").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (isPlaylistFile(name)) {
+            await play_source(handle);
+        } else {
+            alert("This file type cannot be played directly.");
+        }
+    });
+
+    // Add to playlist button
+    li.querySelector(".file-add").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!isPlaylistFile(name)) {
+            alert("This file type cannot be added to playlist.");
+            return;
+        }
+
+        const playlists = await playlists_load();
+        const names = Object.keys(playlists);
+
+        const choice = prompt(
+            "Add to which playlist?\n" +
+            names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+            "1"
+        );
+
+        if (!choice) return;
+
+        const index = parseInt(choice, 10) - 1;
+        if (index < 0 || index >= names.length) {
+            alert("Invalid selection");
+            return;
+        }
+
+        const selectedName = names[index];
+        const path = `${entry.schema}://${entry.rootName}/${fullPath}`;
+
+        playlists[selectedName].push({ name, path });
+        await playlists_save(playlists);
+        alert(`Added "${name}" to playlist "${selectedName}".`);
+    });
+
+    // Right-click context menu
+    li.querySelector(".storage-file-header").addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        showStorageFileMenu(entry, name, handle, fullPath, e.pageX, e.pageY);
+    });
+
+    subList.appendChild(li);
+}
+
+function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPath = "", rootHandle = null) {
     const li = document.createElement("li");
     li.className = "storage-sub-item";
 
     li.innerHTML = `
         <div class="storage-sub-header">
-            <span class="sub-name">${escapeHTML(name)}</span>
+            <span class="sub-name">📁 ${escapeHTML(name)}</span>
             <button class="quick-add">+</button>
         </div>
     `;
 
     const header = li.querySelector(".storage-sub-header");
 
+    // Full path for this subdirectory
+    const fullPath = currentPath ? `${currentPath}/${name}` : name;
+
+    // Root handle is the top-level directory (imports, files, etc.)
+    const actualRootHandle = rootHandle || parentHandle;
+
     // Right-click context menu
     header.addEventListener("contextmenu", (e) => {
         e.preventDefault();
-        showStorageDirMenu(entry, name, e.pageX, e.pageY);
+        showStorageDirMenu(entry, fullPath, e.pageX, e.pageY);
     });
 
 
     const addBtn = li.querySelector(".quick-add");
-    // Quick add to playlist
-    addBtn.addEventListener("click", async () => {
-        await choosePlaylistAndAdd(parentHandle, entry, name);
+    // Quick add to playlist - pass the root handle, not the immediate parent
+    addBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        await choosePlaylistAndAdd(actualRootHandle, entry, fullPath);
     });
 
     if (entry.showSubdirs)
@@ -465,7 +802,7 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry) {
 
             const hidden = sub.classList.toggle("hidden");
             if (!hidden) {
-                await loadStorageSubdirs(sub, handle, entry);
+                await loadStorageSubdirs(sub, handle, entry, fullPath, actualRootHandle);
             }
         });
     }
@@ -473,28 +810,51 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry) {
     subList.appendChild(li);
 }
 
-async function loadStorageSubdirs(subList, dirHandle, entry) {
+async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", rootHandle = null) {
     // Clear previous content
     subList.innerHTML = "";
+
+    // The root handle is the top-level directory (imports, files, etc.)
+    const actualRootHandle = rootHandle || dirHandle;
+
+    // Separate directories and files for sorting
+    const dirs = [];
+    const files = [];
 
     // Case 1: navigator_storage → real FileSystemDirectoryHandle
     if (dirHandle && typeof dirHandle.entries === "function") {
         for await (const [name, handle] of dirHandle.entries()) {
-            if (handle.kind !== "directory") continue;
-            renderSubdirItem(subList, name, handle, dirHandle, entry);
+            if (handle.kind === "directory") {
+                dirs.push({ name, handle });
+            } else if (handle.kind === "file") {
+                files.push({ name, handle });
+            }
         }
-        return;
     }
-
     // Case 2: external_storage
-    if (entry.schema === "external_storage" && dirHandle && typeof dirHandle === "object") {
+    else if (entry.schema === "external_storage" && dirHandle && typeof dirHandle === "object") {
         for (const [name, handle] of Object.entries(dirHandle)) {
-            renderSubdirItem(subList, name, handle, dirHandle, entry);
+            dirs.push({ name, handle });
         }
+    }
+    else {
+        console.warn("Unknown dirHandle type in loadStorageSubdirs:", dirHandle);
         return;
     }
 
-    console.warn("Unknown dirHandle type in loadStorageSubdirs:", dirHandle);
+    // Sort directories and files alphabetically
+    dirs.sort((a, b) => a.name.localeCompare(b.name));
+    files.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Render directories first
+    for (const { name, handle } of dirs) {
+        renderSubdirItem(subList, name, handle, dirHandle, entry, currentPath, actualRootHandle);
+    }
+
+    // Render files after directories
+    for (const { name, handle } of files) {
+        renderFileItem(subList, name, handle, entry, currentPath);
+    }
 }
 
 // ============================================================

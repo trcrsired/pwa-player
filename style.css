@@ -424,6 +424,26 @@ button:hover,
     border: 1px solid #444;
     padding: 6px 0;
     border-radius: 6px;
+    min-width: 120px;
+}
+
+.context-menu .menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 14px;
+}
+
+.context-menu .menu-item:hover {
+    background-color: #444;
+}
+
+.context-menu .menu-item.danger {
+    color: #ff6b6b;
+}
+
+.context-menu .menu-item.danger:hover {
+    background-color: #4a2222;
 }
 
 @media (prefers-color-scheme: light) {

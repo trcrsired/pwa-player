@@ -474,13 +474,13 @@ subtitleBtn.onclick = async () => {
           const [subHandle] = await window.showOpenFilePicker({
             types: [{
               description: 'Subtitle Files',
-              accept: { 'text/vtt': ['.vtt', '.webvtt'] }
+              accept: { 'text/vtt': ['.vtt'] }
             }]
           });
           await play_source(videoFile, null);
           await loadSubtitle(subHandle);
         } else {
-          const subFile = await pickFileSafariFallback(".vtt,.webvtt");
+          const subFile = await pickFileSafariFallback(".vtt");
           if (subFile)
           {
             await play_source(videoFile, null);
@@ -503,12 +503,12 @@ subtitleBtn.onclick = async () => {
       const [handle] = await window.showOpenFilePicker({
         types: [{
           description: 'Subtitle Files',
-          accept: { 'text/vtt': ['.vtt', '.webvtt'] }
+          accept: { 'text/vtt': ['.vtt'] }
         }]
       });
       await loadSubtitle(handle);
     } else {
-      const file = await pickFileSafariFallback(".vtt,.webvtt");
+      const file = await pickFileSafariFallback(".vtt");
       if (file) await loadSubtitle(file);
     }
   } catch (err) {
