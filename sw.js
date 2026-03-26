@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-player-cache-v94";
+const CACHE_NAME = "pwa-player-cache-v96";
 const urlsToCache = [
   "/",
   "/style.css",
@@ -15,7 +15,10 @@ const urlsToCache = [
   "/settings.js",
   "/sw-register.js",
   "/manifest.json",
-  "/icons/icon.webp"
+  "/icons/icon.webp",
+  "/locale.js",
+  "/locales/en.js",
+  "/locales/zhcn.js",
 ];
 
 self.addEventListener("install", event => {

@@ -416,3 +416,21 @@ html, body {
 .search-input::placeholder {
     color: var(--subtle);
 }
+
+/* Language select */
+.language-select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 16px;
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--fg);
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+.language-select:focus {
+    outline: none;
+    border-color: var(--primary-bg);
+}

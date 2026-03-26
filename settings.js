@@ -38,3 +38,13 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
 document.getElementById("settingsCloseBtn").addEventListener("click", () => {
     closeActiveView();
 });
+
+// Language selection
+const languageSelect = document.getElementById("languageSelect");
+
+languageSelect.addEventListener("change", () => {
+    const newLang = languageSelect.value;
+    if (window.i18n && window.i18n.setLanguage(newLang)) {
+        showToast(window.i18n.t('languageChanged') || "Language changed");
+    }
+});
