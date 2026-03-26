@@ -65,6 +65,22 @@ const ZHCN_TRANSLATIONS = {
     addToPlaylist: "添加到播放列表",
     newPlaylist: "新建播放列表",
     whichPlaylist: "添加到哪个播放列表？",
+    rename: "重命名",
+    duplicate: "复制",
+    export: "导出",
+    delete: "删除",
+    clearPlaylist: "清空播放列表",
+    moveUp: "上移",
+    moveDown: "下移",
+    importFromNowPlaying: "从正在播放导入",
+    copy: "复制",
+    newPlaylistName: "新播放列表名称：",
+    confirmDeletePlaylist: "删除播放列表",
+    confirmClearPlaylist: "清空播放列表中的所有项目",
+    confirmRemoveItem: "从播放列表中移除此项目",
+    addedToPlaylist: "已添加",
+    toPlaylist: "到播放列表",
+    exportedToConsole: "播放列表已导出到控制台。",
 
     // IPTV
     iptvChannels: "📺 网络电视频道",
@@ -100,6 +116,8 @@ const ZHCN_TRANSLATIONS = {
     exportSuccess: "导出成功",
     exportFailed: "导出失败",
     languageChanged: "语言已更改",
+    newVersionAvailable: "PWA Player 有新版本可用。",
+    reloadNow: "立即重新加载？",
 
     // Screen capture
     screenCapture: "屏幕录制",

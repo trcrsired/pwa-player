@@ -65,6 +65,22 @@ const EN_TRANSLATIONS = {
     addToPlaylist: "Add to Playlist",
     newPlaylist: "New Playlist",
     whichPlaylist: "Add to which playlist?",
+    rename: "Rename",
+    duplicate: "Duplicate",
+    export: "Export",
+    delete: "Delete",
+    clearPlaylist: "Clear Playlist",
+    moveUp: "Move Up",
+    moveDown: "Move Down",
+    importFromNowPlaying: "Import from Now Playing",
+    copy: "Copy",
+    newPlaylistName: "New playlist name:",
+    confirmDeletePlaylist: "Delete playlist",
+    confirmClearPlaylist: "Clear ALL items in playlist",
+    confirmRemoveItem: "Remove this item from playlist",
+    addedToPlaylist: "Added",
+    toPlaylist: "to playlist",
+    exportedToConsole: "Playlist exported to console.",
 
     // IPTV
     iptvChannels: "📺 IPTV Channels",
@@ -100,6 +116,8 @@ const EN_TRANSLATIONS = {
     exportSuccess: "Export successful",
     exportFailed: "Export failed",
     languageChanged: "Language changed",
+    newVersionAvailable: "A new version of PWA Player is available.",
+    reloadNow: "Reload now?",
 
     // Screen capture
     screenCapture: "Screen Capture",

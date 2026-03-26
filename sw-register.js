@@ -8,7 +8,10 @@ if ("serviceWorker" in navigator) {
             newWorker.state === "installed" &&
             navigator.serviceWorker.controller
           ) {
-            if (confirm("A new version of PWA Player is available. Reload now?")) {
+            const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+            const msg = t('newVersionAvailable', 'A new version of PWA Player is available.');
+            const reload = t('reloadNow', 'Reload now?');
+            if (confirm(`${msg}\n${reload}`)) {
               newWorker.postMessage("SKIP_WAITING");
             }
           }

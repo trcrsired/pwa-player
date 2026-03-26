@@ -99,16 +99,18 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
 
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
     const menu = document.createElement("div");
     menu.className = "context-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
 
     menu.innerHTML = `
-        <div class="menu-item danger" data-action="delete">Delete</div>
-        <div class="menu-item" data-action="move-up">Move Up</div>
-        <div class="menu-item" data-action="move-down">Move Down</div>
-        <div class="menu-item" data-action="close">Close</div>
+        <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
+        <div class="menu-item" data-action="move-up">${t('moveUp', 'Move Up')}</div>
+        <div class="menu-item" data-action="move-down">${t('moveDown', 'Move Down')}</div>
+        <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
     document.body.appendChild(menu);
@@ -129,7 +131,7 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
             const list = playlists[playlistName];
 
             if (action === "delete") {
-                const ok = confirm(`Remove this item from playlist "${playlistName}"?`);
+                const ok = confirm(`${t('confirmRemoveItem', 'Remove this item from playlist')} "${playlistName}"?`);
                 if (ok) {
                     list.splice(index, 1);
                 }
@@ -215,19 +217,21 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
 
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
     const menu = document.createElement("div");
     menu.className = "context-menu";
     menu.style.left = x + "px";
     menu.style.top = y + "px";
 
     menu.innerHTML = `
-        <div class="menu-item" data-action="rename">Rename</div>
-        <div class="menu-item" data-action="duplicate">Duplicate</div>
-        <div class="menu-item" data-action="export">Export</div>
-        <div class="menu-item" data-action="import-from-now-playing">Import from Now Playing</div>
-        <div class="menu-item danger" data-action="delete">Delete</div>
-        <div class="menu-item danger" data-action="clear">Clear Playlist</div>
-        <div class="menu-item" data-action="close">Close</div>
+        <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
+        <div class="menu-item" data-action="duplicate">${t('duplicate', 'Duplicate')}</div>
+        <div class="menu-item" data-action="export">${t('export', 'Export')}</div>
+        <div class="menu-item" data-action="import-from-now-playing">${t('importFromNowPlaying', 'Import from Now Playing')}</div>
+        <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
+        <div class="menu-item danger" data-action="clear">${t('clearPlaylist', 'Clear Playlist')}</div>
+        <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
     document.body.appendChild(menu);
@@ -252,7 +256,7 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
                 const currentEntry = getCurrentTrack();
 
                 if (!currentEntry) {
-                    alert("No track is currently playing.");
+                    alert(t('noTrackPlaying', 'No track is currently playing.'));
                     closeMenu();
                     return;
                 }
@@ -262,11 +266,11 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
                     path: currentEntry.path
                 });
                 await playlists_save(playlists);
-                alert(`Added "${currentEntry.name}" to playlist "${playlistName}".`);
+                alert(`${t('addedToPlaylist', 'Added')} "${currentEntry.name}" ${t('toPlaylist', 'to playlist')} "${playlistName}".`);
             }
 
             if (action === "rename") {
-                const newName = prompt("New playlist name:", playlistName);
+                const newName = prompt(t('newPlaylistName', 'New playlist name:'), playlistName);
                 if (newName && newName.trim()) {
                     playlists[newName.trim()] = playlists[playlistName];
                     delete playlists[playlistName];
@@ -274,25 +278,25 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
             }
 
             if (action === "duplicate") {
-                const copyName = playlistName + " Copy";
+                const copyName = playlistName + " " + t('copy', 'Copy');
                 playlists[copyName] = JSON.parse(JSON.stringify(playlists[playlistName]));
             }
 
             if (action === "export") {
                 const json = JSON.stringify(playlists[playlistName], null, 2);
                 console.log("EXPORT PLAYLIST:", json);
-                alert("Playlist exported to console.");
+                alert(t('exportedToConsole', 'Playlist exported to console.'));
             }
 
             if (action === "delete") {
-                const confirmDelete = confirm(`Delete playlist "${playlistName}"?`);
+                const confirmDelete = confirm(`${t('confirmDeletePlaylist', 'Delete playlist')} "${playlistName}"?`);
                 if (confirmDelete) {
                     delete playlists[playlistName];
                 }
             }
 
             if (action === "clear") {
-                const ok = confirm(`Clear ALL items in playlist "${playlistName}"?`);
+                const ok = confirm(`${t('confirmClearPlaylist', 'Clear ALL items in playlist')} "${playlistName}"?`);
                 if (ok) {
                     playlists[playlistName] = []; // clear entire playlist
                 }
