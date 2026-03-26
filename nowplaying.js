@@ -1,6 +1,7 @@
 let nowPlayingQueue = [];
 let shuffledQueue = [];
 let nowPlayingIndex = 0;
+let currentTrackEntry = null; // Store current track even when not playing from playlist
 
 // Playback modes
 const PLAY_MODES = ["once", "repeat", "repeat-one", "shuffle"];
@@ -139,6 +140,16 @@ function getActiveQueue() {
     return playMode === "shuffle" ? shuffledQueue : nowPlayingQueue;
 }
 
+// Get the currently playing track entry
+function getCurrentTrack() {
+    const queue = getActiveQueue();
+    if (queue.length > 0 && queue[nowPlayingIndex]) {
+        return queue[nowPlayingIndex];
+    }
+    // Return currentTrackEntry for single file/URL/IPTV plays
+    return currentTrackEntry;
+}
+
 // Try to restore last playback state.
 // Priority:
 // 1. Last playlist (playlistName + index)
@@ -169,6 +180,9 @@ async function restoreLastPlayback() {
 
 
 function updateNowPlayingInfo(entry) {
+    // Store current track for access from other parts of the app
+    currentTrackEntry = entry;
+
     const titleEl = document.querySelector("#nowPlayingInfo .track-title");
     const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
     const urlEl = document.querySelector("#nowPlayingInfo .track-url");

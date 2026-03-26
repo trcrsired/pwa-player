@@ -224,6 +224,7 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
         <div class="menu-item" data-action="rename">Rename</div>
         <div class="menu-item" data-action="duplicate">Duplicate</div>
         <div class="menu-item" data-action="export">Export</div>
+        <div class="menu-item" data-action="import-from-now-playing">Import from Now Playing</div>
         <div class="menu-item danger" data-action="delete">Delete</div>
         <div class="menu-item danger" data-action="clear">Clear Playlist</div>
         <div class="menu-item" data-action="close">Close</div>
@@ -245,6 +246,24 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
             const playlists = await playlists_load();
+
+            if (action === "import-from-now-playing") {
+                // Get current track from now playing
+                const currentEntry = getCurrentTrack();
+
+                if (!currentEntry) {
+                    alert("No track is currently playing.");
+                    closeMenu();
+                    return;
+                }
+
+                playlists[playlistName].push({
+                    name: currentEntry.name,
+                    path: currentEntry.path
+                });
+                await playlists_save(playlists);
+                alert(`Added "${currentEntry.name}" to playlist "${playlistName}".`);
+            }
 
             if (action === "rename") {
                 const newName = prompt("New playlist name:", playlistName);
