@@ -32,17 +32,6 @@ async function resolveUnderRoot(rootHandle, path) {
     }
 }
 
-async function externalStorage_setRoot(handle) {
-    const db = await idb.openDB("storage-roots", 1, {
-        upgrade(db) {
-            db.createObjectStore("roots");
-        }
-    });
-
-    await db.put("roots", handle, "external");
-    window.externalStorageRoot = handle;
-}
-
 async function storage_resolvePath(pointer) {
 
     // navigator_storage://

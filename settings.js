@@ -48,3 +48,33 @@ languageSelect.addEventListener("change", () => {
         showToast(window.i18n.t('languageChanged') || "Language changed");
     }
 });
+
+// Subtitle in MediaSession toggle
+const subtitleInMediaSessionCheckbox = document.getElementById("subtitleInMediaSession");
+
+// Load saved preference (default: true)
+subtitleInMediaSessionCheckbox.checked = localStorage.getItem("subtitleInMediaSession") !== "false";
+
+subtitleInMediaSessionCheckbox.addEventListener("change", () => {
+    localStorage.setItem("subtitleInMediaSession", subtitleInMediaSessionCheckbox.checked ? "true" : "false");
+});
+
+// Helper function to check if subtitle in MediaSession is enabled
+function isSubtitleInMediaSessionEnabled() {
+    return localStorage.getItem("subtitleInMediaSession") !== "false";
+}
+
+// Auto-load subtitle toggle
+const autoLoadSubtitleCheckbox = document.getElementById("autoLoadSubtitle");
+
+// Load saved preference (default: true)
+autoLoadSubtitleCheckbox.checked = localStorage.getItem("autoLoadSubtitle") !== "false";
+
+autoLoadSubtitleCheckbox.addEventListener("change", () => {
+    localStorage.setItem("autoLoadSubtitle", autoLoadSubtitleCheckbox.checked ? "true" : "false");
+});
+
+// Helper function to check if auto-load subtitle is enabled
+function isAutoLoadSubtitleEnabled() {
+    return localStorage.getItem("autoLoadSubtitle") !== "false";
+}

@@ -88,6 +88,10 @@ const ZHCN_TRANSLATIONS = {
 
     // Settings
     language: "语言",
+    mediaSession: "媒体会话",
+    showSubtitlesInMediaSession: "在锁屏界面显示字幕",
+    subtitles: "字幕",
+    autoLoadSubtitles: "自动加载同名子幕文件",
     aboutThisApp: "关于此应用",
     sourceCode: "源代码",
     license: "许可证",

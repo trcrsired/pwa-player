@@ -88,6 +88,10 @@ const EN_TRANSLATIONS = {
 
     // Settings
     language: "Language",
+    mediaSession: "Media Session",
+    showSubtitlesInMediaSession: "Show subtitles in lock screen",
+    subtitles: "Subtitles",
+    autoLoadSubtitles: "Auto-load subtitles with same filename",
     aboutThisApp: "About This App",
     sourceCode: "Source Code",
     license: "License",

@@ -320,21 +320,6 @@ async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
     );
 }
 
-function getSchemaForRoot(rootHandle) {
-    // Private navigator.storage root
-    if (rootHandle === window.navigatorStorageRoot) {
-        return "navigator_storage";
-    }
-
-    // External SAF root
-    if (rootHandle === window.externalStorageRoot) {
-        return "external_storage";
-    }
-
-    // Fallback
-    return "unknown";
-}
-
 // Export/Download files from a directory
 async function exportDirectory(entry, dirPath, parent) {
     try {

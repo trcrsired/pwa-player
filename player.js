@@ -130,6 +130,11 @@ function updateTimeDisplay(txtct)
 async function tryAutoLoadSubtitleFromPath(entryPath) {
   if (!entryPath) return;
 
+  // Check if auto-load is enabled
+  if (typeof isAutoLoadSubtitleEnabled === 'function' && !isAutoLoadSubtitleEnabled()) {
+    return;
+  }
+
   // Only for storage paths
   if (!entryPath.startsWith('navigator_storage://') && !entryPath.startsWith('external_storage://')) {
     return;
@@ -425,6 +430,11 @@ function decodeHtmlEntities(text) {
 // Update MediaSession with current subtitle text
 function updateMediaSessionSubtitle(subtitleText) {
   if (!currentMediaMetadata) return;
+
+  // Check if subtitle in MediaSession is enabled
+  if (typeof isSubtitleInMediaSessionEnabled === 'function' && !isSubtitleInMediaSessionEnabled()) {
+    return;
+  }
 
   if (subtitleText) {
     // Decode HTML entities and clean up the text
@@ -802,15 +812,7 @@ function showControlsTemporarily() {
       updateSubtitlePosition(false);
     }, 3000);
   }
-/*
-  document.addEventListener("click", (e) => {
-    const target = e.target;
-    if (!(controls.contains(target)|| volumePanel.contains(target))) {
-        const video = document.getElementById("player");
-        togglePlay(video);
-    }
-  });
-*/
+
   player.addEventListener("pointermove", (e) => {
     const target = e.target;
     if (controls.contains(target)) {

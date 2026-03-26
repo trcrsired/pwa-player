@@ -57,17 +57,6 @@ class SimpleKVStore {
       tx.onerror = (e) => reject(e.target.error);
     });
   }
-
-  async keys() {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(this.storeName, "readonly");
-      const store = tx.objectStore(this.storeName);
-      const request = store.getAllKeys();
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = (e) => reject(e.target.error);
-    });
-  }
 };
 
 let kv_async = new SimpleKVStore("pwaplayerdb", "videos")
