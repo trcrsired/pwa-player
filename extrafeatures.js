@@ -72,6 +72,7 @@ let micAudioSource = null;
 let recordingDestination = null;
 let isMicEnabled = false;
 let currentRecordingStream = null;
+let previousVideoMuted = false; // Store original mute state
 
 function getMicToggleBtn() {
     if (!micToggleBtn) {
@@ -116,7 +117,11 @@ screenCaptureBtn.addEventListener("click", async () => {
             }
         }
 
-        // Video element plays only screen (no mic playback)
+        // Save previous mute state and mute video to prevent audio playback
+        previousVideoMuted = video.muted;
+        video.muted = true;
+
+        // Video element plays only screen (muted so no audio playback)
         video.srcObject = screenCaptureStream;
         await video.play();
 
@@ -210,11 +215,22 @@ async function switchCaptureSource() {
 
         screenCaptureStream = newStream;
 
-        // Reconnect screen audio to recording destination
+        // Disconnect old screen audio source
         if (screenAudioSource) {
             screenAudioSource.disconnect();
             screenAudioSource = null;
         }
+
+        // Create new recording destination to ensure clean audio mixing
+        const oldMicEnabled = isMicEnabled;
+        const oldMicStream = micStream;
+        const oldMicGainNode = micGainNode;
+        const oldMicAudioSource = micAudioSource;
+
+        // Create fresh destination
+        recordingDestination = audioContext.createMediaStreamDestination();
+
+        // Connect screen audio to new destination
         const screenAudioTracks = newStream.getAudioTracks();
         if (screenAudioTracks.length > 0) {
             screenAudioSource = audioContext.createMediaStreamSource(
@@ -223,7 +239,16 @@ async function switchCaptureSource() {
             screenAudioSource.connect(recordingDestination);
         }
 
-        // Update video element
+        // Reconnect mic if it was enabled
+        if (oldMicEnabled && oldMicStream && oldMicAudioSource && oldMicGainNode) {
+            micAudioSource = oldMicAudioSource;
+            micGainNode = oldMicGainNode;
+            micGainNode.connect(recordingDestination);
+            micGainNode.gain.value = 1;
+        }
+
+        // Keep video muted to prevent audio playback
+        video.muted = true;
         video.srcObject = newStream;
         await video.play();
 
@@ -245,13 +270,8 @@ async function switchCaptureSource() {
 
         currentRecordingStream = newRecordingStream;
 
-        // Start new recorder
-        screenRecorder = new MediaRecorder(newRecordingStream);
-        screenRecorder.ondataavailable = e => {
-            if (e.data.size > 0) screenChunks.push(e.data);
-        };
-        screenRecorder.onstop = saveScreenRecording;
-        screenRecorder.start();
+        // Start new recorder (keep existing chunks)
+        startScreenRecording(newRecordingStream, false);
 
         // Handle track ended
         newVideoTrack.onended = () => {
@@ -298,8 +318,10 @@ function saveScreenRecording() {
     URL.revokeObjectURL(url);
 }
 
-function startScreenRecording(stream) {
-    screenChunks = [];
+function startScreenRecording(stream, resetChunks = true) {
+    if (resetChunks) {
+        screenChunks = [];
+    }
     screenRecorder = new MediaRecorder(stream);
 
     screenRecorder.ondataavailable = e => {
@@ -333,6 +355,10 @@ function stopScreenRecording() {
     micAudioSource = null;
     recordingDestination = null;
     currentRecordingStream = null;
+
+    // Restore previous mute state
+    video.muted = previousVideoMuted;
+
     screenCaptureBtn.textContent = "🖥️";
     const micBtn = getMicToggleBtn();
     if (micBtn) {
