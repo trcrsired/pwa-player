@@ -3,11 +3,11 @@ const EN_TRANSLATIONS = {
     // Navigation
     nowPlaying: "▶️ Now Playing",
     playlist: "🎵 Playlist",
-    playlists: "Playlists",
+    playlists: "🎵 Playlists",
     storage: "🗂️ Storage",
     iptv: "📺 IPTV",
     settings: "⚙️ Settings",
-    storageManager: "Storage Manager",
+    storageManager: "🗂️ Storage Manager",
 
     // Player controls
     play: "Play",
@@ -67,7 +67,7 @@ const EN_TRANSLATIONS = {
     whichPlaylist: "Add to which playlist?",
 
     // IPTV
-    iptvChannels: "IPTV Channels",
+    iptvChannels: "📺 IPTV Channels",
     searchChannels: "Search channels...",
 
     // Settings

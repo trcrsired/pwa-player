@@ -3,11 +3,11 @@ const ZHCN_TRANSLATIONS = {
     // Navigation
     nowPlaying: "▶️ 正在播放",
     playlist: "🎵 播放列表",
-    playlists: "播放列表",
+    playlists: "🎵 播放列表",
     storage: "🗂️ 存储",
     iptv: "📺 网络电视",
     settings: "⚙️ 设置",
-    storageManager: "存储管理",
+    storageManager: "🗂️ 存储管理",
 
     // Player controls
     play: "播放",
@@ -67,7 +67,7 @@ const ZHCN_TRANSLATIONS = {
     whichPlaylist: "添加到哪个播放列表？",
 
     // IPTV
-    iptvChannels: "网络电视频道",
+    iptvChannels: "📺 网络电视频道",
     searchChannels: "搜索频道...",
 
     // Settings
