@@ -207,7 +207,7 @@ async function switchCaptureSource() {
             audio: true
         });
 
-        // Stop old screen capture video track (but keep mic and audio context)
+        // Stop old video and audio tracks (but keep mic stream)
         if (screenCaptureStream) {
             screenCaptureStream.getVideoTracks().forEach(track => track.stop());
             screenCaptureStream.getAudioTracks().forEach(track => track.stop());
@@ -221,16 +221,7 @@ async function switchCaptureSource() {
             screenAudioSource = null;
         }
 
-        // Create new recording destination to ensure clean audio mixing
-        const oldMicEnabled = isMicEnabled;
-        const oldMicStream = micStream;
-        const oldMicGainNode = micGainNode;
-        const oldMicAudioSource = micAudioSource;
-
-        // Create fresh destination
-        recordingDestination = audioContext.createMediaStreamDestination();
-
-        // Connect screen audio to new destination
+        // Connect new screen audio to existing recording destination
         const screenAudioTracks = newStream.getAudioTracks();
         if (screenAudioTracks.length > 0) {
             screenAudioSource = audioContext.createMediaStreamSource(
@@ -239,39 +230,18 @@ async function switchCaptureSource() {
             screenAudioSource.connect(recordingDestination);
         }
 
-        // Reconnect mic if it was enabled
-        if (oldMicEnabled && oldMicStream && oldMicAudioSource && oldMicGainNode) {
-            micAudioSource = oldMicAudioSource;
-            micGainNode = oldMicGainNode;
-            micGainNode.connect(recordingDestination);
-            micGainNode.gain.value = 1;
+        // Replace the video track in the existing recording stream
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        const oldVideoTrack = currentRecordingStream.getVideoTracks()[0];
+        if (oldVideoTrack) {
+            currentRecordingStream.removeTrack(oldVideoTrack);
         }
+        currentRecordingStream.addTrack(newVideoTrack);
 
         // Keep video muted to prevent audio playback
         video.muted = true;
         video.srcObject = newStream;
         await video.play();
-
-        // Stop current recorder and start new one with new stream
-        // Keep existing chunks
-        screenRecorder.onstop = null; // Prevent saving prematurely
-        screenRecorder.stop();
-
-        // Create new recording stream with new video track
-        const newVideoTrack = newStream.getVideoTracks()[0];
-        const audioTracks = recordingDestination.stream.getAudioTracks();
-
-        let newRecordingStream;
-        if (audioTracks.length > 0) {
-            newRecordingStream = new MediaStream([newVideoTrack, audioTracks[0]]);
-        } else {
-            newRecordingStream = new MediaStream([newVideoTrack]);
-        }
-
-        currentRecordingStream = newRecordingStream;
-
-        // Start new recorder (keep existing chunks)
-        startScreenRecording(newRecordingStream, false);
 
         // Handle track ended
         newVideoTrack.onended = () => {

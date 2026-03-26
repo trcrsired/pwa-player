@@ -68,6 +68,7 @@ const playerWrapper = document.getElementById("playerWrapper");
 const video = document.getElementById("player");
 let hasActiveSource = false;
 let currentBlobURL = null;
+let currentMediaMetadata = null; // Store original metadata for subtitle updates
 
 function revokeBlobURL() {
   if (currentBlobURL && currentBlobURL.startsWith("blob:")) {
@@ -109,6 +110,10 @@ function clearSubtitles() {
     t.remove();
   });
   subtitleBtn.textContent = '📝';
+  // Restore original metadata
+  if (currentMediaMetadata) {
+    navigator.mediaSession.metadata = new MediaMetadata(currentMediaMetadata);
+  }
 }
 
 function updateTimeDisplay(txtct)
@@ -175,6 +180,8 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     playBtn.textContent = autoPlay ? "⏸️" : "▶️";
 
+    // Store original metadata for subtitle updates
+    currentMediaMetadata = { ...mediametadata };
     navigator.mediaSession.metadata = new MediaMetadata(mediametadata);
     document.title = `PWA Player ▶️ ${mediametadata.title}`;
 
@@ -355,6 +362,7 @@ async function toggleStopBtn()
   video.load();
   hasActiveSource = false;
   revokeBlobURL();
+  currentMediaMetadata = null;
   playBtn.textContent = "▶️";
   npPlayBtn.textContent = playBtn.textContent;
   // Clear subtitles
@@ -398,6 +406,52 @@ pickerBtn.onclick = async (e) => {
   }
 };
 
+// Decode HTML entities in subtitle text (e.g., &gt; → >, &amp; → &)
+function decodeHtmlEntities(text) {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
+// Update MediaSession with current subtitle text
+function updateMediaSessionSubtitle(subtitleText) {
+  if (!currentMediaMetadata) return;
+
+  if (subtitleText) {
+    // Decode HTML entities and clean up the text
+    let cleanText = decodeHtmlEntities(subtitleText);
+    // Replace line feeds with spaces
+    cleanText = cleanText.replace(/[\r\n]+/g, ' ').trim();
+    // Update metadata with subtitle in artist field
+    const updatedMetadata = {
+      title: currentMediaMetadata.title,
+      artist: cleanText, // Show subtitle as "artist" on lock screen
+      album: currentMediaMetadata.album || '',
+      artwork: currentMediaMetadata.artwork || []
+    };
+    navigator.mediaSession.metadata = new MediaMetadata(updatedMetadata);
+  } else {
+    // No active subtitle - restore original metadata
+    navigator.mediaSession.metadata = new MediaMetadata(currentMediaMetadata);
+  }
+}
+
+// Set up cuechange listener for a text track
+function setupSubtitleMediaSession(textTrack) {
+  textTrack.addEventListener('cuechange', () => {
+    if (textTrack.mode !== 'showing') return;
+
+    const activeCues = textTrack.activeCues;
+    if (activeCues && activeCues.length > 0) {
+      const cue = activeCues[0];
+      const subtitleText = cue.text || '';
+      updateMediaSessionSubtitle(subtitleText);
+    } else {
+      updateMediaSessionSubtitle('');
+    }
+  });
+}
+
 // Subtitle loader
 async function loadSubtitle(file) {
   const blob = file instanceof FileSystemFileHandle ? await file.getFile() : file;
@@ -426,6 +480,9 @@ async function loadSubtitle(file) {
   const textTrack = video.textTracks[0];
   textTrack.mode = 'showing';
 
+  // Set up MediaSession subtitle updates
+  setupSubtitleMediaSession(textTrack);
+
   // Update cue positions when track loads
   track.addEventListener('load', () => {
     if (!controls.classList.contains('hidden')) {
@@ -444,6 +501,8 @@ subtitleBtn.onclick = async () => {
     if (track.mode === 'showing') {
       track.mode = 'hidden';
       subtitleBtn.textContent = '📝';
+      // Restore original metadata when hiding subtitles
+      updateMediaSessionSubtitle('');
       return;
     } else {
       track.mode = 'showing';
