@@ -28,6 +28,8 @@ function showIPTVChannelMenu(channel, url, x, y) {
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
 
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
     const menu = document.createElement("div");
     menu.className = "context-menu";
     menu.style.left = x + "px";
@@ -35,8 +37,10 @@ function showIPTVChannelMenu(channel, url, x, y) {
     menu.style.position = "fixed";
 
     menu.innerHTML = `
-        <div class="menu-item" data-action="add">${window.i18n ? window.i18n.t('addToPlaylist') : 'Add to Playlist'}</div>
-        <div class="menu-item" data-action="close">${window.i18n ? window.i18n.t('close') : 'Close'}</div>
+        <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
+        <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
+        <div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>
+        <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
     document.body.appendChild(menu);
@@ -53,12 +57,27 @@ function showIPTVChannelMenu(channel, url, x, y) {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
 
+            if (action === "play") {
+                play_source_title(url, channel.name, null);
+                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                    closeActiveView();
+                }
+                closeMenu();
+                return;
+            }
+
+            if (action === "play-keep-open") {
+                play_source_title(url, channel.name, null);
+                closeMenu();
+                return;
+            }
+
             if (action === "add") {
                 const playlists = await playlists_load();
                 const names = Object.keys(playlists);
 
                 const choice = prompt(
-                    window.i18n ? window.i18n.t('whichPlaylist') : "Add to which playlist?\n" +
+                    t('whichPlaylist') + "\n" +
                     names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
                     "1"
                 );
@@ -70,7 +89,7 @@ function showIPTVChannelMenu(channel, url, x, y) {
 
                 const index = parseInt(choice, 10) - 1;
                 if (index < 0 || index >= names.length) {
-                    alert(window.i18n ? window.i18n.t('invalidSelection') : "Invalid selection");
+                    alert(t('invalidSelection'));
                     closeMenu();
                     return;
                 }
@@ -152,7 +171,9 @@ function renderIPTVList(searchFilter = "") {
         nameSpan.addEventListener("click", () => {
             if (!primaryUrl) return;
             play_source_title(primaryUrl, channel.name, null);
-            closeActiveView();
+            if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                closeActiveView();
+            }
         });
 
         const subList = document.createElement("ul");
@@ -184,7 +205,9 @@ function renderIPTVList(searchFilter = "") {
             // Click on URL plays it
             urlSpan.addEventListener("click", () => {
                 play_source_title(url, channel.name, null);
-                closeActiveView();
+                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                    closeActiveView();
+                }
             });
 
             subLi.appendChild(urlSpan);
