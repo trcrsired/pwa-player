@@ -88,7 +88,8 @@ async function promptForUniqueName(baseName, parentHandle) {
 // Media extensions for playlist items
 const PLAYLIST_EXTENSIONS = new Set([
     ".mp4", ".webm", ".mkv",
-    ".mp3", ".wav", ".flac"
+    ".mp3", ".wav", ".flac",
+    ".m4a"
 ]);
 
 // Allowed extensions for import (media + subtitles)
