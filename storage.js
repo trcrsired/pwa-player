@@ -820,30 +820,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                                 parent = await parent.getDirectoryHandle(part);
                             }
                         } else if (entry.schema === "external_storage") {
-                            // For external storage, get parent directory from the handle
-                            const parts = fullPath.split("/");
-                            parts.pop();
-                            const topLevelName = parts[0];
-
-                            const dirs = await loadExternalDirs();
-                            parent = dirs[topLevelName];
-
-                            if (!parent) {
-                                alert("External directory not found.");
-                                return;
-                            }
-
-                            // Request write permission
-                            const hasPermission = await verifyPermission(parent, "readwrite");
-                            if (!hasPermission) {
-                                alert("Write permission denied for external directory.");
-                                return;
-                            }
-
-                            // Navigate to parent
-                            for (let i = 1; i < parts.length; ++i) {
-                                parent = await parent.getDirectoryHandle(parts[i]);
-                            }
+                            return;
                         }
 
                         // Read old file
@@ -885,30 +862,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                                 parent = await parent.getDirectoryHandle(part);
                             }
                         } else if (entry.schema === "external_storage") {
-                            // For external storage, get parent directory from the handle
-                            const parts = fullPath.split("/");
-                            parts.pop();
-                            const topLevelName = parts[0];
-
-                            const dirs = await loadExternalDirs();
-                            parent = dirs[topLevelName];
-
-                            if (!parent) {
-                                alert("External directory not found.");
-                                return;
-                            }
-
-                            // Request write permission
-                            const hasPermission = await verifyPermission(parent, "readwrite");
-                            if (!hasPermission) {
-                                alert("Write permission denied for external directory.");
-                                return;
-                            }
-
-                            // Navigate to parent
-                            for (let i = 1; i < parts.length; ++i) {
-                                parent = await parent.getDirectoryHandle(parts[i]);
-                            }
+                            return;
                         }
 
                         await parent.removeEntry(name);
