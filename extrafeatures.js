@@ -619,6 +619,12 @@ function initScrollButtons() {
     // Set up scroll listeners
     document.querySelectorAll(".overlay-view .content").forEach(content => {
         content.addEventListener("scroll", updateScrollButtons);
+
+        // Add MutationObserver to detect content changes
+        const observer = new MutationObserver(() => {
+            setTimeout(updateScrollButtons, 50);
+        });
+        observer.observe(content, { childList: true, subtree: true });
     });
 }
 
@@ -655,14 +661,14 @@ function updateScrollButtons() {
         return;
     }
 
-    // Show up button if not at top
+    // Show up button if scrolled down more than 50px
     if (scrollTop > 50) {
         scrollUpBtn.classList.add("visible");
     } else {
         scrollUpBtn.classList.remove("visible");
     }
 
-    // Show down button if not at bottom
+    // Show down button if not at bottom (always show initially if scrollable)
     if (scrollTop + clientHeight < scrollHeight - 50) {
         scrollDownBtn.classList.add("visible");
     } else {
@@ -683,7 +689,10 @@ window.switchView = function(viewId) {
     if (_originalSwitchView) {
         _originalSwitchView(viewId);
     }
-    setTimeout(updateScrollButtons, 100);
+    // Update multiple times as content may render dynamically
+    setTimeout(updateScrollButtons, 50);
+    setTimeout(updateScrollButtons, 200);
+    setTimeout(updateScrollButtons, 500);
 };
 
 // Also hook into closeActiveView to hide buttons
@@ -695,4 +704,46 @@ window.closeActiveView = function() {
     if (scrollUpBtn) scrollUpBtn.classList.remove("visible");
     if (scrollDownBtn) scrollDownBtn.classList.remove("visible");
 };
+
+// Hook into render functions to update buttons after content changes
+function hookRenderFunctions() {
+    // Storage render
+    if (window.storage_renderTree) {
+        const orig = window.storage_renderTree;
+        window.storage_renderTree = async function() {
+            await orig();
+            setTimeout(updateScrollButtons, 100);
+        };
+    }
+
+    // Playlist render
+    if (window.playlist_renderTree) {
+        const orig = window.playlist_renderTree;
+        window.playlist_renderTree = async function() {
+            await orig();
+            setTimeout(updateScrollButtons, 100);
+        };
+    }
+
+    // Now Playing render
+    if (window.renderNowPlayingQueue) {
+        const orig = window.renderNowPlayingQueue;
+        window.renderNowPlayingQueue = function() {
+            orig();
+            setTimeout(updateScrollButtons, 100);
+        };
+    }
+
+    // IPTV render
+    if (window.renderIPTVTree) {
+        const orig = window.renderIPTVTree;
+        window.renderIPTVTree = function() {
+            orig();
+            setTimeout(updateScrollButtons, 100);
+        };
+    }
+}
+
+// Initialize hooks after DOM is ready
+setTimeout(hookRenderFunctions, 100);
 

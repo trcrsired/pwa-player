@@ -57,7 +57,6 @@ async function storage_resolvePath(pointer) {
         if (rootName === "external") {
 
             const rootHandle = externalDirs[dirName];
-            console.log(`rootHandle, dirName=${dirName}`);
             if (!rootHandle) {
                 throw new Error(`External directory "${dirName}" not found`);
             }
