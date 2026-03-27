@@ -95,6 +95,7 @@ function showPlaylistItemMenu(playlistName, index, button) {
         <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
         <div class="menu-item" data-action="move-up">${t('moveUp', 'Move Up')}</div>
         <div class="menu-item" data-action="move-down">${t('moveDown', 'Move Down')}</div>
+        <div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
@@ -141,6 +142,18 @@ function showPlaylistItemMenu(playlistName, index, button) {
 
             if (action === "move-down" && index < list.length - 1) {
                 [list[index + 1], list[index]] = [list[index], list[index + 1]];
+            }
+
+            if (action === "properties") {
+                const item = list[index];
+                const info = [
+                    `${t('playlistName', 'Playlist')}: ${playlistName}`,
+                    `${t('index', 'Index')}: ${index + 1} / ${list.length}`,
+                    `${t('name', 'Name')}: ${item.name || 'N/A'}`,
+                    `${t('path', 'Path')}: ${item.path || 'N/A'}`
+                ];
+                alert(info.join('\n\n'));
+                return;
             }
 
             if (action === "close") {

@@ -273,6 +273,7 @@ function showNowPlayingItemMenu(index, button) {
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
         <div class="menu-item danger" data-action="remove">${t('removeFromQueue', 'Remove from Queue')}</div>
+        <div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
@@ -299,6 +300,19 @@ function showNowPlayingItemMenu(index, button) {
 
             if (action === "remove") {
                 confirmRemoveFromNowPlaying(index);
+            }
+
+            if (action === "properties") {
+                const queue = getActiveQueue();
+                const entry = queue[index];
+                const info = [
+                    `${t('index', 'Index')}: ${index + 1} / ${queue.length}`,
+                    `${t('name', 'Name')}: ${entry?.name || 'N/A'}`,
+                    `${t('path', 'Path')}: ${entry?.path || 'N/A'}`,
+                    `${t('playlistName', 'Playlist')}: ${entry?.playlistName || 'N/A'}`
+                ];
+                alert(info.join('\n\n'));
+                return;
             }
 
             closeContextMenu();
