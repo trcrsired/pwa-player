@@ -83,17 +83,11 @@ async function storage_resolvePath(pointer) {
 }
 
 
-function showPlaylistItemMenu(playlistName, index, x, y) {
-    // Close any existing menu
-    const existing = document.querySelector(".context-menu");
-    if (existing) existing.remove();
-
+function showPlaylistItemMenu(playlistName, index, button) {
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
 
     menu.innerHTML = `
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
@@ -104,7 +98,7 @@ function showPlaylistItemMenu(playlistName, index, x, y) {
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
-    document.body.appendChild(menu);
+    if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
 
@@ -174,6 +168,7 @@ async function playlist_renderTree() {
             <div class="playlist-header">
                 <button class="toggle" aria-label="Toggle playlist">+</button>
                 <span class="playlist-name">${escapeHTML(playlistName)}</span>
+                <button class="playlist-menu" title="Menu">⋮</button>
             </div>
             <ul class="playlist-items hidden"></ul>
         `;
@@ -181,33 +176,32 @@ async function playlist_renderTree() {
         const header = li.querySelector(".playlist-header");
         const toggleBtn = header.querySelector(".toggle");
         const itemsContainer = li.querySelector(".playlist-items");
+        const menuBtn = li.querySelector(".playlist-menu");
 
-        toggleBtn.addEventListener("click", () => {
+        toggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
             const hidden = itemsContainer.classList.toggle("hidden");
             toggleBtn.textContent = hidden ? "+" : "−";
         });
 
-        header.addEventListener("contextmenu", (e) => {
-            e.preventDefault();
-            showPlaylistHeaderMenu(playlistName, e.pageX, e.pageY);
+        // Burger menu button
+        menuBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showPlaylistHeaderMenu(playlistName, e.currentTarget);
         });
 
         items.forEach((item, index) => {
             const itemLi = document.createElement("li");
             itemLi.className = "playlist-item";
 
-            // Create + button for menu
+            // Create menu button (⋮)
             const menuBtn = document.createElement("button");
-            menuBtn.className = "playlist-item-toggle";
-            menuBtn.textContent = "+";
+            menuBtn.className = "playlist-item-menu";
+            menuBtn.textContent = "⋮";
+            menuBtn.title = "Menu";
             menuBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
-                showPlaylistItemMenu(playlistName, index, e.clientX, e.clientY);
-            });
-            menuBtn.addEventListener("contextmenu", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                showPlaylistItemMenu(playlistName, index, e.clientX, e.clientY);
+                showPlaylistItemMenu(playlistName, index, e.currentTarget);
             });
 
             // Item path/title
@@ -223,14 +217,8 @@ async function playlist_renderTree() {
                 }
             });
 
-            // Right-click on path → context menu
-            pathSpan.addEventListener("contextmenu", (e) => {
-                e.preventDefault();
-                showPlaylistItemMenu(playlistName, index, e.pageX, e.pageY);
-            });
-
-            itemLi.appendChild(menuBtn);
             itemLi.appendChild(pathSpan);
+            itemLi.appendChild(menuBtn);
             itemsContainer.appendChild(itemLi);
         });
 
@@ -238,17 +226,11 @@ async function playlist_renderTree() {
     });
 }
 
-function showPlaylistHeaderMenu(playlistName, x, y) {
-    // Close any existing menu first
-    const existing = document.querySelector(".context-menu");
-    if (existing) existing.remove();
-
+function showPlaylistHeaderMenu(playlistName, button) {
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
 
     menu.innerHTML = `
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
@@ -260,7 +242,7 @@ function showPlaylistHeaderMenu(playlistName, x, y) {
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
-    document.body.appendChild(menu);
+    if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
 

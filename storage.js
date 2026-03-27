@@ -422,7 +422,45 @@ async function collectFilesForExport(dirHandle, basePath) {
     return files;
 }
 
-function showStorageDirMenu(entry, dirName, x, y) {
+// ============================================================
+// Helper: position menu to the left of a button
+// ============================================================
+window.positionMenu = function(menu, button) {
+    // Check if there's already an open menu from this button
+    const existing = document.querySelector(".context-menu");
+    if (existing) {
+        const existingButton = existing._triggerButton;
+        if (existingButton === button) {
+            // Same button clicked - just close the menu
+            existing.remove();
+            return false; // Signal to not create new menu
+        }
+        existing.remove();
+    }
+
+    menu._triggerButton = button;
+    menu.style.visibility = "hidden";
+    menu.style.position = "fixed";
+    document.body.appendChild(menu);
+
+    const btnRect = button.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+
+    // Position menu's right edge to the left of the button
+    menu.style.left = (btnRect.left - menuRect.width) + "px";
+    menu.style.top = btnRect.top + "px";
+
+    // If menu goes off left edge, show it below the button instead
+    if (btnRect.left - menuRect.width < 0) {
+        menu.style.left = btnRect.left + "px";
+        menu.style.top = btnRect.bottom + "px";
+    }
+
+    menu.style.visibility = "visible";
+    return true; // Menu was created
+};
+
+function showStorageDirMenu(entry, dirName, button) {
     // Remove existing menu
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
@@ -457,12 +495,10 @@ function showStorageDirMenu(entry, dirName, x, y) {
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
 
     menu.innerHTML = menuItems.join("");
 
-    document.body.appendChild(menu);
+    if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
 
@@ -580,7 +616,7 @@ function showStorageDirMenu(entry, dirName, x, y) {
         });
     });
 }
-function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
+function showStorageFileMenu(entry, name, handle, fullPath, button) {
     // Remove existing menu
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
@@ -600,12 +636,10 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
-    menu.style.left = x + "px";
-    menu.style.top = y + "px";
 
     menu.innerHTML = menuItems.join("");
 
-    document.body.appendChild(menu);
+    if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
 
@@ -734,8 +768,11 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
     li.innerHTML = `
         <div class="storage-file-header">
             <span class="file-name">📄 ${escapeHTML(name)}</span>
-            <button class="file-play" title="Play">▶</button>
-            <button class="file-add" title="Add to Playlist">+</button>
+            <div class="file-actions">
+                <button class="file-play" title="Play">▶</button>
+                <button class="file-add" title="Add to Playlist">+</button>
+                <button class="file-menu" title="Menu">⋮</button>
+            </div>
         </div>
     `;
 
@@ -787,10 +824,10 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
         alert(`Added "${name}" to playlist "${selectedName}".`);
     });
 
-    // Right-click context menu
-    li.querySelector(".storage-file-header").addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        showStorageFileMenu(entry, name, handle, fullPath, e.pageX, e.pageY);
+    // Burger menu button
+    li.querySelector(".file-menu").addEventListener("click", (e) => {
+        e.stopPropagation();
+        showStorageFileMenu(entry, name, handle, fullPath, e.currentTarget);
     });
 
     subList.appendChild(li);
@@ -803,7 +840,10 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPat
     li.innerHTML = `
         <div class="storage-sub-header">
             <span class="sub-name">📁 ${escapeHTML(name)}</span>
-            <button class="quick-add">+</button>
+            <div class="sub-actions">
+                <button class="quick-add" title="Add to Playlist">+</button>
+                <button class="sub-menu" title="Menu">⋮</button>
+            </div>
         </div>
     `;
 
@@ -815,12 +855,11 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPat
     // Root handle is the top-level directory (imports, files, etc.)
     const actualRootHandle = rootHandle || parentHandle;
 
-    // Right-click context menu
-    header.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        showStorageDirMenu(entry, fullPath, e.pageX, e.pageY);
+    // Burger menu button
+    li.querySelector(".sub-menu").addEventListener("click", (e) => {
+        e.stopPropagation();
+        showStorageDirMenu(entry, fullPath, e.currentTarget);
     });
-
 
     const addBtn = li.querySelector(".quick-add");
     // Quick add to playlist - pass the root handle, not the immediate parent
@@ -948,6 +987,7 @@ async function renderStorage() {
             <div class="storage-header">
                 <button class="toggle">+</button>
                 <span class="storage-name">${entry.schema}://${entry.rootName}</span>
+                <button class="storage-menu" title="Menu">⋮</button>
             </div>
             <ul class="storage-sub hidden"></ul>
         `;
@@ -955,18 +995,20 @@ async function renderStorage() {
         const header = li.querySelector(".storage-header");
         const toggleBtn = li.querySelector(".toggle");
         const subList = li.querySelector(".storage-sub");
+        const menuBtn = li.querySelector(".storage-menu");
 
-        // Click to expand/collapse
-        header.addEventListener("click", () => {
+        // Click to expand/collapse (but not on menu button)
+        header.addEventListener("click", (e) => {
+            if (e.target === menuBtn) return;
             const hidden = subList.classList.toggle("hidden");
             toggleBtn.textContent = hidden ? "+" : "−";
             if (!hidden) loadStorageSubdirs(subList, rootDir, entry);
         });
 
-        // Right-click menu
-        header.addEventListener("contextmenu", (e) => {
-            e.preventDefault();
-            showStorageDirMenu(entry, null, e.pageX, e.pageY);
+        // Burger menu button
+        menuBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showStorageDirMenu(entry, null, e.currentTarget);
         });
 
         list.appendChild(li);

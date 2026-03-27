@@ -234,31 +234,6 @@ function removeFromNowPlaying(index) {
     renderNowPlayingQueue();
 }
 
-function positionContextMenu(menu, x, y) {
-    const menuWidth = menu.offsetWidth;
-    const menuHeight = menu.offsetHeight;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    let left = x;
-    let top = y;
-
-    // Prefer right side, flip left if overflowing
-    if (left + menuWidth > viewportWidth) {
-        left = x - menuWidth;
-        if (left < 0) left = 0;
-    }
-
-    // Prefer below, flip above if overflowing
-    if (top + menuHeight > viewportHeight) {
-        top = y - menuHeight;
-        if (top < 0) top = 0;
-    }
-
-    menu.style.left = left + "px";
-    menu.style.top = top + "px";
-}
-
 function closeContextMenu() {
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
@@ -288,9 +263,7 @@ function confirmRemoveFromNowPlaying(index) {
     removeFromNowPlaying(index);
 }
 
-function showNowPlayingItemMenu(index, x, y) {
-    closeContextMenu();
-
+function showNowPlayingItemMenu(index, button) {
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
     const menu = document.createElement("div");
@@ -303,14 +276,7 @@ function showNowPlayingItemMenu(index, x, y) {
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
-    // Step 1: append BEFORE measuring
-    document.body.appendChild(menu);
-
-    // Step 2: force layout (important!)
-    menu.getBoundingClientRect();
-
-    // Step 3: now position correctly
-    positionContextMenu(menu, x, y);
+    if (!positionMenu(menu, button)) return;
 
     enableContextMenuAutoClose(menu);
 
@@ -355,20 +321,6 @@ function renderNowPlayingQueue() {
             li.classList.add("active");
         }
 
-        // Create + button for menu
-        const menuBtn = document.createElement("button");
-        menuBtn.className = "np-item-toggle";
-        menuBtn.textContent = "+";
-        menuBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            showNowPlayingItemMenu(i, e.clientX, e.clientY);
-        });
-        menuBtn.addEventListener("contextmenu", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            showNowPlayingItemMenu(i, e.clientX, e.clientY);
-        });
-
         // Track title
         const titleSpan = document.createElement("span");
         titleSpan.className = "np-item-title";
@@ -382,14 +334,18 @@ function renderNowPlayingQueue() {
             }
         });
 
-        // Right-click on title → context menu
-        titleSpan.addEventListener("contextmenu", (e) => {
-            e.preventDefault();
-            showNowPlayingItemMenu(i, e.pageX, e.pageY);
+        // Menu button (⋮)
+        const menuBtn = document.createElement("button");
+        menuBtn.className = "np-item-menu";
+        menuBtn.textContent = "⋮";
+        menuBtn.title = "Menu";
+        menuBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showNowPlayingItemMenu(i, e.currentTarget);
         });
 
-        li.appendChild(menuBtn);
         li.appendChild(titleSpan);
+        li.appendChild(menuBtn);
         ul.appendChild(li);
     });
 }

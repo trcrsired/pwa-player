@@ -588,3 +588,104 @@ if (connection) {
     networkStatus.textContent = "🌐 n/a";
 }
 
+// ===============================
+// Floating Scroll Buttons
+// ===============================
+const scrollUpBtn = document.getElementById("scrollUpBtn");
+const scrollDownBtn = document.getElementById("scrollDownBtn");
+
+function getActiveOverlayView() {
+    const views = document.querySelectorAll(".overlay-view");
+    for (const view of views) {
+        if (!view.classList.contains("hidden")) {
+            return view;
+        }
+    }
+    return null;
+}
+
+function updateScrollButtons() {
+    const view = getActiveOverlayView();
+    const content = view ? view.querySelector(".content") : null;
+
+    if (!content) {
+        scrollUpBtn.classList.remove("visible");
+        scrollDownBtn.classList.remove("visible");
+        return;
+    }
+
+    const scrollTop = content.scrollTop;
+    const scrollHeight = content.scrollHeight;
+    const clientHeight = content.clientHeight;
+
+    // Only show buttons if there's scrollable content
+    if (scrollHeight <= clientHeight + 10) {
+        scrollUpBtn.classList.remove("visible");
+        scrollDownBtn.classList.remove("visible");
+        return;
+    }
+
+    // Show up button if not at top
+    if (scrollTop > 50) {
+        scrollUpBtn.classList.add("visible");
+    } else {
+        scrollUpBtn.classList.remove("visible");
+    }
+
+    // Show down button if not at bottom
+    if (scrollTop + clientHeight < scrollHeight - 50) {
+        scrollDownBtn.classList.add("visible");
+    } else {
+        scrollDownBtn.classList.remove("visible");
+    }
+}
+
+scrollUpBtn.addEventListener("click", () => {
+    const view = getActiveOverlayView();
+    const content = view ? view.querySelector(".content") : null;
+    if (content) {
+        content.scrollTo({ top: 0, behavior: "smooth" });
+    }
+});
+
+scrollDownBtn.addEventListener("click", () => {
+    const view = getActiveOverlayView();
+    const content = view ? view.querySelector(".content") : null;
+    if (content) {
+        content.scrollTo({ top: content.scrollHeight, behavior: "smooth" });
+    }
+});
+
+// Set up scroll listeners and mutation observer
+function initScrollListeners() {
+    document.querySelectorAll(".overlay-view .content").forEach(content => {
+        content.addEventListener("scroll", updateScrollButtons);
+    });
+}
+
+// Run after DOM is ready
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initScrollListeners);
+} else {
+    initScrollListeners();
+}
+
+// Hook into switchView to update buttons when view changes
+const _originalSwitchView = window.switchView;
+window.switchView = function(viewId) {
+    if (_originalSwitchView) {
+        _originalSwitchView(viewId);
+    }
+    setTimeout(updateScrollButtons, 100);
+};
+
+// Also hook into closeActiveView to hide buttons
+const _originalCloseActiveView = window.closeActiveView;
+window.closeActiveView = function() {
+    if (_originalCloseActiveView) {
+        _originalCloseActiveView();
+    }
+    scrollUpBtn.classList.remove("visible");
+    scrollDownBtn.classList.remove("visible");
+};
+
