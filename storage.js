@@ -935,20 +935,7 @@ async function renderStorage() {
         const subList = li.querySelector(".storage-sub");
 
         // Click to expand/collapse
-        header.addEventListener("click", async () => {
-            // For external storage, check permission for each directory
-            if (entry.schema === "external_storage") {
-                // Check permission for all external directories
-                const externalDirs = rootDir;
-                for (const [dirName, dirHandle] of Object.entries(externalDirs || {})) {
-                    const hasPermission = await verifyPermission(dirHandle);
-                    if (!hasPermission) {
-                        alert(`Permission denied for "${dirName}". Please grant permission to access this directory.`);
-                        return;
-                    }
-                }
-            }
-
+        header.addEventListener("click", () => {
             const hidden = subList.classList.toggle("hidden");
             toggleBtn.textContent = hidden ? "+" : "−";
             if (!hidden) loadStorageSubdirs(subList, rootDir, entry);
