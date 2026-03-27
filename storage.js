@@ -802,6 +802,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 const newName = prompt("New file name:", name);
                 if (newName && newName.trim() && newName.trim() !== name) {
                     const trimmed = newName.trim();
+                    let writable = null;
                     try {
                         // Get parent directory
                         const parts = fullPath.split("/");
@@ -819,9 +820,10 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                         // Read old file
                         const oldFile = await handle.getFile();
                         const newHandle = await parent.getFileHandle(trimmed, { create: true });
-                        const writable = await newHandle.createWritable();
+                        writable = await newHandle.createWritable();
                         await writable.write(await oldFile.arrayBuffer());
                         await writable.close();
+                        writable = null;
 
                         // Delete old file
                         await parent.removeEntry(name);
@@ -830,6 +832,8 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     } catch (err) {
                         console.error("Rename failed:", err);
                         alert("Failed to rename file.");
+                    } finally {
+                        if (writable) await writable.close();
                     }
                 }
             }
