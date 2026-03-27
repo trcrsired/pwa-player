@@ -491,6 +491,7 @@ function showStorageDirMenu(entry, dirName, button) {
             : t('delete', 'Delete');
         menuItems.push(`<div class="menu-item danger" data-action="delete">${deleteLabel}</div>`);
     }
+    menuItems.push(`<div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="close">${t('close', 'Close')}</div>`);
 
     const menu = document.createElement("div");
@@ -611,10 +612,92 @@ function showStorageDirMenu(entry, dirName, button) {
                 }
             }
 
+            if (action === "properties") {
+                const fullPath = dirName
+                    ? `${entry.schema}://${entry.rootName}/${dirName}`
+                    : `${entry.schema}://${entry.rootName}`;
+                const displayName = dirName ? dirName.split("/").pop() : entry.rootName;
+
+                let info = [
+                    `${t('directoryName', 'Directory Name')}: ${displayName}`,
+                    `${t('fullPath', 'Full Path')}: ${fullPath}`
+                ];
+
+                // Count files in directory
+                let fileCount = 0;
+                let totalSize = 0;
+                try {
+                    let targetDir;
+                    if (entry.schema === "navigator_storage") {
+                        const root = await navigator.storage.getDirectory();
+                        targetDir = await root.getDirectoryHandle(entry.dirName);
+                        if (dirName) {
+                            const parts = dirName.split("/");
+                            for (const part of parts) {
+                                targetDir = await targetDir.getDirectoryHandle(part);
+                            }
+                        }
+                    } else if (entry.schema === "external_storage" && dirName) {
+                        const dirs = await loadExternalDirs();
+                        targetDir = dirs[dirName.split("/")[0]];
+                        if (targetDir) {
+                            const ok = await verifyPermission(targetDir);
+                            if (ok && dirName.includes("/")) {
+                                const parts = dirName.split("/").slice(1);
+                                for (const part of parts) {
+                                    targetDir = await targetDir.getDirectoryHandle(part);
+                                }
+                            }
+                        }
+                    }
+
+                    if (targetDir) {
+                        const countResult = await countFilesInDir(targetDir);
+                        fileCount = countResult.count;
+                        totalSize = countResult.size;
+                    }
+                } catch (err) {
+                    console.error("Failed to count files:", err);
+                }
+
+                if (fileCount > 0) {
+                    const sizeKB = (totalSize / 1024).toFixed(2);
+                    const sizeMB = (totalSize / 1048576).toFixed(2);
+                    info.push(`${t('fileCount', 'Files')}: ${fileCount}`);
+                    info.push(`${t('totalSize', 'Total Size')}: ${totalSize} bytes (${sizeKB} KB / ${sizeMB} MB)`);
+                }
+
+                alert(info.join('\n\n'));
+            }
+
             closeMenu();
             renderStorage();
         });
     });
+}
+
+// Count files recursively in a directory
+async function countFilesInDir(dirHandle) {
+    let count = 0;
+    let size = 0;
+
+    for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === "file") {
+            if (isPlaylistFile(name)) {
+                try {
+                    const file = await handle.getFile();
+                    size += file.size;
+                } catch {}
+            }
+            count++;
+        } else if (handle.kind === "directory") {
+            const subResult = await countFilesInDir(handle);
+            count += subResult.count;
+            size += subResult.size;
+        }
+    }
+
+    return { count, size };
 }
 function showStorageFileMenu(entry, name, handle, fullPath, button) {
     // Remove existing menu
@@ -632,6 +715,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
         menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
         menuItems.push(`<div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>`);
     }
+    menuItems.push(`<div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="close">${t('close', 'Close')}</div>`);
 
     const menu = document.createElement("div");
@@ -691,6 +775,27 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     console.error("Failed to export file:", err);
                     alert("Failed to export file.");
                 }
+            }
+
+            if (action === "properties") {
+                const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                let info = [
+                    `${t('fileName', 'File Name')}: ${name}`,
+                    `${t('fullPath', 'Full Path')}: ${entryPath}`
+                ];
+                try {
+                    const file = await handle.getFile();
+                    const size = file.size;
+                    const sizeKB = (size / 1024).toFixed(2);
+                    const sizeMB = (size / 1048576).toFixed(2);
+                    const lastModified = new Date(file.lastModified).toISOString();
+                    info.push(`${t('size', 'Size')}: ${size} bytes (${sizeKB} KB / ${sizeMB} MB)`);
+                    info.push(`${t('type', 'Type')}: ${file.type || 'Unknown'}`);
+                    info.push(`${t('lastModified', 'Last Modified')}: ${lastModified}`);
+                } catch (err) {
+                    console.error("Failed to get file properties:", err);
+                }
+                alert(info.join('\n\n'));
             }
 
             if (action === "rename" && canModify) {

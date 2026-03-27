@@ -116,6 +116,15 @@ const EN_TRANSLATIONS = {
     error: "Error",
     success: "Success",
     loading: "Loading...",
+    properties: "Properties",
+    fileName: "File Name",
+    fullPath: "Full Path",
+    size: "Size",
+    type: "Type",
+    lastModified: "Last Modified",
+    directoryName: "Directory Name",
+    fileCount: "Files",
+    totalSize: "Total Size",
 
     // Messages
     noTrackPlaying: "No track playing",

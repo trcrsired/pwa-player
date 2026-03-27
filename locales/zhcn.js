@@ -116,6 +116,15 @@ const ZHCN_TRANSLATIONS = {
     error: "错误",
     success: "成功",
     loading: "加载中...",
+    properties: "属性",
+    fileName: "文件名",
+    fullPath: "完整路径",
+    size: "大小",
+    type: "类型",
+    lastModified: "最后修改",
+    directoryName: "目录名",
+    fileCount: "文件数",
+    totalSize: "总大小",
 
     // Messages
     noTrackPlaying: "没有正在播放的曲目",
