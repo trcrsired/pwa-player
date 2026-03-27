@@ -798,23 +798,52 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 alert(info.join('\n\n'));
             }
 
+            const canModify = entry.allowModification;
+
             if (action === "rename" && canModify) {
                 const newName = prompt("New file name:", name);
                 if (newName && newName.trim() && newName.trim() !== name) {
                     const trimmed = newName.trim();
                     let writable = null;
                     try {
-                        // Get parent directory
-                        const parts = fullPath.split("/");
-                        const fileName = parts.pop();
-                        const parentPath = parts.join("/");
+                        let parent;
 
-                        const root = await navigator.storage.getDirectory();
-                        let parent = await root.getDirectoryHandle(entry.dirName);
+                        if (entry.schema === "navigator_storage") {
+                            const parts = fullPath.split("/");
+                            parts.pop();
+                            const parentPath = parts.join("/");
 
-                        // Navigate to parent directory
-                        for (const part of parentPath.split("/").filter(p => p)) {
-                            parent = await parent.getDirectoryHandle(part);
+                            const root = await navigator.storage.getDirectory();
+                            parent = await root.getDirectoryHandle(entry.dirName);
+
+                            for (const part of parentPath.split("/").filter(p => p)) {
+                                parent = await parent.getDirectoryHandle(part);
+                            }
+                        } else if (entry.schema === "external_storage") {
+                            // For external storage, get parent directory from the handle
+                            const parts = fullPath.split("/");
+                            parts.pop();
+                            const topLevelName = parts[0];
+
+                            const dirs = await loadExternalDirs();
+                            parent = dirs[topLevelName];
+
+                            if (!parent) {
+                                alert("External directory not found.");
+                                return;
+                            }
+
+                            // Request write permission
+                            const hasPermission = await verifyPermission(parent, "readwrite");
+                            if (!hasPermission) {
+                                alert("Write permission denied for external directory.");
+                                return;
+                            }
+
+                            // Navigate to parent
+                            for (let i = 1; i < parts.length; ++i) {
+                                parent = await parent.getDirectoryHandle(parts[i]);
+                            }
                         }
 
                         // Read old file
@@ -842,16 +871,44 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 const ok = confirm(`Delete file "${name}"?`);
                 if (ok) {
                     try {
-                        const parts = fullPath.split("/");
-                        const fileName = parts.pop();
-                        const parentPath = parts.join("/");
+                        let parent;
 
-                        const root = await navigator.storage.getDirectory();
-                        let parent = await root.getDirectoryHandle(entry.dirName);
+                        if (entry.schema === "navigator_storage") {
+                            const parts = fullPath.split("/");
+                            parts.pop();
+                            const parentPath = parts.join("/");
 
-                        // Navigate to parent directory
-                        for (const part of parentPath.split("/").filter(p => p)) {
-                            parent = await parent.getDirectoryHandle(part);
+                            const root = await navigator.storage.getDirectory();
+                            parent = await root.getDirectoryHandle(entry.dirName);
+
+                            for (const part of parentPath.split("/").filter(p => p)) {
+                                parent = await parent.getDirectoryHandle(part);
+                            }
+                        } else if (entry.schema === "external_storage") {
+                            // For external storage, get parent directory from the handle
+                            const parts = fullPath.split("/");
+                            parts.pop();
+                            const topLevelName = parts[0];
+
+                            const dirs = await loadExternalDirs();
+                            parent = dirs[topLevelName];
+
+                            if (!parent) {
+                                alert("External directory not found.");
+                                return;
+                            }
+
+                            // Request write permission
+                            const hasPermission = await verifyPermission(parent, "readwrite");
+                            if (!hasPermission) {
+                                alert("Write permission denied for external directory.");
+                                return;
+                            }
+
+                            // Navigate to parent
+                            for (let i = 1; i < parts.length; ++i) {
+                                parent = await parent.getDirectoryHandle(parts[i]);
+                            }
                         }
 
                         await parent.removeEntry(name);

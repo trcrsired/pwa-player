@@ -591,8 +591,36 @@ if (connection) {
 // ===============================
 // Floating Scroll Buttons
 // ===============================
-const scrollUpBtn = document.getElementById("scrollUpBtn");
-const scrollDownBtn = document.getElementById("scrollDownBtn");
+let scrollUpBtn = null;
+let scrollDownBtn = null;
+
+function initScrollButtons() {
+    scrollUpBtn = document.getElementById("scrollUpBtn");
+    scrollDownBtn = document.getElementById("scrollDownBtn");
+
+    if (!scrollUpBtn || !scrollDownBtn) return;
+
+    scrollUpBtn.addEventListener("click", () => {
+        const view = getActiveOverlayView();
+        const content = view ? view.querySelector(".content") : null;
+        if (content) {
+            content.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    });
+
+    scrollDownBtn.addEventListener("click", () => {
+        const view = getActiveOverlayView();
+        const content = view ? view.querySelector(".content") : null;
+        if (content) {
+            content.scrollTo({ top: content.scrollHeight, behavior: "smooth" });
+        }
+    });
+
+    // Set up scroll listeners
+    document.querySelectorAll(".overlay-view .content").forEach(content => {
+        content.addEventListener("scroll", updateScrollButtons);
+    });
+}
 
 function getActiveOverlayView() {
     const views = document.querySelectorAll(".overlay-view");
@@ -605,6 +633,8 @@ function getActiveOverlayView() {
 }
 
 function updateScrollButtons() {
+    if (!scrollUpBtn || !scrollDownBtn) return;
+
     const view = getActiveOverlayView();
     const content = view ? view.querySelector(".content") : null;
 
@@ -640,34 +670,11 @@ function updateScrollButtons() {
     }
 }
 
-scrollUpBtn.addEventListener("click", () => {
-    const view = getActiveOverlayView();
-    const content = view ? view.querySelector(".content") : null;
-    if (content) {
-        content.scrollTo({ top: 0, behavior: "smooth" });
-    }
-});
-
-scrollDownBtn.addEventListener("click", () => {
-    const view = getActiveOverlayView();
-    const content = view ? view.querySelector(".content") : null;
-    if (content) {
-        content.scrollTo({ top: content.scrollHeight, behavior: "smooth" });
-    }
-});
-
-// Set up scroll listeners and mutation observer
-function initScrollListeners() {
-    document.querySelectorAll(".overlay-view .content").forEach(content => {
-        content.addEventListener("scroll", updateScrollButtons);
-    });
-}
-
-// Run after DOM is ready
+// Initialize when DOM is ready
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initScrollListeners);
+    document.addEventListener("DOMContentLoaded", initScrollButtons);
 } else {
-    initScrollListeners();
+    initScrollButtons();
 }
 
 // Hook into switchView to update buttons when view changes
@@ -685,7 +692,7 @@ window.closeActiveView = function() {
     if (_originalCloseActiveView) {
         _originalCloseActiveView();
     }
-    scrollUpBtn.classList.remove("visible");
-    scrollDownBtn.classList.remove("visible");
+    if (scrollUpBtn) scrollUpBtn.classList.remove("visible");
+    if (scrollDownBtn) scrollDownBtn.classList.remove("visible");
 };
 
