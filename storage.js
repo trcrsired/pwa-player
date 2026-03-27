@@ -601,7 +601,8 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
 
             if (action === "play") {
                 if (isPlaylistFile(name)) {
-                    await play_source(handle);
+                    const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                    await play_source(handle, { entryPath });
                     closeActiveView();
                 } else {
                     alert("This file type cannot be played directly.");
@@ -612,7 +613,8 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
 
             if (action === "play-keep-open") {
                 if (isPlaylistFile(name)) {
-                    await play_source(handle);
+                    const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                    await play_source(handle, { entryPath });
                 } else {
                     alert("This file type cannot be played directly.");
                 }
@@ -719,7 +721,9 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
     li.querySelector(".file-play").addEventListener("click", async (e) => {
         e.stopPropagation();
         if (isPlaylistFile(name)) {
-            await play_source(handle);
+            // Build the proper path for subtitle auto-load
+            const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+            await play_source(handle, { entryPath });
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
             }
@@ -807,6 +811,15 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPat
     {
         // Click to expand/collapse subdirectories (recursive)
         header.addEventListener("click", async () => {
+            // For external storage, check/request permission first
+            if (entry.schema === "external_storage" && handle) {
+                const hasPermission = await verifyPermission(handle);
+                if (!hasPermission) {
+                    alert("Permission denied for this directory.");
+                    return;
+                }
+            }
+
             let sub = li.querySelector("ul");
             if (!sub) {
                 sub = document.createElement("ul");
@@ -922,7 +935,20 @@ async function renderStorage() {
         const subList = li.querySelector(".storage-sub");
 
         // Click to expand/collapse
-        header.addEventListener("click", () => {
+        header.addEventListener("click", async () => {
+            // For external storage, check permission for each directory
+            if (entry.schema === "external_storage") {
+                // Check permission for all external directories
+                const externalDirs = rootDir;
+                for (const [dirName, dirHandle] of Object.entries(externalDirs || {})) {
+                    const hasPermission = await verifyPermission(dirHandle);
+                    if (!hasPermission) {
+                        alert(`Permission denied for "${dirName}". Please grant permission to access this directory.`);
+                        return;
+                    }
+                }
+            }
+
             const hidden = subList.classList.toggle("hidden");
             toggleBtn.textContent = hidden ? "+" : "−";
             if (!hidden) loadStorageSubdirs(subList, rootDir, entry);
