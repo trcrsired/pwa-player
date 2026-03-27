@@ -54,6 +54,8 @@ const ZHCN_TRANSLATIONS = {
     export: "导出",
     rename: "重命名",
     delete: "删除",
+    removeEntry: "移除条目",
+    removeAllEntries: "移除所有条目",
     add: "添加",
     playThis: "播放",
     importDirectoryHint: "将整个文件夹复制到应用私有存储(OPFS)，无需再次请求权限",

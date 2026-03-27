@@ -54,6 +54,8 @@ const EN_TRANSLATIONS = {
     export: "Export",
     rename: "Rename",
     delete: "Delete",
+    removeEntry: "Remove entry",
+    removeAllEntries: "Remove all entries",
     add: "Add",
     playThis: "Play",
     importDirectoryHint: "Copy an entire folder into private app storage (OPFS). No future permission prompts.",

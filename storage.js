@@ -6,7 +6,8 @@
 // - rootName: logical name used in pointer paths
 // - dirName: actual directory name inside private storage
 // - enabled: allows future toggling or feature flags
-// - allowModification: if false, prevents delete/rename operations
+// - allowModification: if true, allows delete/rename operations on content
+// - useRemoveLabel: if true, use "Remove entry" label instead of "Delete"
 //
 const IMPORT_ROOTS = [
     {
@@ -15,7 +16,8 @@ const IMPORT_ROOTS = [
         dirName: "imports",
         enabled: true,
         showSubdirs: true,
-        allowModification: true
+        allowModification: true,
+        useRemoveLabel: false
     },
     {
         schema: "navigator_storage",
@@ -23,7 +25,8 @@ const IMPORT_ROOTS = [
         dirName: "files",
         enabled: true,
         showSubdirs: true,
-        allowModification: true
+        allowModification: true,
+        useRemoveLabel: false
     },
     {
         schema: "external_storage",
@@ -31,7 +34,8 @@ const IMPORT_ROOTS = [
         dirName: "external",
         enabled: true,
         showSubdirs: true,
-        allowModification: false
+        allowModification: false,
+        useRemoveLabel: true
     }
 ];
 
@@ -423,22 +427,33 @@ function showStorageDirMenu(entry, dirName, x, y) {
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
 
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
     // Determine which menu items to show
     const isRoot = !dirName;
-    const canModify = entry.allowModification !== false;
+    const isTopLevel = dirName && !dirName.includes("/");
+
     const menuItems = [];
 
     if (!isRoot) {
-        menuItems.push(`<div class="menu-item" data-action="add">Add to Playlist</div>`);
-        menuItems.push(`<div class="menu-item" data-action="export">Export</div>`);
-        if (canModify) {
-            menuItems.push(`<div class="menu-item" data-action="rename">Rename</div>`);
+        menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
+        if (entry.allowModification) {
+            menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
         }
     }
-    if (canModify) {
-        menuItems.push(`<div class="menu-item danger" data-action="delete">Delete</div>`);
+    // Show delete/remove for root or top-level (always allowed), or nested folders with allowModification
+    const canRemoveEntry = !dirName || isTopLevel;
+    const canDeleteContent = entry.allowModification && !isRoot && !isTopLevel;
+
+    if (canRemoveEntry || canDeleteContent) {
+        // Use "Remove entry" label when useRemoveLabel is true, otherwise "Delete"
+        const deleteLabel = canRemoveEntry && entry.useRemoveLabel
+            ? (isRoot ? t('removeAllEntries', 'Remove all entries') : t('removeEntry', 'Remove entry'))
+            : t('delete', 'Delete');
+        menuItems.push(`<div class="menu-item danger" data-action="delete">${deleteLabel}</div>`);
     }
-    menuItems.push(`<div class="menu-item" data-action="close">Close</div>`);
+    menuItems.push(`<div class="menu-item" data-action="close">${t('close', 'Close')}</div>`);
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
@@ -509,23 +524,31 @@ function showStorageDirMenu(entry, dirName, x, y) {
             }
 
             if (action === "delete") {
-                let ok;
-                if (dirName) {
-                    ok = confirm(`Delete folder "${dirName}"?`);
+                const isTopLevel = dirName && !dirName.includes("/");
+                const isEntryRemoval = entry.useRemoveLabel && (!dirName || isTopLevel);
+
+                let confirmMsg;
+                if (isEntryRemoval) {
+                    // Entry removal - only remove reference, not actual files
+                    confirmMsg = dirName
+                        ? `Remove entry "${dirName}"?\n\nNote: The actual folder on your device will NOT be deleted.`
+                        : `Remove all entries from "${entry.rootName}"?\n\nNote: The actual folders on your device will NOT be deleted.`;
                 } else {
-                    ok = confirm(`Delete entire "${entry.rootName}" storage? This will remove all items in this category.`);
+                    confirmMsg = dirName
+                        ? `Delete folder "${dirName}"?`
+                        : `Delete entire "${entry.rootName}" storage?`;
                 }
 
-                if (ok) {
-                    if (entry.schema === "external_storage") {
+                if (confirm(confirmMsg)) {
+                    if (isEntryRemoval && entry.schema === "external_storage") {
                         if (dirName) {
-                            // For external, dirName should be top-level only (no nesting)
+                            // Remove just this external directory reference
                             const dirs = await loadExternalDirs();
                             delete dirs[dirName];
                             await kv_set("external_dirs", dirs);
                             window.externalStorageRoot = dirs;
                         } else {
-                            // Delete all external directory references (not actual directories)
+                            // Remove all external directory references
                             await kv_delete("external_dirs");
                             window.externalStorageRoot = {};
                         }
@@ -564,13 +587,12 @@ function showStorageFileMenu(entry, name, handle, fullPath, x, y) {
 
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
-    const canModify = entry.allowModification !== false;
     const menuItems = [];
 
     menuItems.push(`<div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
-    if (canModify) {
+    if (entry.allowModification) {
         menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
         menuItems.push(`<div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>`);
     }
