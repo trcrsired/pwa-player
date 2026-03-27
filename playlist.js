@@ -162,24 +162,25 @@ async function playlist_renderTree() {
 
     Object.entries(playlists).forEach(([playlistName, items]) => {
         const li = document.createElement("li");
-        li.className = "playlist-node";
+        li.className = "storage-node";
 
         li.innerHTML = `
-            <div class="playlist-header">
-                <button class="toggle" aria-label="Toggle playlist">+</button>
-                <span class="playlist-name">${escapeHTML(playlistName)}</span>
-                <button class="playlist-menu" title="Menu">⋮</button>
+            <div class="storage-header">
+                <button class="toggle">+</button>
+                <span class="storage-name">${escapeHTML(playlistName)} (${items.length})</span>
+                <button class="storage-menu" title="Menu">⋮</button>
             </div>
-            <ul class="playlist-items hidden"></ul>
+            <ul class="storage-sub hidden"></ul>
         `;
 
-        const header = li.querySelector(".playlist-header");
-        const toggleBtn = header.querySelector(".toggle");
-        const itemsContainer = li.querySelector(".playlist-items");
-        const menuBtn = li.querySelector(".playlist-menu");
+        const header = li.querySelector(".storage-header");
+        const toggleBtn = li.querySelector(".toggle");
+        const itemsContainer = li.querySelector(".storage-sub");
+        const menuBtn = li.querySelector(".storage-menu");
 
-        toggleBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
+        // Click to expand/collapse (but not on menu button)
+        header.addEventListener("click", (e) => {
+            if (e.target === menuBtn) return;
             const hidden = itemsContainer.classList.toggle("hidden");
             toggleBtn.textContent = hidden ? "+" : "−";
         });
@@ -192,33 +193,35 @@ async function playlist_renderTree() {
 
         items.forEach((item, index) => {
             const itemLi = document.createElement("li");
-            itemLi.className = "playlist-item";
+            itemLi.className = "storage-sub-item";
 
-            // Create menu button (⋮)
-            const menuBtn = document.createElement("button");
-            menuBtn.className = "playlist-item-menu";
-            menuBtn.textContent = "⋮";
-            menuBtn.title = "Menu";
-            menuBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                showPlaylistItemMenu(playlistName, index, e.currentTarget);
-            });
+            itemLi.innerHTML = `
+                <div class="storage-sub-header">
+                    <span class="sub-name">${escapeHTML(item.name || item.path)}</span>
+                    <div class="sub-actions">
+                        <button class="sub-menu" title="Menu">⋮</button>
+                    </div>
+                </div>
+            `;
 
-            // Item path/title
-            const pathSpan = document.createElement("span");
-            pathSpan.className = "item-origin";
-            pathSpan.textContent = item.path;
+            const subHeader = itemLi.querySelector(".storage-sub-header");
+            const subMenuBtn = itemLi.querySelector(".sub-menu");
 
-            // Click on path → play
-            pathSpan.addEventListener("click", async () => {
+            // Click on name to play
+            subHeader.addEventListener("click", async (e) => {
+                if (e.target === subMenuBtn) return;
                 await startNowPlayingFromPlaylist(playlistName, index);
                 if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                     closeActiveView();
                 }
             });
 
-            itemLi.appendChild(pathSpan);
-            itemLi.appendChild(menuBtn);
+            // Menu button
+            subMenuBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                showPlaylistItemMenu(playlistName, index, e.currentTarget);
+            });
+
             itemsContainer.appendChild(itemLi);
         });
 

@@ -159,7 +159,7 @@ html, body {
     margin: 0;
 }
 
-.list li {
+.list > li:not(.storage-node):not(.iptv-node) {
     padding: 14px 12px;
     border-bottom: 1px solid var(--divider);
     background: var(--card-bg);
@@ -169,40 +169,8 @@ html, body {
     transition: background 0.15s ease;
 }
 
-.list li:hover {
+.list > li:not(.storage-node):not(.iptv-node):hover {
     background: var(--btn-hover);
-}
-
-.playlist-item {
-    padding: 10px 14px;
-    font-size: 16px;
-    line-height: 1.4;
-    cursor: pointer;
-    user-select: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.playlist-item-toggle {
-    background: transparent;
-    border: none;
-    color: var(--fg);
-    cursor: pointer;
-    font-size: 14px;
-    padding: 0;
-    min-width: 16px;
-    flex-shrink: 0;
-}
-
-.playlist-item-toggle:hover {
-    color: var(--primary-bg);
-}
-
-.playlist-item .item-origin {
-    flex: 1;
-    display: block;
-    word-break: break-all;
 }
 
 .toast {
