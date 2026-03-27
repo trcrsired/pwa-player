@@ -175,7 +175,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     video.src = blobURL;
     hasActiveSource = true;
-    toggleControls(false);
+    hideControls();
 
     // 🔥 Fix: wait for metadata before playing
     video.onloadedmetadata = () => {
@@ -383,6 +383,8 @@ async function toggleStopBtn()
   clearSubtitles();
   navigator.mediaSession.metadata = new MediaMetadata({});
   document.title = `PWA Player`;
+  // Show controls when nothing is playing
+  ensureControlsVisibility();
 }
 
 stopBtn.onclick = toggleStopBtn;
@@ -697,10 +699,12 @@ function fullscreencallback()
 {
   if (document.fullscreenElement) {
     document.exitFullscreen();
-    toggleControls(true);
+    showControls(hasActiveSource);
   } else {
     document.documentElement.requestFullscreen();
-    toggleControls(false);
+    if (hasActiveSource) {
+        hideControls();
+    }
   }
 }
 
@@ -798,16 +802,36 @@ function updateSubtitlePosition(controlsVisible) {
   }
 }
 
-// Toggle controls visibility on click
-function toggleControls(show) {
-    if (show) {
-        controls.classList.remove("hidden");
-        playerWrapper.classList.remove("hide-cursor");
-        updateSubtitlePosition(true);
-    } else {
-        controls.classList.add("hidden");
-        playerWrapper.classList.add("hide-cursor");
-        updateSubtitlePosition(false);
+// Show controls and optionally start auto-hide timer
+function showControls(autoHide = true) {
+    controls.classList.remove("hidden");
+    playerWrapper.classList.remove("hide-cursor");
+    updateSubtitlePosition(true);
+
+    clearTimeout(hideTimeout);
+
+    // Auto-hide after 5 seconds only when playing
+    if (autoHide && hasActiveSource) {
+        hideTimeout = setTimeout(() => {
+            controls.classList.add("hidden");
+            playerWrapper.classList.add("hide-cursor");
+            updateSubtitlePosition(false);
+        }, 5000);
+    }
+}
+
+// Hide controls immediately
+function hideControls() {
+    clearTimeout(hideTimeout);
+    controls.classList.add("hidden");
+    playerWrapper.classList.add("hide-cursor");
+    updateSubtitlePosition(false);
+}
+
+// Ensure controls are visible when nothing is playing
+function ensureControlsVisibility() {
+    if (!hasActiveSource) {
+        showControls(false); // Show without auto-hide
     }
 }
 
@@ -818,17 +842,26 @@ playerWrapper.addEventListener("click", (e) => {
 
     if (controlsHidden) {
         // Show controls when clicking anywhere
-        toggleControls(true);
+        showControls(true);
     } else if (!controls.contains(target)) {
-        // Hide controls when clicking outside controls
-        toggleControls(false);
+        // Clicking outside controls: hide if playing, otherwise do nothing
+        if (hasActiveSource) {
+            hideControls();
+        }
     }
 });
 
 // Prevent clicks on controls from bubbling to playerWrapper
 controls.addEventListener("click", (e) => {
     e.stopPropagation();
+    // Reset auto-hide timer when interacting with controls
+    if (hasActiveSource) {
+        showControls(true);
+    }
 });
+
+// Initial state: show controls (nothing playing)
+ensureControlsVisibility();
 
   function expandCollapseBurgerMenu(hide) {
       if (hide) {
