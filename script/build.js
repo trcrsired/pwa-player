@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const UglifyJS = require("uglify-js");
+const { minify: minifyHTML } = require("html-minifier-terser");
+const CleanCSS = require("clean-css");
 
 const root = process.argv[2];
 if (!root) {
@@ -15,23 +17,53 @@ function ensureDir(dir) {
     fs.mkdirSync(dir, { recursive: true });
 }
 
-function copyOrMinify(srcPath, outPath) {
+async function processFile(srcPath, outPath) {
     const ext = path.extname(srcPath).toLowerCase();
+    const content = fs.readFileSync(srcPath, "utf8");
 
-    // JS → uglify
+    // HTML → html-minifier-terser
+    if (ext === ".html") {
+        const result = await minifyHTML(content, {
+            collapseWhitespace: true,
+            removeComments: true,
+            minifyCSS: true,
+            minifyJS: true
+        });
+        ensureDir(path.dirname(outPath));
+        fs.writeFileSync(outPath, result, "utf8");
+        console.log("HTML:", srcPath);
+        return;
+    }
+
+    // CSS → clean-css
+    if (ext === ".css") {
+        const result = new CleanCSS().minify(content).styles;
+        ensureDir(path.dirname(outPath));
+        fs.writeFileSync(outPath, result, "utf8");
+        console.log("CSS:", srcPath);
+        return;
+    }
+
+    // JS → uglify-js
     if (ext === ".js") {
-        const code = fs.readFileSync(srcPath, "utf8");
-        const result = UglifyJS.minify(code, { compress: true, mangle: true });
-
+        const result = UglifyJS.minify(content, { compress: true, mangle: true });
         if (result.error) {
-            console.error("Uglify error in:", srcPath);
+            console.error("UglifyJS error in:", srcPath);
             console.error(result.error);
             return;
         }
-
         ensureDir(path.dirname(outPath));
         fs.writeFileSync(outPath, result.code, "utf8");
         console.log("JS:", srcPath);
+        return;
+    }
+
+    // manifest.json → minify JSON
+    if (ext === ".json" && path.basename(srcPath) === "manifest.json") {
+        const result = JSON.stringify(JSON.parse(content));
+        ensureDir(path.dirname(outPath));
+        fs.writeFileSync(outPath, result, "utf8");
+        console.log("JSON:", srcPath);
         return;
     }
 
@@ -41,16 +73,16 @@ function copyOrMinify(srcPath, outPath) {
     console.log("COPY:", srcPath);
 }
 
-function walk(dir, baseOut) {
+async function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const srcPath = path.join(dir, entry.name);
         const relPath = path.relative(src, srcPath);
-        const outPath = path.join(baseOut, relPath);
+        const outPath = path.join(out, relPath);
 
         if (entry.isDirectory()) {
-            walk(srcPath, baseOut);
+            await walk(srcPath);
         } else {
-            copyOrMinify(srcPath, outPath);
+            await processFile(srcPath, outPath);
         }
     }
 }
@@ -62,5 +94,4 @@ if (fs.existsSync(out)) {
 ensureDir(out);
 
 // Start build
-walk(src, out);
-console.log("\nBuild complete!");
+walk(src).then(() => console.log("\nBuild complete!"));
