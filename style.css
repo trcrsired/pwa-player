@@ -7,17 +7,17 @@
   --color-text: #fff;
 
   --button-font-size: 24px;
-  --button-padding: 10px 18px;
+  --button-padding: 6px 10px;
   --button-radius: 6px;
 
   --control-gap: 16px;
-  --group-gap: 12px;
-  --row-gap: 14px;
+  --group-gap: 4px;
+  --row-gap: 8px;
 
   --volume-width: 100px;
   --progress-width: 80%;
 
-  --controls-padding: 14px 20px;
+  --controls-padding: 10px 14px;
   --controls-radius: 10px;
   --controls-width: 92vw;
   --controls-z: 1000;

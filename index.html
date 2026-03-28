@@ -52,8 +52,9 @@
 
                     <div class="control-group right-controls">
                         <button id="burgerBtn" data-i18n-title="more">☰</button>
-                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
-                        <span id="timeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
+                        <button id="volumeToggle" data-i18n-title="toggleVolume">🔊</button>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
+                        <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
                     </div>
                 </div>
                 <!-- Row 1: Playback & Timeline -->
@@ -70,9 +71,8 @@
                         <button id="rotationBtn" data-i18n-title="rotateView">🌀</button>
                         <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
                         <span id="networkStatus" data-i18n-title="networkStatus">🌐</span>
-                        <button id="volumeToggle" data-i18n-title="toggleVolume">🔊</button>
-                        <input type="range" id="volumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
-                        <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
+                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
+                        <span id="timeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
                     </div>
                 </div>
                 <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" />
