@@ -1,0 +1,54 @@
+{
+  "id": "/",
+  "name": "PWA Player",
+  "short_name": "PWA Player",
+  "start_url": "/",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "description": "A Progressive Web APP Media Player",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "icons/icon.webp",
+      "type": "image/webp",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/icon.webp",
+      "type": "image/webp",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icons/icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "screenshots":
+  [
+    {
+      "src": "icons/screenshot.webp",
+      "sizes": "2032x1124",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "desktop"
+    },
+    {
+      "src": "icons/screenshot-mobile.webp",
+      "sizes": "1080x2424",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "mobile"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "start_in": "music",
+      "accept": {
+        "video/*": [".mp4", ".webm", ".mkv"],
+        "audio/*": [".mp3", ".webm", ".wav", ".m4a", ".flac"]
+      }
+    }
+  ]
+}
