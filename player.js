@@ -440,20 +440,25 @@ function updateMediaSessionSubtitle(subtitleText) {
   if (subtitleText) {
     // Decode HTML entities and clean up the text
     let cleanText = decodeHtmlEntities(subtitleText);
-    // Replace line feeds with spaces
-    cleanText = cleanText.replace(/[\r\n]+/g, ' ').trim();
-    // Update metadata with subtitle in artist field and transparent artwork
+    // Split into lines
+    const lines = cleanText.split(/[\r\n]+/).filter(line => line.trim());
+
+    // First line as title
+    const firstLine = lines[0] ? lines[0].trim() : '';
+    // Remaining lines as artist
+    const remainingLines = lines.slice(1).join(' ').trim();
+
     const updatedMetadata = {
-      title: currentMediaMetadata.title,
-      artist: cleanText,
+      title: firstLine,
+      artist: remainingLines,
       album: currentMediaMetadata.album || ''
     };
     navigator.mediaSession.metadata = new MediaMetadata(updatedMetadata);
   } else {
-    // No active subtitle - restore original metadata with transparent artwork
+    // No active subtitle - show empty title (VTT is loaded but no current cue)
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentMediaMetadata.title,
-      artist: currentMediaMetadata.artist || '',
+      title: '',
+      artist: '',
       album: currentMediaMetadata.album || ''
     });
   }
