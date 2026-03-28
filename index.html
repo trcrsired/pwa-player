@@ -72,10 +72,14 @@
                         <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
                         <span id="networkStatus" data-i18n-title="networkStatus">🌐</span>
                         <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
-                        <span id="timeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
                     </div>
                 </div>
-                <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" />
+
+                <!-- Progress Bar with Time -->
+                <div class="progress-row">
+                    <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" />
+                    <span id="timeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
+                </div>
             </div>
 
         </div>

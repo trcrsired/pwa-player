@@ -49,7 +49,7 @@ html, body {
 /* Controls Container */
 #controls {
   position: absolute;
-  bottom: 40px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
   background-color: var(--controls-ui-bg);
@@ -173,6 +173,27 @@ button:hover,
   width: var(--progress-width);
   z-index: var(--progress-z);
 }
+
+/* Progress Row - progress bar with time on same line */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.progress-row #progressBar {
+  flex: 1;
+  width: auto;
+}
+
+.progress-row #timeDisplay {
+  flex-shrink: 0;
+  min-width: 90px;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
 /* Volume Slider */
 #volumeSlider {
   width: var(--volume-width);
@@ -254,12 +275,12 @@ button:hover,
     --group-gap: 10px;
     --volume-width: 120px;
     --progress-width: 90%;
+    --controls-padding: 8px 12px;
   }
 
   #controls {
-    padding: 16px;
-    gap: 18px;
     width: 96vw;
+    bottom: 4px;
   }
 }
 
