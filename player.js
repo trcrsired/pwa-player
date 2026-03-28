@@ -302,6 +302,10 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       if (autoPlay) {
         video.play().catch(err => console.warn("Play failed:", err));
       }
+      // Resize window to video dimensions if enabled
+      if (typeof resizeWindowToVideo === 'function') {
+        resizeWindowToVideo(video.videoWidth, video.videoHeight);
+      }
     };
 
     // Ensure video loads the new source

@@ -105,6 +105,8 @@ const ZHCN_TRANSLATIONS = {
     autoLoadSubtitles: "自动加载同名子幕文件",
     behavior: "行为",
     autoHidePanel: "播放后隐藏面板",
+    autoResizeWindow: "窗口大小适应视频",
+    autoResizeWindowHint: "加载视频时自动调整窗口大小（仅PWA模式）",
     aboutThisApp: "关于此应用",
     sourceCode: "源代码",
     license: "许可证",

@@ -105,6 +105,8 @@ const EN_TRANSLATIONS = {
     autoLoadSubtitles: "Auto-load subtitles with same filename",
     behavior: "Behavior",
     autoHidePanel: "Hide panel after playing",
+    autoResizeWindow: "Resize window to video size",
+    autoResizeWindowHint: "Automatically resize window when video loads (PWA mode only)",
     aboutThisApp: "About This App",
     sourceCode: "Source Code",
     license: "License",

@@ -119,6 +119,66 @@ function isAutoHidePanelEnabled() {
     return localStorage.getItem("autoHidePanel") === "true";
 }
 
+// Auto-resize window toggle
+const autoResizeWindowCheckbox = document.getElementById("autoResizeWindow");
+
+// Load saved preference (default: true)
+autoResizeWindowCheckbox.checked = localStorage.getItem("autoResizeWindow") !== "false";
+
+autoResizeWindowCheckbox.addEventListener("change", () => {
+    localStorage.setItem("autoResizeWindow", autoResizeWindowCheckbox.checked ? "true" : "false");
+});
+
+// Helper function to check if auto-resize window is enabled
+function isAutoResizeWindowEnabled() {
+    return localStorage.getItem("autoResizeWindow") !== "false";
+}
+
+// Resize window to video dimensions
+function resizeWindowToVideo(videoWidth, videoHeight) {
+    if (!isAutoResizeWindowEnabled()) return;
+
+    // Only works in PWA standalone mode or window.open() context
+    if (window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone ||
+        document.referrer === '' ||
+        window.opener) {
+
+        // Use maximize if video has no dimensions (audio-only webm, etc.)
+        const useDefault = !videoWidth || !videoHeight;
+
+        try {
+            if (useDefault) {
+                // Maximize window for audio-only content
+                window.resizeTo(screen.availWidth, screen.availHeight);
+                window.moveTo(0, 0);
+            } else {
+                // Resize to video dimensions
+                const chromeWidth = window.outerWidth - window.innerWidth;
+                const chromeHeight = window.outerHeight - window.innerHeight;
+
+                const maxWidth = screen.availWidth - 100;
+                const maxHeight = screen.availHeight - 100;
+
+                // Minimum 16:9 size to ensure controls are visible
+                const minWidth = 640;
+                const minHeight = 360;
+
+                const finalWidth = Math.max(Math.min(videoWidth + chromeWidth, maxWidth), minWidth);
+                const finalHeight = Math.max(Math.min(videoHeight + chromeHeight, maxHeight), minHeight);
+
+                window.resizeTo(finalWidth, finalHeight);
+                window.moveTo(
+                    Math.floor((screen.availWidth - finalWidth) / 2),
+                    Math.floor((screen.availHeight - finalHeight) / 2)
+                );
+            }
+        } catch (err) {
+            console.warn("Window resize failed:", err);
+        }
+    }
+}
+
 // Startup view selection
 const startupViewSelect = document.getElementById("startupViewSelect");
 
