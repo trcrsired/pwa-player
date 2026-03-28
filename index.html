@@ -34,21 +34,6 @@
                         <button class="config-item" id="settingsBtn" data-i18n="settings">⚙️ Settings</button>
                     </div>
                 </div>
-                <!-- Row 3: System / Advanced -->
-                <div class="control-row" id="advancedControls">
-                    <div class="control-group left-controls">
-                        <button id="pipBtn" data-i18n-title="pip">🪟</button>
-                        <button id="remoteBtn" data-i18n-title="remotePlayback">📡</button>
-                        <button id="screenCaptureBtn" data-i18n-title="captureScreen">🖥️</button>
-                        <button id="mediaRecordBtn" data-i18n-title="recordMedia">⏺️</button>
-                        <button id="screenshotBtn" data-i18n-title="screenshot">📸</button>
-                    </div>
-
-                    <div class="control-group right-controls">
-                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
-                        <span id="networkStatus" data-i18n-title="networkStatus">🌐</span>
-                    </div>
-                </div>
                 <!-- Row 1: Playback & Timeline -->
                 <div class="control-row">
                     <div class="control-group left-controls">
@@ -60,6 +45,9 @@
                     </div>
 
                     <div class="control-group right-controls">
+                        <button id="rotationBtn" data-i18n-title="rotateView">🌀</button>
+                        <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
+                        <span id="networkStatus" data-i18n-title="networkStatus">🌐</span>
                         <button id="volumeToggle" data-i18n-title="toggleVolume">🔊</button>
                         <input type="range" id="volumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
                         <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
@@ -72,14 +60,19 @@
                         <button id="pickerBtn" data-i18n-title="pickFile">📁</button>
                         <button id="webBtn" data-i18n-title="openWebView">🌍</button>
                         <button id="subtitleBtn" data-i18n-title="loadSubtitles">📝</button>
-                        <button id="burgerBtn" data-i18n-title="more">☰</button>
+                        <button id="pipBtn" data-i18n-title="pip">🪟</button>
+                        <button id="remoteBtn" data-i18n-title="remotePlayback">📡</button>
+                        <button id="screenCaptureBtn" data-i18n-title="captureScreen">🖥️</button>
+                        <button id="mediaRecordBtn" data-i18n-title="recordMedia">⏺️</button>
+                        <button id="screenshotBtn" data-i18n-title="screenshot">📸</button>
+
                         <button id="micToggleBtn" data-i18n-title="toggleMicrophone" style="display:none;">🎤</button>
                         <button id="switchCaptureBtn" data-i18n-title="switchCapture" style="display:none;">🔄</button>
                     </div>
 
                     <div class="control-group right-controls">
-                        <button id="rotationBtn" data-i18n-title="rotateView">🌀</button>
-                        <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
+                        <button id="burgerBtn" data-i18n-title="more">☰</button>
+                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
                         <span id="timeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
                     </div>
                 </div>

@@ -94,7 +94,6 @@ const volumeToggleBtn = document.getElementById("volumeToggle");
 const npVolumeToggleBtn = document.getElementById("npVolumeToggle");
 const burgerBtn = document.getElementById('burgerBtn');
 const configOptions = document.getElementById('configOptions');
-const advancedControls = document.getElementById('advancedControls');
 const subtitleBtn = document.getElementById('subtitleBtn');
 
 // Clear all subtitles properly
@@ -864,22 +863,23 @@ controls.addEventListener("click", (e) => {
 ensureControlsVisibility();
 
   function expandCollapseBurgerMenu(hide) {
+      if (!configOptions) return;
       if (hide) {
           configOptions.classList.add("hidden");
-          advancedControls.classList.add("hidden");
       } else {
           configOptions.classList.remove("hidden");
-          advancedControls.classList.remove("hidden");
       }
       localStorage.setItem("burgerMenuHidden", hide ? "true" : "false");
   }
 
-  burgerBtn.addEventListener("click", () => {
-      const currentlyHidden = configOptions.classList.contains("hidden");
-      expandCollapseBurgerMenu(!currentlyHidden);
-  });
+  if (burgerBtn) {
+    burgerBtn.addEventListener("click", () => {
+        const currentlyHidden = configOptions && configOptions.classList.contains("hidden");
+        expandCollapseBurgerMenu(!currentlyHidden);
+    });
+  }
 
-  {
+  if (configOptions) {
     expandCollapseBurgerMenu(localStorage.getItem("burgerMenuHidden") === "true");
   }
 
