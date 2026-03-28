@@ -24,15 +24,33 @@ function closeActiveView() {
   }
 }
 
-// Handle back gesture/button on mobile - close overlay views instead of exiting app
+// Handle back/forward gesture/button - navigate between views and main player
 window.addEventListener("popstate", (e) => {
   const activeView = getActiveView();
-  if (activeView) {
-    // Back gesture while in overlay - close it
-    // Use closeActiveView() to ensure all hooks (like scroll button hiding) are triggered
-    closeActiveView();
+
+  if (e.state && e.state.view) {
+    // Forward navigation or restore view - open the view
+    const viewId = e.state.view;
+    const viewEl = document.getElementById(viewId);
+    if (viewEl) {
+      viewEl.classList.remove("hidden");
+      document.getElementById("playerContainer").classList.add("hidden");
+      // Trigger scroll button update if available
+      if (typeof window.updateScrollButtons === 'function') {
+        setTimeout(window.updateScrollButtons, 50);
+        setTimeout(window.updateScrollButtons, 200);
+      }
+    }
+  } else if (activeView) {
+    // Back navigation from view - close it
+    activeView.classList.add("hidden");
+    document.getElementById("playerContainer").classList.remove("hidden");
+    // Trigger scroll button hiding if available
+    if (typeof window.updateScrollButtons === 'function') {
+      window.updateScrollButtons();
+    }
   }
-  // If no active view, let browser handle normally (exit app)
+  // If no active view and no state, let browser handle normally (exit app)
 });
 
 function nop() {}
