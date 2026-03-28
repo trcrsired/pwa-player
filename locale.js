@@ -3,7 +3,8 @@
 // Available languages - translations loaded from locale files
 const LANGUAGES = {
     'en': { name: 'English', translations: EN_TRANSLATIONS },
-    'zhcn': { name: '简体中文', translations: ZHCN_TRANSLATIONS }
+    'zhcn': { name: '简体中文', translations: ZHCN_TRANSLATIONS },
+    'ja': { name: '日本語', translations: JA_TRANSLATIONS }
 };
 
 let currentLang = 'en';

@@ -188,3 +188,26 @@ startupViewSelect.value = localStorage.getItem("startupView") || "player";
 startupViewSelect.addEventListener("change", () => {
     localStorage.setItem("startupView", startupViewSelect.value);
 });
+
+// Disable rotate button toggle
+const disableRotateBtnCheckbox = document.getElementById("disableRotateBtn");
+
+// Load saved preference (default: false - rotate button enabled)
+disableRotateBtnCheckbox.checked = localStorage.getItem("disableRotateBtn") === "true";
+
+// Apply initial state
+if (rotationBtn && disableRotateBtnCheckbox.checked) {
+    rotationBtn.style.display = "none";
+}
+
+disableRotateBtnCheckbox.addEventListener("change", () => {
+    localStorage.setItem("disableRotateBtn", disableRotateBtnCheckbox.checked ? "true" : "false");
+    if (rotationBtn) {
+        rotationBtn.style.display = disableRotateBtnCheckbox.checked ? "none" : "";
+    }
+});
+
+// Helper function to check if rotate button is disabled
+function isRotateBtnDisabled() {
+    return localStorage.getItem("disableRotateBtn") === "true";
+}

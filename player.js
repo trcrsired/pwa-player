@@ -568,10 +568,10 @@ function updateMediaSessionSubtitle(subtitleText) {
     // Split into lines
     const lines = cleanText.split(/[\r\n]+/).filter(line => line.trim());
 
-    // First line as title
-    const firstLine = lines[0] ? lines[0].trim() : '';
-    // Remaining lines as artist
-    const remainingLines = lines.slice(1).join(' ').trim();
+    // First line as title (use space if empty to prevent Android showing URL)
+    const firstLine = lines[0] ? lines[0].trim() : ' ';
+    // Remaining lines as artist (use space if empty to prevent Android showing URL)
+    const remainingLines = lines.slice(1).join(' ').trim() || ' ';
 
     const updatedMetadata = {
       title: firstLine,
@@ -580,10 +580,10 @@ function updateMediaSessionSubtitle(subtitleText) {
     };
     navigator.mediaSession.metadata = new MediaMetadata(updatedMetadata);
   } else {
-    // No active subtitle - show empty title (VTT is loaded but no current cue)
+    // No active subtitle - show space to prevent Android showing URL
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: '',
-      artist: '',
+      title: ' ',
+      artist: ' ',
       album: currentMediaMetadata.album || ''
     });
   }
