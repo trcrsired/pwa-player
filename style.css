@@ -703,11 +703,11 @@ button:hover,
 }
 
 .scroll-btn.scroll-up {
-    bottom: 80px;
+    bottom: 130px;
 }
 
 .scroll-btn.scroll-down {
-    bottom: 24px;
+    bottom: 70px;
 }
 
 .scroll-btn.visible {

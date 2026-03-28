@@ -425,21 +425,30 @@ async function collectFilesForExport(dirHandle, basePath) {
 // ============================================================
 // Helper: position menu within viewport boundaries
 // ============================================================
+let _menuCounter = 0;
+
 window.positionMenu = function(menu, button) {
+    // Ensure button has a unique ID for comparison
+    if (!button.dataset.menuTriggerId) {
+        button.dataset.menuTriggerId = "menuTrigger_" + (++_menuCounter);
+    }
+    const triggerId = button.dataset.menuTriggerId;
+
     // Check if there's already an open menu from this button
     const existing = document.querySelector(".context-menu");
     if (existing) {
-        const existingButton = existing._triggerButton;
-        // Use contains for more reliable comparison (handles same element)
-        if (existingButton && (existingButton === button || existingButton.contains(button) || button.contains(existingButton))) {
-            // Same button clicked - just close the menu
+        const existingTriggerId = existing.dataset.triggerId;
+        // Same button clicked - close menu and don't create new one
+        if (existingTriggerId === triggerId) {
             existing.remove();
-            return false; // Signal to not create new menu
+            return false;
         }
+        // Different button - close old menu, create new one
         existing.remove();
     }
 
-    menu._triggerButton = button;
+    // Store trigger ID on menu for comparison
+    menu.dataset.triggerId = triggerId;
     menu.style.visibility = "hidden";
     menu.style.position = "fixed";
     document.body.appendChild(menu);
@@ -479,10 +488,10 @@ window.positionMenu = function(menu, button) {
     menu.style.top = top + "px";
     menu.style.visibility = "visible";
 
-    // Auto-close handler - close on outside click, but skip trigger button (for toggle)
+    // Auto-close handler - close on outside click (not on trigger button)
     const closeHandler = (e) => {
-        // Don't close if clicking the trigger button (let click handler toggle)
-        if (button.contains(e.target)) {
+        // Don't close if clicking the trigger button (positionMenu handles toggle)
+        if (e.target === button || button.contains(e.target)) {
             return;
         }
         // Close if click is outside menu
@@ -491,7 +500,7 @@ window.positionMenu = function(menu, button) {
             document.removeEventListener("click", closeHandler, true);
         }
     };
-    // Use capture phase to catch clicks before they reach other handlers
+    // Use capture phase to catch clicks
     document.addEventListener("click", closeHandler, true);
 
     return true; // Menu was created
