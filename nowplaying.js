@@ -234,25 +234,6 @@ function removeFromNowPlaying(index) {
     renderNowPlayingQueue();
 }
 
-function closeContextMenu() {
-    const existing = document.querySelector(".context-menu");
-    if (existing) existing.remove();
-}
-
-function enableContextMenuAutoClose(menu) {
-    const handler = (e) => {
-        if (!menu.contains(e.target)) {
-            menu.remove();
-            document.removeEventListener("mousedown", handler);
-            document.removeEventListener("touchstart", handler);
-        }
-    };
-
-    // Use mousedown/touchstart so it closes BEFORE new menus open
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("touchstart", handler);
-}
-
 function confirmRemoveFromNowPlaying(index) {
     const queue = getActiveQueue();
     const entry = queue[index];
@@ -278,8 +259,6 @@ function showNowPlayingItemMenu(index, button) {
     `;
 
     if (!positionMenu(menu, button)) return;
-
-    enableContextMenuAutoClose(menu);
 
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", () => {

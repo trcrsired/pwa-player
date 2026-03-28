@@ -262,21 +262,6 @@ html, body {
     font-size: 14px;
 }
 
-.storage-sub-header .quick-add {
-    background: var(--primary-bg);
-    color: var(--primary-fg);
-    border: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.storage-sub-header .quick-add:hover {
-    background: var(--primary-hover);
-}
-
 /* Storage file item styles */
 .storage-file-item {
     padding: 2px 0;

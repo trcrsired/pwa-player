@@ -423,14 +423,15 @@ async function collectFilesForExport(dirHandle, basePath) {
 }
 
 // ============================================================
-// Helper: position menu to the left of a button
+// Helper: position menu within viewport boundaries
 // ============================================================
 window.positionMenu = function(menu, button) {
     // Check if there's already an open menu from this button
     const existing = document.querySelector(".context-menu");
     if (existing) {
         const existingButton = existing._triggerButton;
-        if (existingButton === button) {
+        // Use contains for more reliable comparison (handles same element)
+        if (existingButton && (existingButton === button || existingButton.contains(button) || button.contains(existingButton))) {
             // Same button clicked - just close the menu
             existing.remove();
             return false; // Signal to not create new menu
@@ -446,25 +447,57 @@ window.positionMenu = function(menu, button) {
     const btnRect = button.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
 
-    // Position menu's right edge to the left of the button
-    menu.style.left = (btnRect.left - menuRect.width) + "px";
-    menu.style.top = btnRect.top + "px";
+    // Calculate available space
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
-    // If menu goes off left edge, show it below the button instead
-    if (btnRect.left - menuRect.width < 0) {
-        menu.style.left = btnRect.left + "px";
-        menu.style.top = btnRect.bottom + "px";
+    // Try positioning to the left of the button first
+    let left = btnRect.left - menuRect.width;
+    let top = btnRect.top;
+
+    // If menu goes off left edge, try right side
+    if (left < 0) {
+        left = btnRect.right;
     }
 
+    // If menu goes off right edge, position at left edge of viewport
+    if (left + menuRect.width > viewportWidth) {
+        left = 0;
+    }
+
+    // Check bottom boundary - if menu goes below viewport, position above button
+    if (top + menuRect.height > viewportHeight) {
+        top = btnRect.top - menuRect.height;
+    }
+
+    // If still goes above viewport, position at bottom of viewport
+    if (top < 0) {
+        top = viewportHeight - menuRect.height;
+    }
+
+    menu.style.left = left + "px";
+    menu.style.top = top + "px";
     menu.style.visibility = "visible";
+
+    // Auto-close handler - close on outside click, but skip trigger button (for toggle)
+    const closeHandler = (e) => {
+        // Don't close if clicking the trigger button (let click handler toggle)
+        if (button.contains(e.target)) {
+            return;
+        }
+        // Close if click is outside menu
+        if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener("click", closeHandler, true);
+        }
+    };
+    // Use capture phase to catch clicks before they reach other handlers
+    document.addEventListener("click", closeHandler, true);
+
     return true; // Menu was created
 };
 
 function showStorageDirMenu(entry, dirName, button) {
-    // Remove existing menu
-    const existing = document.querySelector(".context-menu");
-    if (existing) existing.remove();
-
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
     // Determine which menu items to show
@@ -502,13 +535,6 @@ function showStorageDirMenu(entry, dirName, button) {
     if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
-
-    // Auto-close when clicking outside
-    setTimeout(() => {
-        document.addEventListener("mousedown", (e) => {
-            if (!menu.contains(e.target)) closeMenu();
-        }, { once: true });
-    }, 0);
 
     // Menu actions
     menu.querySelectorAll(".menu-item").forEach(item => {
@@ -700,16 +726,13 @@ async function countFilesInDir(dirHandle) {
     return { count, size };
 }
 function showStorageFileMenu(entry, name, handle, fullPath, button) {
-    // Remove existing menu
-    const existing = document.querySelector(".context-menu");
-    if (existing) existing.remove();
-
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
     const menuItems = [];
 
     menuItems.push(`<div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
+    menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
     if (entry.allowModification) {
         menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
@@ -726,13 +749,6 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
     if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
-
-    // Auto-close when clicking outside
-    setTimeout(() => {
-        document.addEventListener("mousedown", (e) => {
-            if (!menu.contains(e.target)) closeMenu();
-        }, { once: true });
-    }, 0);
 
     // Menu actions
     menu.querySelectorAll(".menu-item").forEach(item => {
@@ -757,6 +773,36 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     await play_source(handle, { entryPath });
                 } else {
                     alert("This file type cannot be played directly.");
+                }
+                closeMenu();
+                return;
+            }
+
+            if (action === "add") {
+                if (!isPlaylistFile(name)) {
+                    alert("This file type cannot be added to playlist.");
+                    closeMenu();
+                    return;
+                }
+
+                const playlists = await playlists_load();
+                const names = Object.keys(playlists);
+
+                const choice = prompt(
+                    "Add to which playlist?\n" +
+                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+                    "1"
+                );
+
+                if (choice) {
+                    const index = parseInt(choice, 10) - 1;
+                    if (index >= 0 && index < names.length) {
+                        const selectedName = names[index];
+                        const path = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                        playlists[selectedName].push({ name, path });
+                        await playlists_save(playlists);
+                        alert(`Added "${name}" to playlist "${selectedName}".`);
+                    }
                 }
                 closeMenu();
                 return;
@@ -890,7 +936,6 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
             <span class="file-name">📄 ${escapeHTML(name)}</span>
             <div class="file-actions">
                 <button class="file-play" title="Play">▶</button>
-                <button class="file-add" title="Add to Playlist">+</button>
                 <button class="file-menu" title="Menu">⋮</button>
             </div>
         </div>
@@ -911,39 +956,6 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
         }
     });
 
-    // Add to playlist button
-    li.querySelector(".file-add").addEventListener("click", async (e) => {
-        e.stopPropagation();
-        if (!isPlaylistFile(name)) {
-            alert("This file type cannot be added to playlist.");
-            return;
-        }
-
-        const playlists = await playlists_load();
-        const names = Object.keys(playlists);
-
-        const choice = prompt(
-            "Add to which playlist?\n" +
-            names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-            "1"
-        );
-
-        if (!choice) return;
-
-        const index = parseInt(choice, 10) - 1;
-        if (index < 0 || index >= names.length) {
-            alert("Invalid selection");
-            return;
-        }
-
-        const selectedName = names[index];
-        const path = `${entry.schema}://${entry.rootName}/${fullPath}`;
-
-        playlists[selectedName].push({ name, path });
-        await playlists_save(playlists);
-        alert(`Added "${name}" to playlist "${selectedName}".`);
-    });
-
     // Burger menu button
     li.querySelector(".file-menu").addEventListener("click", (e) => {
         e.stopPropagation();
@@ -961,7 +973,6 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPat
         <div class="storage-sub-header">
             <span class="sub-name">📁 ${escapeHTML(name)}</span>
             <div class="sub-actions">
-                <button class="quick-add" title="Add to Playlist">+</button>
                 <button class="sub-menu" title="Menu">⋮</button>
             </div>
         </div>
@@ -979,13 +990,6 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPat
     li.querySelector(".sub-menu").addEventListener("click", (e) => {
         e.stopPropagation();
         showStorageDirMenu(entry, fullPath, e.currentTarget);
-    });
-
-    const addBtn = li.querySelector(".quick-add");
-    // Quick add to playlist - pass the root handle, not the immediate parent
-    addBtn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        await choosePlaylistAndAdd(actualRootHandle, entry, fullPath);
     });
 
     if (entry.showSubdirs)

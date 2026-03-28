@@ -41,12 +41,6 @@ function showIPTVChannelMenu(channel, url, button) {
 
     const closeMenu = () => menu.remove();
 
-    setTimeout(() => {
-        document.addEventListener("mousedown", (e) => {
-            if (!menu.contains(e.target)) closeMenu();
-        }, { once: true });
-    }, 0);
-
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;

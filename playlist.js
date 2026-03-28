@@ -102,13 +102,6 @@ function showPlaylistItemMenu(playlistName, index, button) {
 
     const closeMenu = () => menu.remove();
 
-    // Auto-close when clicking outside
-    setTimeout(() => {
-        document.addEventListener("mousedown", (e) => {
-            if (!menu.contains(e.target)) closeMenu();
-        }, { once: true });
-    }, 0);
-
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
@@ -260,13 +253,6 @@ function showPlaylistHeaderMenu(playlistName, button) {
     if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
-
-    // Auto-close when clicking outside
-    setTimeout(() => {
-        document.addEventListener("mousedown", (e) => {
-            if (!menu.contains(e.target)) closeMenu();
-        }, { once: true });
-    }, 0);
 
     // Menu actions
     menu.querySelectorAll(".menu-item").forEach(item => {
