@@ -122,8 +122,8 @@ function isAutoHidePanelEnabled() {
 // Auto-resize window toggle
 const autoResizeWindowCheckbox = document.getElementById("autoResizeWindow");
 
-// Load saved preference (default: true)
-autoResizeWindowCheckbox.checked = localStorage.getItem("autoResizeWindow") !== "false";
+// Load saved preference (default: false)
+autoResizeWindowCheckbox.checked = localStorage.getItem("autoResizeWindow") === "true";
 
 autoResizeWindowCheckbox.addEventListener("change", () => {
     localStorage.setItem("autoResizeWindow", autoResizeWindowCheckbox.checked ? "true" : "false");
@@ -131,7 +131,7 @@ autoResizeWindowCheckbox.addEventListener("change", () => {
 
 // Helper function to check if auto-resize window is enabled
 function isAutoResizeWindowEnabled() {
-    return localStorage.getItem("autoResizeWindow") !== "false";
+    return localStorage.getItem("autoResizeWindow") === "true";
 }
 
 // Resize window to video dimensions

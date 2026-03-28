@@ -9,6 +9,7 @@ function getActiveView() {
 function switchView(viewId) {
   document.getElementById(viewId).classList.remove("hidden");
   document.getElementById("playerContainer").classList.add("hidden");
+  history.pushState({ view: viewId }, "", location.href);
 }
 
 function closeActiveView() {
@@ -16,8 +17,23 @@ function closeActiveView() {
   if (view) {
     view.classList.add("hidden");
     document.getElementById("playerContainer").classList.remove("hidden");
+    // Only update history if we're not already navigating back
+    if (history.state && history.state.view) {
+      history.replaceState(null, "", location.href);
+    }
   }
 }
+
+// Handle back gesture/button on mobile - close overlay views instead of exiting app
+window.addEventListener("popstate", (e) => {
+  const activeView = getActiveView();
+  if (activeView) {
+    // Back gesture while in overlay - close it
+    // Use closeActiveView() to ensure all hooks (like scroll button hiding) are triggered
+    closeActiveView();
+  }
+  // If no active view, let browser handle normally (exit app)
+});
 
 function nop() {}
 
