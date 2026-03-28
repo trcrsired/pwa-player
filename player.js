@@ -94,7 +94,124 @@ const volumeToggleBtn = document.getElementById("volumeToggle");
 const npVolumeToggleBtn = document.getElementById("npVolumeToggle");
 const burgerBtn = document.getElementById('burgerBtn');
 const configOptions = document.getElementById('configOptions');
+const fileWebRow = document.getElementById('fileWebRow');
 const subtitleBtn = document.getElementById('subtitleBtn');
+
+// Make timeDisplay clickable to seek to a specific time
+let timeInputActive = false;
+let npTimeInputActive = false;
+
+if (timeDisplay) {
+    timeDisplay.addEventListener('click', () => {
+        // Only allow if playing and duration is not Infinity (not live stream)
+        if (!hasActiveSource || !isFinite(video.duration) || video.duration <= 0) return;
+        if (timeInputActive) return;
+
+        timeInputActive = true;
+        const originalText = timeDisplay.textContent;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = originalText.split(' / ')[0]; // Just the current time part
+        input.style.cssText = 'width: 80px; font-size: 12px; padding: 2px 4px; border: 1px solid #666; border-radius: 4px; background: rgba(0,0,0,0.8); color: #fff; text-align: center;';
+        input.placeholder = 'mm:ss';
+
+        timeDisplay.textContent = '';
+        timeDisplay.appendChild(input);
+        input.focus();
+        input.select();
+
+        const finishEdit = () => {
+            timeInputActive = false;
+            timeDisplay.textContent = originalText;
+        };
+
+        input.addEventListener('blur', finishEdit);
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                finishEdit();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const timeStr = input.value.trim();
+                const seconds = parseTimeString(timeStr);
+                if (seconds !== null && seconds >= 0 && seconds <= video.duration) {
+                    video.currentTime = seconds;
+                }
+                finishEdit();
+            }
+        });
+    });
+}
+
+// Make npTimeDisplay (Now Playing) also clickable to seek
+if (npTimeDisplay) {
+    npTimeDisplay.style.cursor = 'pointer';
+    npTimeDisplay.addEventListener('click', () => {
+        // Only allow if playing and duration is not Infinity (not live stream)
+        if (!hasActiveSource || !isFinite(video.duration) || video.duration <= 0) return;
+        if (npTimeInputActive) return;
+
+        npTimeInputActive = true;
+        const originalText = npTimeDisplay.textContent;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = originalText.split(' / ')[0]; // Just the current time part
+        input.style.cssText = 'width: 80px; font-size: 12px; padding: 2px 4px; border: 1px solid #666; border-radius: 4px; background: rgba(0,0,0,0.8); color: #fff; text-align: center;';
+        input.placeholder = 'mm:ss';
+
+        npTimeDisplay.textContent = '';
+        npTimeDisplay.appendChild(input);
+        input.focus();
+        input.select();
+
+        const finishEdit = () => {
+            npTimeInputActive = false;
+            npTimeDisplay.textContent = originalText;
+        };
+
+        input.addEventListener('blur', finishEdit);
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                finishEdit();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const timeStr = input.value.trim();
+                const seconds = parseTimeString(timeStr);
+                if (seconds !== null && seconds >= 0 && seconds <= video.duration) {
+                    video.currentTime = seconds;
+                }
+                finishEdit();
+            }
+        });
+    });
+}
+
+// Parse time string like "1:23:45" or "12:34" or "45" (seconds)
+function parseTimeString(str) {
+    if (!str) return null;
+
+    // Try to parse as seconds only
+    if (/^\d+(\.\d+)?$/.test(str)) {
+        return parseFloat(str);
+    }
+
+    // Parse mm:ss or hh:mm:ss
+    const parts = str.split(':').map(p => parseInt(p, 10));
+    if (parts.some(isNaN)) return null;
+
+    if (parts.length === 2) {
+        const [mm, ss] = parts;
+        if (ss < 0 || ss >= 60) return null;
+        return mm * 60 + ss;
+    } else if (parts.length === 3) {
+        const [hh, mm, ss] = parts;
+        if (mm < 0 || mm >= 60 || ss < 0 || ss >= 60) return null;
+        return hh * 3600 + mm * 60 + ss;
+    }
+
+    return null;
+}
 
 // Clear all subtitles properly
 function clearSubtitles() {
@@ -121,8 +238,12 @@ function clearSubtitles() {
 
 function updateTimeDisplay(txtct)
 {
-  timeDisplay.textContent = txtct;
-  npTimeDisplay.textContent = txtct;
+  if (!timeInputActive) {
+    timeDisplay.textContent = txtct;
+  }
+  if (!npTimeInputActive) {
+    npTimeDisplay.textContent = txtct;
+  }
 }
 
 // Try to auto-load subtitle from storage path
@@ -868,11 +989,12 @@ controls.addEventListener("click", (e) => {
 ensureControlsVisibility();
 
   function expandCollapseBurgerMenu(hide) {
-      if (!configOptions) return;
       if (hide) {
-          configOptions.classList.add("hidden");
+          if (configOptions) configOptions.classList.add("hidden");
+          if (fileWebRow) fileWebRow.classList.add("hidden");
       } else {
-          configOptions.classList.remove("hidden");
+          if (configOptions) configOptions.classList.remove("hidden");
+          if (fileWebRow) fileWebRow.classList.remove("hidden");
       }
       localStorage.setItem("burgerMenuHidden", hide ? "true" : "false");
   }
@@ -884,8 +1006,13 @@ ensureControlsVisibility();
     });
   }
 
-  if (configOptions) {
-    expandCollapseBurgerMenu(localStorage.getItem("burgerMenuHidden") === "true");
+  // Initialize from saved state (default to expanded/visible)
+  const savedHidden = localStorage.getItem("burgerMenuHidden");
+  if (savedHidden === null) {
+    // Default: show the expanded rows
+    expandCollapseBurgerMenu(false);
+  } else {
+    expandCollapseBurgerMenu(savedHidden === "true");
   }
 
 document.getElementById('storageBtn').addEventListener('click', () => {

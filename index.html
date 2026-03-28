@@ -35,15 +35,8 @@
                     </div>
                 </div>
                 <!-- Row 2: File & Web -->
-                <div class="control-row">
+                <div class="control-row" id="fileWebRow">
                     <div class="control-group left-controls">
-                        <button id="rotationBtn" data-i18n-title="rotateView">🌀</button>
-                        <span id="networkStatus" data-i18n-title="networkStatus">🌐</span>
-                        <button id="subtitleBtn" data-i18n-title="loadSubtitles">📝</button>
-                        <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
-                        <button id="burgerBtn" data-i18n-title="more">☰</button>
-                    </div>
-                    <div class="control-group right-controls">
                         <button id="pickerBtn" data-i18n-title="pickFile">📁</button>
                         <button id="webBtn" data-i18n-title="openWebView">🌍</button>
                         <button id="pipBtn" data-i18n-title="pip">🪟</button>
@@ -51,6 +44,14 @@
                         <button id="screenCaptureBtn" data-i18n-title="captureScreen">🖥️</button>
                         <button id="mediaRecordBtn" data-i18n-title="recordMedia">⏺️</button>
                         <button id="screenshotBtn" data-i18n-title="screenshot">📸</button>
+                    </div>
+                    <div class="control-group right-controls">
+                        <button id="micToggleBtn" data-i18n-title="toggleMicrophone" style="display:none;">🎤</button>
+                        <button id="switchCaptureBtn" data-i18n-title="switchCapture" style="display:none;">🔄</button>
+                        <button id="rotationBtn" data-i18n-title="rotateView">🌀</button>
+                        <button id="subtitleBtn" data-i18n-title="loadSubtitles">📝</button>
+                        <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
+                        <span id="networkStatus" data-i18n-title="networkStatus">🌐</span>
                     </div>
                 </div>
                 <!-- Row 1: Playback & Timeline -->
@@ -61,22 +62,21 @@
                         <button id="stopBtn" data-i18n-title="stop">⏹️</button>
                         <button id="nextBtn" data-i18n-title="next">⏭️</button>
                         <button id="playModeBtn" data-i18n-title="playbackMode">🔀</button>
-                        <button id="micToggleBtn" data-i18n-title="toggleMicrophone" style="display:none;">🎤</button>
-                        <button id="switchCaptureBtn" data-i18n-title="switchCapture" style="display:none;">🔄</button>
                     </div>
 
                     <div class="control-group right-controls">
-                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
+                        <button id="burgerBtn" data-i18n-title="more">☰</button>
                         <button id="volumeToggle" data-i18n-title="toggleVolume">🔊</button>
                         <input type="range" id="volumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
-                        <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
+                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
                     </div>
                 </div>
 
-                <!-- Progress Bar with Time -->
+                <!-- Progress Bar with Time and Fullscreen -->
                 <div class="progress-row">
-                    <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" />
                     <span id="timeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
+                    <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" />
+                    <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
                 </div>
             </div>
 

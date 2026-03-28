@@ -192,6 +192,31 @@ button:hover,
   min-width: 90px;
   font-size: 12px;
   color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.progress-row #timeDisplay:hover {
+  opacity: 0.8;
+}
+
+.progress-row #fullscreenBtn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-fg);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-row #fullscreenBtn:hover {
+  opacity: 0.7;
 }
 
 /* Volume Slider */
