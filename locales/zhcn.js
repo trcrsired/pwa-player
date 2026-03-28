@@ -91,6 +91,14 @@ const ZHCN_TRANSLATIONS = {
 
     // Settings
     language: "语言",
+    startupView: "启动视图",
+    startupViewHint: "选择应用启动时显示的视图",
+    playerView: "播放器",
+    nowPlayingView: "正在播放",
+    playlistView: "播放列表",
+    storageView: "存储",
+    iptvView: "网络电视",
+    settingsView: "设置",
     mediaSession: "媒体会话",
     showSubtitlesInMediaSession: "在锁屏界面显示字幕",
     subtitles: "字幕",

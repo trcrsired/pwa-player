@@ -13,6 +13,31 @@ function showToast(msg) {
   }, 2000);
 }
 
+// Startup view - switch to saved view on boot
+function applyStartupView() {
+  const startupView = localStorage.getItem("startupView") || "player";
+  if (startupView !== "player") {
+    const viewMap = {
+      "nowPlaying": "nowPlayingView",
+      "playlist": "playlistView",
+      "storage": "storageView",
+      "iptv": "iptvView",
+      "settings": "settingsView"
+    };
+    const targetView = viewMap[startupView];
+    if (targetView && document.getElementById(targetView)) {
+      switchView(targetView);
+    }
+  }
+}
+
+// Apply startup view when DOM is ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", applyStartupView);
+} else {
+  applyStartupView();
+}
+
 settingsYearEl.addEventListener("click", () => {
     ++settingsClickCount;
 
@@ -93,3 +118,13 @@ autoHidePanelCheckbox.addEventListener("change", () => {
 function isAutoHidePanelEnabled() {
     return localStorage.getItem("autoHidePanel") === "true";
 }
+
+// Startup view selection
+const startupViewSelect = document.getElementById("startupViewSelect");
+
+// Load saved preference (default: player)
+startupViewSelect.value = localStorage.getItem("startupView") || "player";
+
+startupViewSelect.addEventListener("change", () => {
+    localStorage.setItem("startupView", startupViewSelect.value);
+});

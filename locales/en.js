@@ -91,6 +91,14 @@ const EN_TRANSLATIONS = {
 
     // Settings
     language: "Language",
+    startupView: "Startup View",
+    startupViewHint: "Select which view to show when app starts",
+    playerView: "Player",
+    nowPlayingView: "Now Playing",
+    playlistView: "Playlists",
+    storageView: "Storage",
+    iptvView: "IPTV",
+    settingsView: "Settings",
     mediaSession: "Media Session",
     showSubtitlesInMediaSession: "Show subtitles in lock screen",
     subtitles: "Subtitles",
