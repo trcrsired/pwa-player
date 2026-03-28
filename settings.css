@@ -496,3 +496,179 @@ html, body {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* Now Playing - Progress Section */
+.progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.progress-section .progress-row {
+    width: 100%;
+}
+
+.progress-section .progress-row #npProgressBar {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--divider);
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.progress-section .progress-row #npProgressBar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-bg);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.progress-section .progress-row #npProgressBar::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-bg);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.progress-section .time-volume-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.progress-section .time-volume-row #npTimeDisplay {
+    font-size: 12px;
+    color: var(--subtle);
+    font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+.progress-section .time-volume-row .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.progress-section .time-volume-row .volume-row #npVolumeToggle {
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px;
+}
+
+.progress-section .time-volume-row .volume-row #npVolumeSlider {
+    width: 80px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--divider);
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.progress-section .time-volume-row .volume-row #npVolumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--primary-bg);
+    cursor: pointer;
+}
+
+.progress-section .time-volume-row .volume-row #npVolumeSlider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--primary-bg);
+    cursor: pointer;
+    border: none;
+}
+
+/* Now Playing - Controls */
+.np-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.np-controls button {
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    border: none;
+    padding: 12px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    min-width: 48px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.np-controls button:hover {
+    background: var(--btn-hover);
+}
+
+.np-controls button:active {
+    transform: scale(0.95);
+}
+
+/* Now Playing - Info */
+.now-playing-info {
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.now-playing-info .track-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.now-playing-info .track-artist {
+    font-size: 14px;
+    color: var(--subtle);
+    margin-bottom: 4px;
+}
+
+.now-playing-info .track-url {
+    font-size: 12px;
+    color: var(--subtle);
+    opacity: 0.7;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}

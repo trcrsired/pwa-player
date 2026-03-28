@@ -131,10 +131,16 @@
 
                 <!-- Progress + time -->
                 <section class="progress-section">
-                    <span id="npTimeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
-                    <input type="range" id="npProgressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" />
-                    <button id="npVolumeToggle" data-i18n-title="toggleVolume">🔊</button>
-                    <input type="range" id="npVolumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
+                    <div class="progress-row">
+                        <input type="range" id="npProgressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" />
+                    </div>
+                    <div class="time-volume-row">
+                        <span id="npTimeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
+                        <div class="volume-row">
+                            <button id="npVolumeToggle" data-i18n-title="toggleVolume">🔊</button>
+                            <input type="range" id="npVolumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Playback controls -->

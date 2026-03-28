@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-player-cache-v140";
+const CACHE_NAME = "pwa-player-cache-v141";
 const urlsToCache = [
   "/",
   "/style.css",
