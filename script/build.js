@@ -11,13 +11,13 @@ if (!root) {
 }
 
 const src = path.join(root, "source");
-const out = path.join(root, "output");
+const docs = path.join(root, "docs");
 
 function ensureDir(dir) {
     fs.mkdirSync(dir, { recursive: true });
 }
 
-async function processFile(srcPath, outPath) {
+async function processFile(srcPath, docsPath) {
     const ext = path.extname(srcPath).toLowerCase();
     const content = fs.readFileSync(srcPath, "utf8");
 
@@ -29,8 +29,8 @@ async function processFile(srcPath, outPath) {
             minifyCSS: true,
             minifyJS: true
         });
-        ensureDir(path.dirname(outPath));
-        fs.writeFileSync(outPath, result, "utf8");
+        ensureDir(path.dirname(docsPath));
+        fs.writeFileSync(docsPath, result, "utf8");
         console.log("HTML:", srcPath);
         return;
     }
@@ -38,8 +38,8 @@ async function processFile(srcPath, outPath) {
     // CSS → clean-css
     if (ext === ".css") {
         const result = new CleanCSS().minify(content).styles;
-        ensureDir(path.dirname(outPath));
-        fs.writeFileSync(outPath, result, "utf8");
+        ensureDir(path.dirname(docsPath));
+        fs.writeFileSync(docsPath, result, "utf8");
         console.log("CSS:", srcPath);
         return;
     }
@@ -52,8 +52,8 @@ async function processFile(srcPath, outPath) {
             console.error(result.error);
             return;
         }
-        ensureDir(path.dirname(outPath));
-        fs.writeFileSync(outPath, result.code, "utf8");
+        ensureDir(path.dirname(docsPath));
+        fs.writeFileSync(docsPath, result.code, "utf8");
         console.log("JS:", srcPath);
         return;
     }
@@ -61,15 +61,15 @@ async function processFile(srcPath, outPath) {
     // manifest.json → minify JSON
     if (ext === ".json" && path.basename(srcPath) === "manifest.json") {
         const result = JSON.stringify(JSON.parse(content));
-        ensureDir(path.dirname(outPath));
-        fs.writeFileSync(outPath, result, "utf8");
+        ensureDir(path.dirname(docsPath));
+        fs.writeFileSync(docsPath, result, "utf8");
         console.log("JSON:", srcPath);
         return;
     }
 
     // Everything else → copy
-    ensureDir(path.dirname(outPath));
-    fs.copyFileSync(srcPath, outPath);
+    ensureDir(path.dirname(docsPath));
+    fs.copyFileSync(srcPath, docsPath);
     console.log("COPY:", srcPath);
 }
 
@@ -77,21 +77,21 @@ async function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const srcPath = path.join(dir, entry.name);
         const relPath = path.relative(src, srcPath);
-        const outPath = path.join(out, relPath);
+        const docsPath = path.join(docs, relPath);
 
         if (entry.isDirectory()) {
             await walk(srcPath);
         } else {
-            await processFile(srcPath, outPath);
+            await processFile(srcPath, docsPath);
         }
     }
 }
 
-// Clean output folder
-if (fs.existsSync(out)) {
-    fs.rmSync(out, { recursive: true, force: true });
+// Clean docsput folder
+if (fs.existsSync(docs)) {
+    fs.rmSync(docs, { recursive: true, force: true });
 }
-ensureDir(out);
+ensureDir(docs);
 
 // Start build
 walk(src).then(() => console.log("\nBuild complete!"));
