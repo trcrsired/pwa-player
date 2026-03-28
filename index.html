@@ -37,6 +37,13 @@
                 <!-- Row 2: File & Web -->
                 <div class="control-row">
                     <div class="control-group left-controls">
+                        <button id="volumeToggle" data-i18n-title="toggleVolume">🔊</button>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
+                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
+                        <button id="burgerBtn" data-i18n-title="more">☰</button>
+                    </div>
+
+                    <div class="control-group right-controls">
                         <button id="pickerBtn" data-i18n-title="pickFile">📁</button>
                         <button id="webBtn" data-i18n-title="openWebView">🌍</button>
                         <button id="pipBtn" data-i18n-title="pip">🪟</button>
@@ -47,13 +54,6 @@
 
                         <button id="micToggleBtn" data-i18n-title="toggleMicrophone" style="display:none;">🎤</button>
                         <button id="switchCaptureBtn" data-i18n-title="switchCapture" style="display:none;">🔄</button>
-                    </div>
-
-                    <div class="control-group right-controls">
-                        <button id="burgerBtn" data-i18n-title="more">☰</button>
-                        <button id="volumeToggle" data-i18n-title="toggleVolume">🔊</button>
-                        <input type="range" id="volumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
-                        <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
                     </div>
                 </div>
                 <!-- Row 1: Playback & Timeline -->
@@ -67,11 +67,11 @@
                     </div>
 
                     <div class="control-group right-controls">
-                        <button id="subtitleBtn" data-i18n-title="loadSubtitles">📝</button>
                         <button id="rotationBtn" data-i18n-title="rotateView">🌀</button>
-                        <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
                         <span id="networkStatus" data-i18n-title="networkStatus">🌐</span>
-                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
+                        <button id="subtitleBtn" data-i18n-title="loadSubtitles">📝</button>
+                        <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
+                        <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
                     </div>
                 </div>
 
