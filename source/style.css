@@ -713,3 +713,62 @@ button:hover,
 .scroll-btn.visible {
     display: flex;
 }
+
+/* Video status overlay (loading/error) */
+.video-status-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 500;
+}
+
+.video-status-overlay.hidden {
+    display: none;
+}
+
+.video-status-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 32px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 12px;
+    max-width: 80%;
+    text-align: center;
+}
+
+.video-status-icon {
+    font-size: 48px;
+}
+
+.video-status-text {
+    color: #fff;
+    font-size: 16px;
+    line-height: 1.5;
+    font-family: system-ui, sans-serif;
+}
+
+/* Loading spinner animation */
+.video-status-icon.loading {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.video-status-icon.error::before {
+    content: "❌";
+}

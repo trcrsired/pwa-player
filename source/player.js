@@ -104,6 +104,59 @@ let hasActiveSource = false;
 let currentBlobURL = null;
 let currentMediaMetadata = null; // Store original metadata for subtitle updates
 
+// Video status overlay elements
+const videoStatusOverlay = document.getElementById("videoStatusOverlay");
+const videoStatusIcon = document.getElementById("videoStatusIcon");
+const videoStatusText = document.getElementById("videoStatusText");
+
+function showVideoLoading() {
+  if (!videoStatusOverlay) return;
+  videoStatusIcon.className = "video-status-icon loading";
+  videoStatusIcon.textContent = "";
+  videoStatusText.textContent = "";
+  videoStatusOverlay.classList.remove("hidden");
+}
+
+function showVideoError(message) {
+  if (!videoStatusOverlay) return;
+  videoStatusIcon.className = "video-status-icon error";
+  videoStatusText.textContent = message;
+  videoStatusOverlay.classList.remove("hidden");
+}
+
+function hideVideoStatus() {
+  if (!videoStatusOverlay) return;
+  videoStatusOverlay.classList.add("hidden");
+}
+
+function getFileExtension(filename) {
+  if (!filename) return "";
+  const lastDot = filename.lastIndexOf(".");
+  if (lastDot === -1) return "";
+  return filename.substring(lastDot).toLowerCase();
+}
+
+function isWebmSupported() {
+  const testVideo = document.createElement("video");
+  return testVideo.canPlayType && testVideo.canPlayType("video/webm") !== "";
+}
+
+function isLikelyUnsupportedVideo(filename) {
+  const ext = getFileExtension(filename);
+  // Check if it's not a webm video
+  return ext && ext !== ".webm" && !isWebmSupported();
+}
+
+function getUnsupportedVideoMessage(filename) {
+  const ext = getFileExtension(filename);
+  const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+  if (isLikelyUnsupportedVideo(filename)) {
+    return t("videoFormatNotSupported", `This video format (${ext}) may not be supported.\n\n.webm is the web standard format that works best across all platforms with no licensing fees.\n\nFor example, Microsoft Edge on Android only supports .webm videos.\n\nConvert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome.`);
+  }
+  return t("videoLoadFailed", "Failed to load video. The format may not be supported.");
+}
+
 function revokeBlobURL() {
   if (currentBlobURL && currentBlobURL.startsWith("blob:")) {
     URL.revokeObjectURL(currentBlobURL);
@@ -327,12 +380,41 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Clear previous subtitles
     clearSubtitles();
 
+    // Show loading indicator
+    showVideoLoading();
+
     video.src = blobURL;
     hasActiveSource = true;
     hideControls();
 
+    // Store filename for error messages
+    const filename = mediametadata.title;
+
+    // Handle video errors
+    video.onerror = (e) => {
+      console.error("Video error:", e);
+      hideVideoStatus();
+      showVideoError(getUnsupportedVideoMessage(filename));
+      hasActiveSource = false;
+    };
+
+    // Hide loading when video starts playing
+    video.oncanplay = () => {
+      hideVideoStatus();
+    };
+
+    // Handle stalled/waiting states
+    video.onwaiting = () => {
+      showVideoLoading();
+    };
+
+    video.onplaying = () => {
+      hideVideoStatus();
+    };
+
     // 🔥 Fix: wait for metadata before playing
     video.onloadedmetadata = () => {
+      hideVideoStatus(); // Hide loading when metadata loads
       if (autoPlay) {
         video.play().catch(err => console.warn("Play failed:", err));
       }
@@ -381,6 +463,8 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     }
   } catch (err) {
     console.warn(err);
+    hideVideoStatus();
+    showVideoError(getUnsupportedVideoMessage(mediametadata?.title));
   }
 }
 

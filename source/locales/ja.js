@@ -154,5 +154,10 @@ const JA_TRANSLATIONS = {
     // Screen capture
     screenCapture: "画面キャプチャ",
     microphone: "マイク",
-    switchSource: "ソース切替"
+    switchSource: "ソース切替",
+
+    // Video status
+    videoLoading: "読み込み中...",
+    videoLoadFailed: "ビデオの読み込みに失敗しました。形式が対応していない可能性があります。",
+    videoFormatNotSupported: "このビデオ形式は対応していない可能性があります。\n\n.webmはウェブ標準形式で、すべてのプラットフォームで最適に動作し、ライセンス費用もかかりません。\n\n例えば、Microsoft Edge Android版は.webmビデオのみ対応しています。\n\nFFmpegなどのツールで.webm形式に変換するか、Google Chromeなどの別のブラウザをお試しください。"
 };

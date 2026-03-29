@@ -89,7 +89,14 @@ async function walk(dir) {
 
 // Clean docsput folder
 if (fs.existsSync(docs)) {
-    fs.rmSync(docs, { recursive: true, force: true });
+    try
+    {
+        fs.rmSync(docs, { recursive: true, force: true });
+    }
+    catch(err)
+    {
+        console.warn(err);
+    }
 }
 ensureDir(docs);
 
