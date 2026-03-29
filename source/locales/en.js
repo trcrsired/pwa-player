@@ -29,6 +29,7 @@ const EN_TRANSLATIONS = {
     retryingLoad: "Retrying ({count}/{max})...",
     videoLoadFailed: "Failed to load video. The format may not be supported.",
     videoFormatNotSupported: "This video format may not be supported. .webm is the web standard format that works best across all platforms with no licensing fees. For example, Microsoft Edge on Android only supports .webm videos. Convert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome.",
+    corsError: "CORS Error: This server blocks cross-origin requests. The server needs to allow access from this app, or you may need to use a proxy.",
 
     // Buttons
     pickFile: "Pick a File",

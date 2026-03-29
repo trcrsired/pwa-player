@@ -29,6 +29,7 @@ const ZHCN_TRANSLATIONS = {
     retryingLoad: "重试中 ({count}/{max})...",
     videoLoadFailed: "视频加载失败。格式可能不受支持。",
     videoFormatNotSupported: "此视频格式可能不受支持。.webm 是 Web 标准格式，在所有平台上效果最佳且无许可费用。例如，Android 上的 Microsoft Edge 仅支持 .webm 视频。请使用 FFmpeg 等工具转换为 .webm，或尝试其他浏览器如 Google Chrome。",
+    corsError: "CORS 错误：此服务器阻止跨域请求。服务器需要允许此应用的访问，或者您可能需要使用代理。",
 
     // Buttons
     pickFile: "选择文件",

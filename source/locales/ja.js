@@ -29,6 +29,7 @@ const JA_TRANSLATIONS = {
     retryingLoad: "再試行中 ({count}/{max})...",
     videoLoadFailed: "ビデオの読み込みに失敗しました。形式が対応していない可能性があります。",
     videoFormatNotSupported: "このビデオ形式は対応していない可能性があります。.webm は Web 標準形式で、ライセンス料なしで全てのプラットフォームで最適に動作します。例えば、Android の Microsoft Edge は .webm ビデオのみ対応しています。FFmpeg などのツールで .webm に変換するか、Google Chrome などの別のブラウザをお試しください。",
+    corsError: "CORS エラー：このサーバーはクロスオリジンリクエストをブロックしています。サーバーがこのアプリからのアクセスを許可する必要があるか、プロキシを使用する必要があります。",
 
     // Buttons
     pickFile: "ファイルを選択",
