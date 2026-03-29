@@ -736,8 +736,6 @@ button:hover,
     align-items: center;
     gap: 16px;
     padding: 24px 32px;
-    background: rgba(0, 0, 0, 0.85);
-    border-radius: 12px;
     max-width: 80%;
     text-align: center;
 }
