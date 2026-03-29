@@ -96,10 +96,15 @@ const PLAYLIST_EXTENSIONS = new Set([
     ".m4a"
 ]);
 
+// Subtitle extensions
+const SUBTITLE_EXTENSIONS = new Set([
+    ".vtt"
+]);
+
 // Allowed extensions for import (media + subtitles)
 const ALLOWED_EXTENSIONS = new Set([
     ...PLAYLIST_EXTENSIONS,
-    ".vtt" // webvtt subtitle
+    ...SUBTITLE_EXTENSIONS
 ]);
 
 function isAllowedFile(name) {
@@ -139,6 +144,28 @@ function isPlaylistFile(name) {
         const ext = lower.slice(dotIndex);
 
         return PLAYLIST_EXTENSIONS.has(ext);
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+function isSubtitleFile(name) {
+    // Check if file is a subtitle file (.vtt)
+    try
+    {
+        if (typeof name !== "string") return false;
+
+        const lower = name.trim().toLowerCase();
+        if (!lower) return false;
+
+        const dotIndex = lower.lastIndexOf(".");
+        if (dotIndex === -1) return false;
+
+        const ext = lower.slice(dotIndex);
+
+        return SUBTITLE_EXTENSIONS.has(ext);
     }
     catch
     {
@@ -738,6 +765,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
     const isPlayable = isPlaylistFile(name);
+    const isSubtitle = isSubtitleFile(name);
 
     const menuItems = [];
 
@@ -745,6 +773,9 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
         menuItems.push(`<div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
+    }
+    if (isSubtitle) {
+        menuItems.push(`<div class="menu-item" data-action="load-subtitle">📝 ${t('loadSubtitles', 'Load Subtitles')}</div>`);
     }
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
     if (entry.allowModification) {
@@ -816,6 +847,22 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                         await playlists_save(playlists);
                         alert(`Added "${name}" to playlist "${selectedName}".`);
                     }
+                }
+                closeMenu();
+                return;
+            }
+
+            if (action === "load-subtitle") {
+                if (typeof window.loadSubtitle === 'function') {
+                    try {
+                        await window.loadSubtitle(handle);
+                        alert(`Subtitle "${name}" loaded.`);
+                    } catch (err) {
+                        console.error("Failed to load subtitle:", err);
+                        alert("Failed to load subtitle.");
+                    }
+                } else {
+                    alert("Subtitle loading not available.");
                 }
                 closeMenu();
                 return;
@@ -945,12 +992,14 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
     const fullPath = currentPath ? `${currentPath}/${name}` : name;
 
     const isPlayable = isPlaylistFile(name);
+    const isSubtitle = isSubtitleFile(name);
 
     li.innerHTML = `
         <div class="storage-file-header">
             <span class="file-name">📄 ${escapeHTML(name)}</span>
             <div class="file-actions">
                 ${isPlayable ? '<button class="file-play" title="Play">▶</button>' : ''}
+                ${isSubtitle ? '<button class="file-subtitle" title="Load Subtitle">📝</button>' : ''}
                 <button class="file-menu" title="Menu">⋮</button>
             </div>
         </div>
@@ -965,6 +1014,24 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
             await play_source(handle, { entryPath });
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
+            }
+        });
+    }
+
+    // Subtitle button (only for subtitle files)
+    if (isSubtitle) {
+        li.querySelector(".file-subtitle").addEventListener("click", async (e) => {
+            e.stopPropagation();
+            if (typeof window.loadSubtitle === 'function') {
+                try {
+                    await window.loadSubtitle(handle);
+                    alert(`Subtitle "${name}" loaded.`);
+                } catch (err) {
+                    console.error("Failed to load subtitle:", err);
+                    alert("Failed to load subtitle.");
+                }
+            } else {
+                alert("Subtitle loading not available.");
             }
         });
     }

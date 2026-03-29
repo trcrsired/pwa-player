@@ -760,6 +760,9 @@ async function loadSubtitle(file) {
   subtitleBtn.textContent = '✅';
 }
 
+// Expose loadSubtitle globally for storage.js to use
+window.loadSubtitle = loadSubtitle;
+
 subtitleBtn.onclick = async () => {
   // If subtitles already loaded, toggle them
   const tracks = video.textTracks;
