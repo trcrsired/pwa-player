@@ -444,27 +444,11 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Check if this is a network URL (IPTV/stream) that can be retried
     const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
     let retryCount = 0;
-    const maxRetries = isNetworkUrl ? 3 : 0;
+    const maxRetries = isNetworkUrl ? 10 : 0;
     const retryDelay = 2000; // 2 seconds between retries
-
-    // Check if error message indicates CORS issue
-    const isCorsErrorMessage = (msg) => {
-      if (!msg) return false;
-      const lower = msg.toLowerCase();
-      return lower.includes('cors policy') || lower.includes('access-control-allow-origin');
-    };
 
     // Handle video errors with retry for network URLs
     video.onerror = (e) => {
-      // Check for CORS error - no point retrying
-      if (video.error && isCorsErrorMessage(video.error.message)) {
-        const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
-        hideVideoStatus();
-        showVideoError(t('corsError', 'CORS Error: This server blocks cross-origin requests. The server needs to allow access from this app, or you may need to use a proxy.'));
-        hasActiveSource = false;
-        return;
-      }
-
       if (isNetworkUrl && retryCount < maxRetries) {
         ++retryCount;
         const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
@@ -1262,7 +1246,7 @@ let reconnectTimer = null;
 // Triggered when the video element encounters a playback error
 video.addEventListener("error", () => {
     console.warn("Stream error detected. Attempting to reconnect in 2 seconds...");
-/*
+
     // Clear any previous reconnect attempts
     clearTimeout(reconnectTimer);
 
@@ -1279,7 +1263,7 @@ video.addEventListener("error", () => {
             // Try playing again
             video.play().catch(() => {});
         }
-    }, 2000);*/
+    }, 2000);
 });
 
 if ('launchQueue' in window) {
