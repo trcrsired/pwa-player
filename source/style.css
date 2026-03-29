@@ -770,10 +770,17 @@ button:hover,
 .video-status-icon.loading {
     width: 48px;
     height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
+    border: 4px solid rgba(0, 0, 0, 0.2);
+    border-top-color: #000;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+    .video-status-icon.loading {
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+    }
 }
 
 @keyframes spin {
