@@ -739,7 +739,7 @@ button:hover,
     gap: 16px;
     padding: 24px 32px;
     width: 100%;
-    max-width: calc(100% - 32px);
+    max-width: calc(100% - 16px);
     text-align: center;
 }
 
