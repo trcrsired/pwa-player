@@ -159,5 +159,5 @@ const EN_TRANSLATIONS = {
     // Video status
     videoLoading: "Loading...",
     videoLoadFailed: "Failed to load video. The format may not be supported.",
-    videoFormatNotSupported: "This video format may not be supported.\n\n.webm is the web standard format that works best across all platforms with no licensing fees.\n\nFor example, Microsoft Edge on Android only supports .webm videos.\n\nConvert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome."
+    videoFormatNotSupported: "This video format may not be supported. .webm is the web standard format that works best across all platforms with no licensing fees. For example, Microsoft Edge on Android only supports .webm videos. Convert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome."
 };

@@ -159,5 +159,5 @@ const ZHCN_TRANSLATIONS = {
     // Video status
     videoLoading: "加载中...",
     videoLoadFailed: "视频加载失败。格式可能不受支持。",
-    videoFormatNotSupported: "此视频格式可能不受支持。\n\n.webm 是网络标准格式，在所有平台上兼容性最好，且无授权费用。\n\n例如，微软Edge安卓版仅支持 .webm 视频。\n\n请使用 FFmpeg 等工具转换为 .webm 格式，或尝试其他浏览器如 Google Chrome。"
+    videoFormatNotSupported: "此视频格式可能不受支持。.webm 是网络标准格式，在所有平台上兼容性最好，且无授权费用。例如，微软Edge安卓版仅支持 .webm 视频。请使用 FFmpeg 等工具转换为 .webm 格式，或尝试其他浏览器如 Google Chrome。"
 };

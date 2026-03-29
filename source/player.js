@@ -148,7 +148,7 @@ function getUnsupportedVideoMessage(filename) {
   const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
   if (isLikelyUnsupportedVideo(filename)) {
-    return t("videoFormatNotSupported", `This video format may not be supported.\n\n.webm is the web standard format that works best across all platforms with no licensing fees.\n\nFor example, Microsoft Edge on Android only supports .webm videos.\n\nConvert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome.`);
+    return t("videoFormatNotSupported", `This video format may not be supported. .webm is the web standard format that works best across all platforms with no licensing fees. For example, Microsoft Edge on Android only supports .webm videos. Convert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome.`);
   }
   return t("videoLoadFailed", "Failed to load video. The format may not be supported.");
 }
