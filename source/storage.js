@@ -737,11 +737,15 @@ async function countFilesInDir(dirHandle) {
 function showStorageFileMenu(entry, name, handle, fullPath, button) {
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
+    const isPlayable = isPlaylistFile(name);
+
     const menuItems = [];
 
-    menuItems.push(`<div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>`);
-    menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
-    menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
+    if (isPlayable) {
+        menuItems.push(`<div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
+    }
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
     if (entry.allowModification) {
         menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
@@ -940,30 +944,30 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
 
     const fullPath = currentPath ? `${currentPath}/${name}` : name;
 
+    const isPlayable = isPlaylistFile(name);
+
     li.innerHTML = `
         <div class="storage-file-header">
             <span class="file-name">📄 ${escapeHTML(name)}</span>
             <div class="file-actions">
-                <button class="file-play" title="Play">▶</button>
+                ${isPlayable ? '<button class="file-play" title="Play">▶</button>' : ''}
                 <button class="file-menu" title="Menu">⋮</button>
             </div>
         </div>
     `;
 
-    // Play button
-    li.querySelector(".file-play").addEventListener("click", async (e) => {
-        e.stopPropagation();
-        if (isPlaylistFile(name)) {
+    // Play button (only for playable files)
+    if (isPlayable) {
+        li.querySelector(".file-play").addEventListener("click", async (e) => {
+            e.stopPropagation();
             // Build the proper path for subtitle auto-load
             const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
             await play_source(handle, { entryPath });
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
             }
-        } else {
-            alert("This file type cannot be played directly.");
-        }
-    });
+        });
+    }
 
     // Burger menu button
     li.querySelector(".file-menu").addEventListener("click", (e) => {
