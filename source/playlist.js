@@ -34,6 +34,24 @@ async function resolveUnderRoot(rootHandle, path) {
 
 async function storage_resolvePath(pointer) {
 
+    // indexeddb://
+    if (pointer.startsWith("indexeddb://")) {
+        const path = pointer.slice("indexeddb://".length);
+        // path is like "idb/folder/file.webm"
+        const parts = path.split("/");
+        const rootName = parts.shift(); // "idb"
+        const folder = parts.shift();   // folder name like "idb_123456"
+        const fileName = parts.join("/"); // filename
+
+        // Get the file from IndexedDB
+        const fileEntry = await window.idb_getFile(`${folder}/${fileName}`);
+        if (!fileEntry) {
+            throw new Error(`IndexedDB file not found: ${pointer}`);
+        }
+        // Return a File object
+        return new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "application/octet-stream" });
+    }
+
     // navigator_storage://
     if (pointer.startsWith("navigator_storage://")) {
         const path = pointer.slice("navigator_storage://".length);

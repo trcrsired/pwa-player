@@ -50,6 +50,7 @@ const JA_TRANSLATIONS = {
     importDirectory: "ディレクトリをインポート",
     importExternal: "外部をインポート",
     importFiles: "ファイルをインポート",
+    importIndexedDB: "IndexedDBにインポート",
     clearAllImports: "すべてのインポートを削除",
     export: "エクスポート",
     rename: "名前変更",
@@ -61,6 +62,7 @@ const JA_TRANSLATIONS = {
     importDirectoryHint: "フォルダ全体をアプリのプライベートストレージ(OPFS)にコピー。今後の権限確認は不要。",
     importExternalHint: "外部フォルダをコピーせずにリンク。権限が必要で、再認証が必要な場合があります。",
     importFilesHint: "標準ファイル選択機能を使用してメディアファイルをインポート。",
+    importIndexedDBHint: "ファイルをIndexedDBストレージにインポート。OPFSをサポートしない古いブラウザで動作します。",
     clearAllImportsHint: "すべてのインポート済みディレクトリを削除し、ストレージ設定をリセット。",
 
     // Playlist
@@ -110,6 +112,7 @@ const JA_TRANSLATIONS = {
     disableRotateBtn: "画面回転ボタンを無効化",
     disableRotateBtnHint: "VRモード対応用に回転を無効化",
     aboutThisApp: "このアプリについて",
+    version: "バージョン",
     sourceCode: "ソースコード",
     license: "ライセンス",
     organization: "組織",

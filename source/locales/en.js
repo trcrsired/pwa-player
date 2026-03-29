@@ -50,6 +50,7 @@ const EN_TRANSLATIONS = {
     importDirectory: "Import Directory",
     importExternal: "Import External",
     importFiles: "Import Files",
+    importIndexedDB: "Import Into IndexedDB",
     clearAllImports: "Clear All Imports",
     export: "Export",
     rename: "Rename",
@@ -61,6 +62,7 @@ const EN_TRANSLATIONS = {
     importDirectoryHint: "Copy an entire folder into private app storage (OPFS). No future permission prompts.",
     importExternalHint: "Link an external folder without copying. Requires permission and may need re‑authorization.",
     importFilesHint: "Import individual media files using the standard file picker.",
+    importIndexedDBHint: "Import files into IndexedDB storage. Works on older browsers that do not support OPFS properly.",
     clearAllImportsHint: "Remove all imported directories and reset storage configuration.",
 
     // Playlist
@@ -110,6 +112,7 @@ const EN_TRANSLATIONS = {
     disableRotateBtn: "Disable rotate screen button",
     disableRotateBtnHint: "Disable rotation for VR mode compatibility",
     aboutThisApp: "About This App",
+    version: "Version",
     sourceCode: "Source Code",
     license: "License",
     organization: "Organization",

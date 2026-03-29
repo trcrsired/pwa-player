@@ -7,12 +7,24 @@ function getActiveView() {
 }
 
 function switchView(viewId) {
+  // Close any open context menu
+  const openMenu = document.querySelector(".context-menu");
+  if (openMenu) openMenu.remove();
+
   document.getElementById(viewId).classList.remove("hidden");
   document.getElementById("playerContainer").classList.add("hidden");
   history.pushState({ view: viewId }, "", location.href);
+  // Update subtitle position when view opens
+  if (typeof controls !== 'undefined') {
+    updateSubtitlePosition(false);
+  }
 }
 
 function closeActiveView() {
+  // Close any open context menu
+  const openMenu = document.querySelector(".context-menu");
+  if (openMenu) openMenu.remove();
+
   const view = getActiveView();
   if (view) {
     view.classList.add("hidden");
@@ -21,11 +33,19 @@ function closeActiveView() {
     if (history.state && history.state.view) {
       history.replaceState(null, "", location.href);
     }
+    // Update subtitle position when view closes
+    if (typeof controls !== 'undefined') {
+      updateSubtitlePosition(!controls.classList.contains("hidden"));
+    }
   }
 }
 
 // Handle back/forward gesture/button - navigate between views and main player
 window.addEventListener("popstate", (e) => {
+  // Close any open context menu
+  const openMenu = document.querySelector(".context-menu");
+  if (openMenu) openMenu.remove();
+
   const activeView = getActiveView();
 
   if (e.state && e.state.view) {
@@ -35,6 +55,10 @@ window.addEventListener("popstate", (e) => {
     if (viewEl) {
       viewEl.classList.remove("hidden");
       document.getElementById("playerContainer").classList.add("hidden");
+      // Update subtitle position when view opens
+      if (typeof controls !== 'undefined') {
+        updateSubtitlePosition(false);
+      }
       // Trigger scroll button update if available
       if (typeof window.updateScrollButtons === 'function') {
         setTimeout(window.updateScrollButtons, 50);
@@ -45,6 +69,10 @@ window.addEventListener("popstate", (e) => {
     // Back navigation from view - close it
     activeView.classList.add("hidden");
     document.getElementById("playerContainer").classList.remove("hidden");
+    // Update subtitle position when view closes
+    if (typeof controls !== 'undefined') {
+      updateSubtitlePosition(!controls.classList.contains("hidden"));
+    }
     // Trigger scroll button hiding if available
     if (typeof window.updateScrollButtons === 'function') {
       window.updateScrollButtons();
@@ -964,6 +992,16 @@ npProgressBar.oninput = () => {
 };
 
 document.addEventListener("keydown", (e) => {
+  // First check for open context menu - close it on Escape
+  if (e.code === "Escape") {
+    const openMenu = document.querySelector(".context-menu");
+    if (openMenu) {
+      openMenu.remove();
+      e.preventDefault();
+      return;
+    }
+  }
+
   const activeView = getActiveView();
 
   if (activeView) {
@@ -1018,6 +1056,13 @@ document.addEventListener("keydown", (e) => {
 // Adjust subtitle position to avoid overlap with controls
 function updateSubtitlePosition(controlsVisible) {
   const tracks = video.textTracks;
+
+  // If an overlay view is active, treat as controls not visible (bottom position)
+  const activeView = getActiveView();
+  if (activeView) {
+    controlsVisible = false;
+  }
+
   for (let i = 0; i != tracks.length; ++i) {
     const track = tracks[i];
     if (track.kind === 'subtitles' || track.kind === 'captions') {

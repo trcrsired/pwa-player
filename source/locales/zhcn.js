@@ -50,6 +50,7 @@ const ZHCN_TRANSLATIONS = {
     importDirectory: "导入目录",
     importExternal: "导入外部",
     importFiles: "导入文件",
+    importIndexedDB: "导入到IndexedDB",
     clearAllImports: "清除所有导入",
     export: "导出",
     rename: "重命名",
@@ -61,6 +62,7 @@ const ZHCN_TRANSLATIONS = {
     importDirectoryHint: "将整个文件夹复制到应用私有存储(OPFS)，无需再次请求权限",
     importExternalHint: "链接外部文件夹而不复制，需要权限且可能需要重新授权",
     importFilesHint: "使用标准文件选择器导入单个媒体文件",
+    importIndexedDBHint: "将文件导入到IndexedDB存储。适用于不支持OPFS的旧浏览器。",
     clearAllImportsHint: "删除所有导入的目录并重置存储配置",
 
     // Playlist
@@ -110,6 +112,7 @@ const ZHCN_TRANSLATIONS = {
     disableRotateBtn: "禁用旋转屏幕按钮",
     disableRotateBtnHint: "禁用旋转以兼容VR模式",
     aboutThisApp: "关于此应用",
+    version: "版本",
     sourceCode: "源代码",
     license: "许可证",
     organization: "组织",

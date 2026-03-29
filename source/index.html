@@ -97,19 +97,24 @@
 
             <main class="content">
                 <section class="actions">
-                    <button id="addImportBtn" class="btn primary"
-                            data-i18n="importDirectory" data-i18n-title="importDirectoryHint">
-                        Import Directory
-                    </button>
-
                     <button id="addExternalBtn" class="btn primary"
                             data-i18n="importExternal" data-i18n-title="importExternalHint">
                         Import External
                     </button>
 
+                    <button id="addImportBtn" class="btn primary"
+                            data-i18n="importDirectory" data-i18n-title="importDirectoryHint">
+                        Import Directory
+                    </button>
+
                     <button id="addFilesBtn" class="btn primary"
                             data-i18n="importFiles" data-i18n-title="importFilesHint">
                         Import Files
+                    </button>
+
+                    <button id="addIndexedDBBtn" class="btn primary"
+                            data-i18n="importIndexedDB" data-i18n-title="importIndexedDBHint">
+                        Import Into IndexedDB
                     </button>
 
                     <input id="filePicker" type="file" multiple webkitdirectory directory style="display:none">
@@ -241,6 +246,11 @@
                 </p>
 
                 <ul class="overlay-list">
+                    <li>
+                        <strong data-i18n="version">Version</strong><br>
+                        <span id="settingsVersion">-</span>
+                    </li>
+
                     <li>
                         <strong data-i18n="sourceCode">Source Code</strong><br>
                         <a href="https://github.com/trcrsired/pwa-player" target="_blank">

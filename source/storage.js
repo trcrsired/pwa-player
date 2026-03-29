@@ -3,6 +3,7 @@
 // ============================================================
 //
 // Each entry defines:
+// - schema: storage backend (navigator_storage, external_storage, indexeddb)
 // - rootName: logical name used in pointer paths
 // - dirName: actual directory name inside private storage
 // - enabled: allows future toggling or feature flags
@@ -17,6 +18,8 @@ const IMPORT_ROOTS = [
         enabled: true,
         showSubdirs: true,
         allowModification: true,
+        allowFolderRename: true,
+        allowFileRename: true,
         useRemoveLabel: false
     },
     {
@@ -26,6 +29,8 @@ const IMPORT_ROOTS = [
         enabled: true,
         showSubdirs: true,
         allowModification: true,
+        allowFolderRename: false,
+        allowFileRename: true,
         useRemoveLabel: false
     },
     {
@@ -35,9 +40,255 @@ const IMPORT_ROOTS = [
         enabled: true,
         showSubdirs: true,
         allowModification: false,
+        allowFolderRename: true,
+        allowFileRename: false,
         useRemoveLabel: true
+    },
+    {
+        schema: "indexeddb",
+        rootName: "idb",
+        dirName: "idb",
+        enabled: true,
+        showSubdirs: true,
+        allowModification: true,
+        allowFolderRename: false,
+        allowFileRename: true,
+        useRemoveLabel: false
     }
 ];
+
+// ============================================================
+// IndexedDB Storage Backend
+// ============================================================
+const IDB_DB_NAME = "PWAPlayerIDB";
+const IDB_STORE_NAME = "files";
+
+let idb_db = null;
+
+async function idb_init() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(IDB_DB_NAME, 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            idb_db = request.result;
+            resolve(idb_db);
+        };
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
+                db.createObjectStore(IDB_STORE_NAME, { keyPath: "path" });
+            }
+        };
+    });
+}
+
+async function idb_getStore(mode = "readonly") {
+    if (!idb_db) await idb_init();
+    const tx = idb_db.transaction(IDB_STORE_NAME, mode);
+    return tx.objectStore(IDB_STORE_NAME);
+}
+
+async function idb_listFiles() {
+    try {
+        const store = await idb_getStore("readonly");
+        return new Promise((resolve, reject) => {
+            const request = store.getAll();
+            request.onerror = () => {
+                console.error("idb_listFiles error:", request.error);
+                reject(request.error);
+            };
+            request.onsuccess = () => resolve(request.result || []);
+        });
+    } catch (err) {
+        console.error("idb_listFiles failed:", err);
+        return [];
+    }
+}
+
+async function idb_getFile(path) {
+    const store = await idb_getStore("readonly");
+    return new Promise((resolve, reject) => {
+        const request = store.get(path);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+// Put file into IndexedDB with virtual folder
+// folder: virtual folder name like "idb_1234567890"
+// name: filename
+async function idb_putFile(folder, name, blob, type) {
+    const store = await idb_getStore("readwrite");
+    return new Promise((resolve, reject) => {
+        const path = `${folder}/${name}`;
+        const entry = { path, folder, name, blob, type, lastModified: Date.now() };
+        const request = store.put(entry);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(entry);
+    });
+}
+
+async function idb_deleteFile(path) {
+    const store = await idb_getStore("readwrite");
+    return new Promise((resolve, reject) => {
+        const request = store.delete(path);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+    });
+}
+
+// Delete all files in a folder
+async function idb_deleteFolder(folder) {
+    const files = await idb_listFiles();
+    const folderFiles = files.filter(f => f.folder === folder);
+    for (const file of folderFiles) {
+        await idb_deleteFile(file.path);
+    }
+}
+
+async function idb_clearAll() {
+    const store = await idb_getStore("readwrite");
+    return new Promise((resolve, reject) => {
+        const request = store.clear();
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+    });
+}
+
+// Get list of virtual folders
+async function idb_listFolders() {
+    try {
+        const files = await idb_listFiles();
+        const folders = new Set();
+        for (const f of files) {
+            if (f && f.folder) {
+                folders.add(f.folder);
+            }
+        }
+        return Array.from(folders);
+    } catch (err) {
+        console.error("idb_listFolders failed:", err);
+        return [];
+    }
+}
+
+// Get files in a specific folder
+async function idb_getFilesInFolder(folder) {
+    try {
+        const files = await idb_listFiles();
+        return files.filter(f => f && f.folder === folder);
+    } catch (err) {
+        console.error("idb_getFilesInFolder failed:", err);
+        return [];
+    }
+}
+
+// Add all files from an IndexedDB folder to a playlist
+async function addIndexedDBFolderToPlaylist(folderName) {
+    try {
+        const files = await idb_getFilesInFolder(folderName);
+        if (!files || files.length === 0) {
+            alert(`No files found in folder "${folderName}".`);
+            return;
+        }
+
+        // Filter to only playable files
+        const playableFiles = files.filter(f => isPlaylistFile(f.name));
+        if (playableFiles.length === 0) {
+            alert(`No playable files found in folder "${folderName}".`);
+            return;
+        }
+
+        // Load playlists and prompt user
+        const playlists = await playlists_load();
+        const names = Object.keys(playlists);
+
+        if (names.length === 0) {
+            alert("No playlists available. Please create a playlist first.");
+            return;
+        }
+
+        const choice = prompt(
+            "Add to which playlist?\n" +
+            names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+            "1"
+        );
+
+        if (!choice) return;
+
+        const index = parseInt(choice, 10) - 1;
+        if (index < 0 || index >= names.length) {
+            alert("Invalid selection.");
+            return;
+        }
+
+        const selectedName = names[index];
+        const items = playableFiles.map(f => ({
+            name: f.name,
+            path: `indexeddb://idb/${f.folder}/${f.name}`
+        }));
+
+        playlists[selectedName].push(...items);
+        await playlists_save(playlists);
+        alert(`Added ${items.length} file(s) from "${folderName}" to playlist "${selectedName}".`);
+    } catch (err) {
+        console.error("Failed to add IndexedDB folder to playlist:", err);
+        alert("Failed to add files to playlist.");
+    }
+}
+
+// Export all files from an IndexedDB folder
+async function exportIndexedDBFolder(folderName) {
+    try {
+        const files = await idb_getFilesInFolder(folderName);
+        if (!files || files.length === 0) {
+            alert(`No files found in folder "${folderName}".`);
+            return;
+        }
+
+        const ok = confirm(`Export ${files.length} file(s) from "${folderName}"?`);
+        if (!ok) return;
+
+        let exported = 0;
+        for (const fileEntry of files) {
+            try {
+                const url = URL.createObjectURL(fileEntry.blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = fileEntry.name;
+                a.click();
+                URL.revokeObjectURL(url);
+                ++exported;
+                // Small delay between downloads
+                await new Promise(r => setTimeout(r, 100));
+            } catch (err) {
+                console.warn("Failed to export:", fileEntry.name, err);
+            }
+        }
+
+        alert(`Exported ${exported} file(s).`);
+    } catch (err) {
+        console.error("Failed to export IndexedDB folder:", err);
+        alert("Failed to export files.");
+    }
+}
+
+// Initialize IndexedDB on load
+idb_init().catch(err => console.warn("IndexedDB init failed:", err));
+
+// ============================================================
+// Utility: escape HTML to prevent XSS
+// ============================================================
+function escapeHTML(str) {
+    if (typeof str !== "string") return "";
+    return str.replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[c]);
+}
 
 // ============================================================
 // Utility: check if a directory exists under a parent handle
@@ -72,7 +323,7 @@ async function promptForUniqueName(baseName, parentHandle) {
         }
 
         if (trimmed === baseName) {
-            attempts++;
+            ++attempts;
             alert(`"${baseName}" already exists. Please choose a different name.`);
             continue;
         }
@@ -545,7 +796,8 @@ function showStorageDirMenu(entry, dirName, button) {
     if (!isRoot) {
         menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
-        if (entry.allowModification) {
+        // Only show rename if both allowModification and allowFolderRename are true
+        if (entry.allowModification && entry.allowFolderRename !== false) {
             menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
         }
     }
@@ -586,39 +838,56 @@ function showStorageDirMenu(entry, dirName, button) {
             else if (entry.schema === "external_storage") {
                 parent = await loadExternalDirs();
             }
+            else if (entry.schema === "indexeddb") {
+                // IndexedDB has no parent directory, use idb functions directly
+                parent = null;
+            }
             else {
                 alert("Unknown storage schema.");
                 return;
             }
 
             if (action === "add") {
-                await choosePlaylistAndAdd(parent, entry, dirName);
+                if (entry.schema === "indexeddb") {
+                    // Add all files from IndexedDB folder to playlist
+                    await addIndexedDBFolderToPlaylist(dirName);
+                } else {
+                    await choosePlaylistAndAdd(parent, entry, dirName);
+                }
             }
 
             if (action === "export") {
-                await exportDirectory(entry, dirName, parent);
+                if (entry.schema === "indexeddb") {
+                    await exportIndexedDBFolder(dirName);
+                } else {
+                    await exportDirectory(entry, dirName, parent);
+                }
             }
 
             if (action === "rename") {
-                // For nested paths, get just the folder name
-                const parts = dirName.split("/");
-                const oldName = parts.pop();
-                const pathToParent = parts.join("/");
+                if (entry.schema === "indexeddb") {
+                    alert("Rename not available for IndexedDB.");
+                } else {
+                    // For nested paths, get just the folder name
+                    const parts = dirName.split("/");
+                    const oldName = parts.pop();
+                    const pathToParent = parts.join("/");
 
-                const newName = prompt("New folder name:", oldName);
-                if (newName && newName.trim() && newName.trim() !== oldName) {
-                    const trimmed = newName.trim();
+                    const newName = prompt("New folder name:", oldName);
+                    if (newName && newName.trim() && newName.trim() !== oldName) {
+                        const trimmed = newName.trim();
 
-                    // Navigate to the parent directory
-                    let targetParent = parent;
-                    for (const part of pathToParent.split("/").filter(p => p)) {
-                        targetParent = await targetParent.getDirectoryHandle(part);
+                        // Navigate to the parent directory
+                        let targetParent = parent;
+                        for (const part of pathToParent.split("/").filter(p => p)) {
+                            targetParent = await targetParent.getDirectoryHandle(part);
+                        }
+
+                        const sourceDir = await targetParent.getDirectoryHandle(oldName);
+                        const destDir = await targetParent.getDirectoryHandle(trimmed, { create: true });
+                        await copyDirectoryToPrivateStorage(sourceDir, destDir);
+                        await targetParent.removeEntry(oldName, { recursive: true });
                     }
-
-                    const sourceDir = await targetParent.getDirectoryHandle(oldName);
-                    const destDir = await targetParent.getDirectoryHandle(trimmed, { create: true });
-                    await copyDirectoryToPrivateStorage(sourceDir, destDir);
-                    await targetParent.removeEntry(oldName, { recursive: true });
                 }
             }
 
@@ -627,7 +896,11 @@ function showStorageDirMenu(entry, dirName, button) {
                 const isEntryRemoval = entry.useRemoveLabel && (!dirName || isTopLevel);
 
                 let confirmMsg;
-                if (isEntryRemoval) {
+                if (entry.schema === "indexeddb") {
+                    confirmMsg = dirName
+                        ? `Delete folder "${dirName}" and all its files?`
+                        : `Delete all files from IndexedDB storage?`;
+                } else if (isEntryRemoval) {
                     // Entry removal - only remove reference, not actual files
                     confirmMsg = dirName
                         ? `Remove entry "${dirName}"?\n\nNote: The actual folder on your device will NOT be deleted.`
@@ -639,7 +912,15 @@ function showStorageDirMenu(entry, dirName, button) {
                 }
 
                 if (confirm(confirmMsg)) {
-                    if (isEntryRemoval && entry.schema === "external_storage") {
+                    if (entry.schema === "indexeddb") {
+                        if (dirName) {
+                            // Delete a specific IndexedDB folder
+                            await idb_deleteFolder(dirName);
+                        } else {
+                            // Delete all IndexedDB files
+                            await idb_clearAll();
+                        }
+                    } else if (isEntryRemoval && entry.schema === "external_storage") {
                         if (dirName) {
                             // Remove just this external directory reference
                             const dirs = await loadExternalDirs();
@@ -680,46 +961,64 @@ function showStorageDirMenu(entry, dirName, button) {
                     : `${entry.schema}://${entry.rootName}`;
                 const displayName = dirName ? dirName.split("/").pop() : entry.rootName;
 
-                let info = [
-                    `${t('directoryName', 'Directory Name')}: ${displayName}`,
-                    `${t('fullPath', 'Full Path')}: ${fullPath}`
-                ];
+                let info;
 
                 // Count files in directory
                 let fileCount = 0;
                 let totalSize = 0;
                 try {
-                    let targetDir;
-                    if (entry.schema === "navigator_storage") {
-                        const root = await navigator.storage.getDirectory();
-                        targetDir = await root.getDirectoryHandle(entry.dirName);
-                        if (dirName) {
-                            const parts = dirName.split("/");
-                            for (const part of parts) {
-                                targetDir = await targetDir.getDirectoryHandle(part);
-                            }
+                    if (entry.schema === "indexeddb") {
+                        // IndexedDB - list files and count
+                        const idbFiles = await idb_listFiles();
+                        fileCount = idbFiles.length;
+                        for (const f of idbFiles) {
+                            totalSize += f.blob.size;
                         }
-                    } else if (entry.schema === "external_storage" && dirName) {
-                        const dirs = await loadExternalDirs();
-                        targetDir = dirs[dirName.split("/")[0]];
-                        if (targetDir) {
-                            const ok = await verifyPermission(targetDir);
-                            if (ok && dirName.includes("/")) {
-                                const parts = dirName.split("/").slice(1);
+                        info = [
+                            `${t('directoryName', 'Storage Name')}: ${displayName}`,
+                            `${t('fullPath', 'Full Path')}: ${fullPath}`
+                        ];
+                    } else {
+                        let targetDir;
+                        if (entry.schema === "navigator_storage") {
+                            const root = await navigator.storage.getDirectory();
+                            targetDir = await root.getDirectoryHandle(entry.dirName);
+                            if (dirName) {
+                                const parts = dirName.split("/");
                                 for (const part of parts) {
                                     targetDir = await targetDir.getDirectoryHandle(part);
                                 }
                             }
+                        } else if (entry.schema === "external_storage" && dirName) {
+                            const dirs = await loadExternalDirs();
+                            targetDir = dirs[dirName.split("/")[0]];
+                            if (targetDir) {
+                                const ok = await verifyPermission(targetDir);
+                                if (ok && dirName.includes("/")) {
+                                    const parts = dirName.split("/").slice(1);
+                                    for (const part of parts) {
+                                        targetDir = await targetDir.getDirectoryHandle(part);
+                                    }
+                                }
+                            }
                         }
-                    }
 
-                    if (targetDir) {
-                        const countResult = await countFilesInDir(targetDir);
-                        fileCount = countResult.count;
-                        totalSize = countResult.size;
+                        if (targetDir) {
+                            const countResult = await countFilesInDir(targetDir);
+                            fileCount = countResult.count;
+                            totalSize = countResult.size;
+                        }
+                        info = [
+                            `${t('directoryName', 'Directory Name')}: ${displayName}`,
+                            `${t('fullPath', 'Full Path')}: ${fullPath}`
+                        ];
                     }
                 } catch (err) {
                     console.error("Failed to count files:", err);
+                    info = [
+                        `${t('directoryName', 'Directory Name')}: ${displayName}`,
+                        `${t('fullPath', 'Full Path')}: ${fullPath}`
+                    ];
                 }
 
                 if (fileCount > 0) {
@@ -751,7 +1050,7 @@ async function countFilesInDir(dirHandle) {
                     size += file.size;
                 } catch {}
             }
-            count++;
+            ++count;
         } else if (handle.kind === "directory") {
             const subResult = await countFilesInDir(handle);
             count += subResult.count;
@@ -778,8 +1077,10 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
         menuItems.push(`<div class="menu-item" data-action="load-subtitle">📝 ${t('loadSubtitles', 'Load Subtitles')}</div>`);
     }
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
-    if (entry.allowModification) {
+    if (entry.allowFileRename !== false) {
         menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
+    }
+    if (entry.allowModification) {
         menuItems.push(`<div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>`);
     }
     menuItems.push(`<div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>`);
@@ -1045,6 +1346,253 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
     subList.appendChild(li);
 }
 
+// ============================================================
+// Render IndexedDB file item
+// ============================================================
+function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "") {
+    const li = document.createElement("li");
+    li.className = "storage-file-item";
+
+    const isPlayable = isPlaylistFile(name);
+    const isSubtitle = isSubtitleFile(name);
+
+    // Build full path: indexeddb://idb/folder/filename.ext
+    const fullPath = folderPath ? `${folderPath}/${name}` : name;
+    const entryPath = `indexeddb://idb/${fullPath}`;
+
+    li.innerHTML = `
+        <div class="storage-file-header">
+            <span class="file-name">📄 ${escapeHTML(name)}</span>
+            <div class="file-actions">
+                ${isPlayable ? '<button class="file-play" title="Play">▶</button>' : ''}
+                ${isSubtitle ? '<button class="file-subtitle" title="Load Subtitle">📝</button>' : ''}
+                <button class="file-menu" title="Menu">⋮</button>
+            </div>
+        </div>
+    `;
+
+    // Play button (only for playable files)
+    if (isPlayable) {
+        li.querySelector(".file-play").addEventListener("click", async (e) => {
+            e.stopPropagation();
+            try {
+                // Create a File object from IndexedDB entry
+                const file = new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "application/octet-stream" });
+                await play_source(file, { entryPath });
+                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+                    closeActiveView();
+                }
+            } catch (err) {
+                console.error("Failed to play IndexedDB file:", err);
+                alert("Failed to play file.");
+            }
+        });
+    }
+
+    // Subtitle button (only for subtitle files)
+    if (isSubtitle) {
+        li.querySelector(".file-subtitle").addEventListener("click", async (e) => {
+            e.stopPropagation();
+            if (typeof window.loadSubtitle === 'function') {
+                try {
+                    const file = new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "text/vtt" });
+                    await window.loadSubtitle(file);
+                    alert(`Subtitle "${name}" loaded.`);
+                } catch (err) {
+                    console.error("Failed to load subtitle:", err);
+                    alert("Failed to load subtitle.");
+                }
+            } else {
+                alert("Subtitle loading not available.");
+            }
+        });
+    }
+
+    // Burger menu button
+    li.querySelector(".file-menu").addEventListener("click", (e) => {
+        e.stopPropagation();
+        showIndexedDBFileMenu(entry, name, fileEntry, e.currentTarget, folderPath);
+    });
+
+    subList.appendChild(li);
+}
+
+// ============================================================
+// Show menu for IndexedDB file
+// ============================================================
+function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    const isPlayable = isPlaylistFile(name);
+    const isSubtitle = isSubtitleFile(name);
+
+    // Build full path
+    const fullPath = folderPath ? `${folderPath}/${name}` : name;
+    const entryPath = `indexeddb://idb/${fullPath}`;
+
+    const menuItems = [];
+
+    if (isPlayable) {
+        menuItems.push(`<div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
+    }
+    if (isSubtitle) {
+        menuItems.push(`<div class="menu-item" data-action="load-subtitle">📝 ${t('loadSubtitles', 'Load Subtitles')}</div>`);
+    }
+    menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
+    if (entry.allowFileRename !== false) {
+        menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
+    }
+    if (entry.allowModification) {
+        menuItems.push(`<div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>`);
+    }
+    menuItems.push(`<div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>`);
+    menuItems.push(`<div class="menu-item" data-action="close">${t('close', 'Close')}</div>`);
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+
+    menu.innerHTML = menuItems.join("");
+
+    if (!positionMenu(menu, button)) return;
+
+    const closeMenu = () => menu.remove();
+
+    // Menu actions
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const action = item.dataset.action;
+
+            if (action === "play" || action === "play-keep-open") {
+                if (isPlaylistFile(name)) {
+                    try {
+                        const file = new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "application/octet-stream" });
+                        await play_source(file, { entryPath });
+                        if (action === "play") {
+                            closeActiveView();
+                        }
+                    } catch (err) {
+                        console.error("Failed to play IndexedDB file:", err);
+                        alert("Failed to play file.");
+                    }
+                } else {
+                    alert("This file type cannot be played directly.");
+                }
+                closeMenu();
+                return;
+            }
+
+            if (action === "add") {
+                if (!isPlaylistFile(name)) {
+                    alert("This file type cannot be added to playlist.");
+                    closeMenu();
+                    return;
+                }
+
+                const playlists = await playlists_load();
+                const names = Object.keys(playlists);
+
+                const choice = prompt(
+                    "Add to which playlist?\n" +
+                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+                    "1"
+                );
+
+                if (choice) {
+                    const index = parseInt(choice, 10) - 1;
+                    if (index >= 0 && index < names.length) {
+                        const selectedName = names[index];
+                        playlists[selectedName].push({ name, path: entryPath });
+                        await playlists_save(playlists);
+                        alert(`Added "${name}" to playlist "${selectedName}".`);
+                    }
+                }
+                closeMenu();
+                return;
+            }
+
+            if (action === "load-subtitle") {
+                if (typeof window.loadSubtitle === 'function') {
+                    try {
+                        const file = new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "text/vtt" });
+                        await window.loadSubtitle(file);
+                        alert(`Subtitle "${name}" loaded.`);
+                    } catch (err) {
+                        console.error("Failed to load subtitle:", err);
+                        alert("Failed to load subtitle.");
+                    }
+                } else {
+                    alert("Subtitle loading not available.");
+                }
+                closeMenu();
+                return;
+            }
+
+            if (action === "export") {
+                try {
+                    const url = URL.createObjectURL(fileEntry.blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = name;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    console.error("Failed to export file:", err);
+                    alert("Failed to export file.");
+                }
+            }
+
+            if (action === "properties") {
+                const size = fileEntry.blob.size;
+                const sizeKB = (size / 1024).toFixed(2);
+                const sizeMB = (size / 1048576).toFixed(2);
+                const lastModified = new Date(fileEntry.lastModified).toISOString();
+                let info = [
+                    `${t('fileName', 'File Name')}: ${name}`,
+                    `${t('fullPath', 'Full Path')}: ${entryPath}`,
+                    `${t('size', 'Size')}: ${size} bytes (${sizeKB} KB / ${sizeMB} MB)`,
+                    `${t('type', 'Type')}: ${fileEntry.type || 'Unknown'}`,
+                    `${t('lastModified', 'Last Modified')}: ${lastModified}`
+                ];
+                alert(info.join('\n\n'));
+            }
+
+            if (action === "rename" && entry.allowModification) {
+                const newName = prompt("New file name:", name);
+                if (newName && newName.trim() && newName.trim() !== name) {
+                    const trimmed = newName.trim();
+                    try {
+                        // Delete old entry
+                        await idb_deleteFile(fileEntry.path);
+                        // Put new entry with new name
+                        await idb_putFile(fileEntry.folder, trimmed, fileEntry.blob, fileEntry.type);
+                        renderStorage();
+                    } catch (err) {
+                        console.error("Rename failed:", err);
+                        alert("Failed to rename file.");
+                    }
+                }
+            }
+
+            if (action === "delete" && entry.allowModification) {
+                const ok = confirm(`Delete file "${name}"?`);
+                if (ok) {
+                    try {
+                        await idb_deleteFile(fileEntry.path);
+                        renderStorage();
+                    } catch (err) {
+                        console.error("Delete failed:", err);
+                        alert("Failed to delete file.");
+                    }
+                }
+            }
+
+            closeMenu();
+        });
+    });
+}
+
 function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPath = "", rootHandle = null) {
     const li = document.createElement("li");
     li.className = "storage-sub-item";
@@ -1113,8 +1661,25 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
     const dirs = [];
     const files = [];
 
-    // Case 1: navigator_storage → real FileSystemDirectoryHandle
-    if (dirHandle && typeof dirHandle.entries === "function") {
+    // Case 1: IndexedDB (check first since arrays have entries() method)
+    if (entry.schema === "indexeddb") {
+        if (!currentPath) {
+            // Root level - show folder names as directories
+            if (Array.isArray(dirHandle)) {
+                for (const folderName of dirHandle) {
+                    dirs.push({ name: folderName, handle: folderName });
+                }
+            }
+        } else {
+            // Inside a folder - show files
+            const folderFiles = await idb_getFilesInFolder(currentPath);
+            for (const fileEntry of folderFiles) {
+                files.push({ name: fileEntry.name, handle: fileEntry });
+            }
+        }
+    }
+    // Case 2: navigator_storage → real FileSystemDirectoryHandle
+    else if (dirHandle && typeof dirHandle.entries === "function") {
         for await (const [name, handle] of dirHandle.entries()) {
             if (handle.kind === "directory") {
                 dirs.push({ name, handle });
@@ -1123,7 +1688,7 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
             }
         }
     }
-    // Case 2: external_storage
+    // Case 3: external_storage
     else if (entry.schema === "external_storage" && dirHandle && typeof dirHandle === "object") {
         for (const [name, handle] of Object.entries(dirHandle)) {
             dirs.push({ name, handle });
@@ -1145,7 +1710,11 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
 
     // Render files after directories
     for (const { name, handle } of files) {
-        renderFileItem(subList, name, handle, entry, currentPath);
+        if (entry.schema === "indexeddb") {
+            renderIndexedDBFileItem(subList, name, handle, entry, currentPath);
+        } else {
+            renderFileItem(subList, name, handle, entry, currentPath);
+        }
     }
 }
 
@@ -1176,12 +1745,23 @@ async function renderStorage() {
                 if (!rootDir || Object.keys(rootDir).length === 0) {
                     continue;
                 }
+            } else if (entry.schema === "indexeddb") {
+                // Check if IndexedDB has any files
+                const idbFolders = await idb_listFolders();
+                if (!idbFolders || idbFolders.length === 0) {
+                    continue;
+                }
+                rootDir = idbFolders; // Array of folder names
             }
             else
             {
                 continue;
             }
-        } catch {
+        } catch (err) {
+            // NotFoundError is expected for empty/unused storage roots
+            if (err.name !== 'NotFoundError') {
+                console.error(`Failed to load ${entry.rootName}:`, err);
+            }
             continue; // Skip missing roots
         }
         const li = document.createElement("li");
@@ -1260,7 +1840,7 @@ document.getElementById("clearImports").addEventListener("click", async () => {
     const confirmed = confirm(
         "This will permanently delete all imported directories:\n" +
         IMPORT_ROOTS.map(r => `• "${r.dirName}"`).join("\n") +
-        "\n\nAre you sure you want to proceed?"
+        "\n\nThis will also clear IndexedDB storage.\n\nAre you sure you want to proceed?"
     );
     if (!confirmed) return;
 
@@ -1282,6 +1862,13 @@ document.getElementById("clearImports").addEventListener("click", async () => {
                         removedAny = true;
                         window.externalStorageRoot = null;
                     }
+                    continue;
+                }
+                else if (entry.schema === "indexeddb")
+                {
+                    // Clear IndexedDB
+                    await idb_clearAll();
+                    removedAny = true;
                     continue;
                 }
                 else
@@ -1409,6 +1996,62 @@ document.getElementById("addExternalBtn").addEventListener("click", async () => 
     }
 });
 
+// ============================================================
+// IndexedDB Import Handler (directory picker)
+// ============================================================
+document.getElementById("addIndexedDBBtn").addEventListener("click", async () => {
+    try {
+        // Check if showDirectoryPicker is available
+        if (typeof window.showDirectoryPicker !== "function") {
+            alert("Directory picker not supported in this browser.");
+            return;
+        }
+
+        const sourceDir = await window.showDirectoryPicker({ startIn: "music" });
+
+        // Create a timestamp-based virtual folder for this import
+        const folder = `idb_${Date.now()}`;
+        const result = { count: 0, errors: [] };
+
+        // Recursively copy files from directory to IndexedDB
+        await copyDirectoryToIndexedDB(sourceDir, folder, result);
+
+        renderStorage();
+
+        let msg = `Imported ${result.count} file(s) into IndexedDB.`;
+        if (result.errors.length > 0) {
+            msg += "\n\nErrors:\n" + result.errors.join("\n");
+        }
+        alert(msg);
+    } catch (err) {
+        console.warn(err);
+    }
+});
+
+// Recursively copy files from a directory handle to IndexedDB
+async function copyDirectoryToIndexedDB(dirHandle, folder, result) {
+    for await (const [name, handle] of dirHandle.entries()) {
+        try {
+            if (handle.kind === "file") {
+                if (!isAllowedFile(name)) {
+                    continue;
+                }
+                const file = await handle.getFile();
+                await idb_putFile(folder, name, file, file.type || "application/octet-stream");
+                ++result.count;
+            } else if (handle.kind === "directory") {
+                // Recursively process subdirectories
+                await copyDirectoryToIndexedDB(handle, folder, result);
+            }
+        } catch (err) {
+            result.errors.push(`Failed to import '${name}': ${err.message}`);
+        }
+
+        // Yield to avoid UI freeze
+        await new Promise(requestAnimationFrame);
+    }
+}
+
 function supportsExternalDirectoryAccess() {
     return typeof window.showDirectoryPicker === "function";
 }
@@ -1416,11 +2059,18 @@ function supportsExternalDirectoryAccess() {
 function updateImportButtonsVisibility() {
     const btnImportDir = document.getElementById("addImportBtn");
     const btnImportExternal = document.getElementById("addExternalBtn");
+    const btnImportIndexedDB = document.getElementById("addIndexedDBBtn");
 
     if (!supportsExternalDirectoryAccess()) {
         btnImportDir.style.display = "none";
         btnImportExternal.style.display = "none";
+        btnImportIndexedDB.style.display = "none";
     }
 }
 
 updateImportButtonsVisibility();
+
+// Expose IndexedDB functions globally for use by other modules
+window.idb_getFile = idb_getFile;
+window.idb_listFiles = idb_listFiles;
+window.idb_listFolders = idb_listFolders;
