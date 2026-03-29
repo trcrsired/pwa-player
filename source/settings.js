@@ -211,35 +211,3 @@ disableRotateBtnCheckbox.addEventListener("change", () => {
 function isRotateBtnDisabled() {
     return localStorage.getItem("disableRotateBtn") === "true";
 }
-
-// CORS Bypass URL setting
-const corsBypassUrlInput = document.getElementById("corsBypassUrl");
-
-// Load saved preference
-corsBypassUrlInput.value = localStorage.getItem("corsBypassUrl") || "";
-
-corsBypassUrlInput.addEventListener("change", () => {
-    const url = corsBypassUrlInput.value.trim();
-    if (url) {
-        localStorage.setItem("corsBypassUrl", url);
-    } else {
-        localStorage.removeItem("corsBypassUrl");
-    }
-});
-
-// Helper function to get CORS bypass URL
-function getCorsBypassUrl() {
-    return localStorage.getItem("corsBypassUrl") || "";
-}
-
-// Helper function to apply CORS bypass to a URL
-function applyCorsBypass(url) {
-    if (!url || typeof url !== 'string') return url;
-    const bypassUrl = getCorsBypassUrl();
-    if (!bypassUrl) return url;
-    // Only apply to http/https URLs
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-        return bypassUrl + url;
-    }
-    return url;
-}

@@ -434,15 +434,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Show loading indicator
     showVideoLoading();
 
-    // Apply CORS bypass for network URLs
-    let videoSrc = blobURL;
-    if (typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'))) {
-      if (typeof applyCorsBypass === 'function') {
-        videoSrc = applyCorsBypass(blobURL);
-      }
-    }
-
-    video.src = videoSrc;
+    video.src = blobURL;
     hasActiveSource = true;
     hideControls();
 
