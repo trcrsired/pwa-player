@@ -62,6 +62,7 @@ html, body {
     color: var(--fg);
     font-family: system-ui, sans-serif;
     height: 100%;
+    overflow-x: hidden;
 }
 
 /* =========================================
@@ -100,6 +101,7 @@ html, body {
 .content {
     padding: 16px;
     overflow-y: auto;
+    overflow-x: hidden;
     flex: 1;
     min-height: 0; /* Allow shrinking in flexbox for scrolling */
 }
@@ -148,8 +150,17 @@ html, body {
    ========================================= */
 .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 20px;
+}
+
+.actions .btn {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* =========================================
@@ -159,6 +170,8 @@ html, body {
     list-style: none;
     padding: 0;
     margin: 0;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .list > li:not(.storage-node):not(.iptv-node) {
@@ -197,6 +210,8 @@ html, body {
 /* Storage node styles */
 .storage-node {
     margin-bottom: 8px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .storage-header {
@@ -207,6 +222,8 @@ html, body {
     background: var(--card-bg);
     border-radius: 6px;
     cursor: pointer;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .storage-header:hover {
@@ -222,16 +239,24 @@ html, body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
+    flex-shrink: 0;
 }
 
 .storage-header .storage-name {
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
 }
 
 .storage-sub {
     margin-top: 4px;
     padding-left: 16px;
     list-style: none;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .storage-sub.hidden {
@@ -240,6 +265,8 @@ html, body {
 
 .storage-sub-item {
     padding: 2px 0;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .storage-sub-header {
@@ -251,6 +278,8 @@ html, body {
     border-radius: 4px;
     cursor: pointer;
     margin-bottom: 4px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .storage-sub-header:hover {
@@ -260,12 +289,18 @@ html, body {
 .storage-sub-header .sub-name {
     flex: 1;
     font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 /* Storage file item styles */
 .storage-file-item {
     padding: 2px 0;
     margin-bottom: 4px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .storage-file-header {
@@ -275,6 +310,8 @@ html, body {
     padding: 8px 12px;
     background: var(--card-bg);
     border-radius: 4px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .storage-file-header .file-name {
@@ -283,6 +320,7 @@ html, body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
 }
 
 .storage-file-header button {
@@ -293,6 +331,7 @@ html, body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;
+    flex-shrink: 0;
 }
 
 .storage-file-header button:hover {

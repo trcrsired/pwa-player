@@ -331,7 +331,7 @@ button:hover,
   z-index: 999;
   display: flex;
   flex-direction: column;
-  overflow-y: hidden; /* Let .content handle scrolling */
+  overflow: hidden; /* Prevent any scrolling at this level */
 }
 
 .overlay-header {
