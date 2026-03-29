@@ -457,6 +457,41 @@ html, body {
     accent-color: var(--primary-bg);
 }
 
+/* Setting label with input */
+.setting-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 0;
+    font-size: 15px;
+}
+
+.setting-input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    background: var(--card-bg);
+    color: var(--fg);
+    box-sizing: border-box;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: var(--primary-bg);
+}
+
+.setting-input::placeholder {
+    color: var(--subtle);
+}
+
+.setting-hint {
+    font-size: 12px;
+    color: var(--subtle);
+    margin: 4px 0 12px 0;
+}
+
 /* Now Playing item */
 .list-item {
     display: flex;
