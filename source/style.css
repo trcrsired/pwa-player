@@ -736,7 +736,7 @@ button:hover,
     align-items: center;
     gap: 16px;
     padding: 24px 32px;
-    max-width: 80%;
+    max-width: 90vw;
     text-align: center;
 }
 
@@ -745,11 +745,17 @@ button:hover,
 }
 
 .video-status-text {
-    color: #fff;
+    color: #000;
     font-size: 16px;
     line-height: 1.5;
     font-family: system-ui, sans-serif;
     white-space: pre-line;
+}
+
+@media (prefers-color-scheme: dark) {
+    .video-status-text {
+        color: #fff;
+    }
 }
 
 /* Loading spinner animation */
