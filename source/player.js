@@ -423,7 +423,7 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
   }
 }
 
-async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, autoPlay = true) {
+async function play_source_internal(blobURL, mediametadata, sourceobject, playlist) {
   try {
     revokeBlobURL();
     currentBlobURL = blobURL;
@@ -480,12 +480,10 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       hideVideoStatus();
     };
 
-    // 🔥 Fix: wait for metadata before playing
+    // Wait for metadata before playing
     video.onloadedmetadata = () => {
       hideVideoStatus(); // Hide loading when metadata loads
-      if (autoPlay) {
-        video.play().catch(err => console.warn("Play failed:", err));
-      }
+      video.play().catch(err => console.warn("Play failed:", err));
       // Resize window to video dimensions if enabled
       if (typeof resizeWindowToVideo === 'function') {
         resizeWindowToVideo(video.videoWidth, video.videoHeight);
@@ -495,7 +493,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Ensure video loads the new source
     video.load();
 
-    playBtn.textContent = autoPlay ? "⏸️" : "▶️";
+    playBtn.textContent = "⏸️";
 
     // Store original metadata for subtitle updates
     currentMediaMetadata = { ...mediametadata };
@@ -536,7 +534,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
   }
 }
 
-async function play_source_title(sourceobject, customTitle, playlist, autoPlay = true) {
+async function play_source_title(sourceobject, customTitle, playlist) {
   try {
     // Get metadata as usual
     const result = await getMediaMetadataFromSource(sourceobject);
@@ -549,13 +547,13 @@ async function play_source_title(sourceobject, customTitle, playlist, autoPlay =
     mediametadata.title = customTitle;
 
     // Now call the internal playback handler
-    await play_source_internal(blobURL, mediametadata, sourceobject, playlist, autoPlay);
+    await play_source_internal(blobURL, mediametadata, sourceobject, playlist);
   } catch (err) {
     console.warn(err);
   }
 }
 
-async function play_source(sourceobject, playlist, autoPlay = true) {
+async function play_source(sourceobject, playlist) {
   try {
     const result = await getMediaMetadataFromSource(sourceobject);
     if (!result) return;
@@ -564,7 +562,7 @@ async function play_source(sourceobject, playlist, autoPlay = true) {
     const mediametadata = result[2];
 
     // Call the shared internal logic
-    await play_source_internal(blobURL, mediametadata, sourceobject, playlist, autoPlay);
+    await play_source_internal(blobURL, mediametadata, sourceobject, playlist);
 
   } catch (err) {
     console.warn(err);
