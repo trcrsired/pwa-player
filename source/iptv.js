@@ -87,7 +87,7 @@ function showIPTVChannelMenu(channel, url, button) {
                     path: url
                 });
                 await playlists_save(playlists);
-                alert(`Added "${channel.name}" to playlist "${selectedName}".`);
+                alert(`${t('addedToPlaylistSuccess', 'Added')} "${channel.name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
             }
 
             closeMenu();

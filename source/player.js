@@ -543,6 +543,7 @@ window.addEventListener("dragleave", () => {
 });
 
 window.addEventListener("drop", async e => {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     container.style.outline = "none";
 
     // Check for directory drag (using DataTransferItem)
@@ -560,7 +561,7 @@ window.addEventListener("drop", async e => {
                         }
                     } catch (err) {
                         console.error("Failed to add directory:", err);
-                        alert("Failed to add directory to external storage.");
+                        alert(t('failedToImportExternal', "Failed to add directory to external storage."));
                     }
                     return;
                 }
@@ -576,7 +577,7 @@ window.addEventListener("drop", async e => {
         !file.type.startsWith("video/") &&
         !file.type.startsWith("audio/")
     ) {
-        alert("Please drop a video, audio file, or directory");
+        alert(t('dropMediaOrDirectory', "Please drop a video, audio file, or directory"));
         return;
     }
 
@@ -874,8 +875,9 @@ subtitleBtn.onclick = async () => {
 };
 
 webBtn.onclick = () => {
+  const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
   try {
-    const url = prompt("Enter web URL:");
+    const url = prompt(t('enterWebURL', "Enter web URL:"));
 
     if (url)
     {

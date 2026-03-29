@@ -1,0 +1,8 @@
+# Ignore all dotfiles and dotfolders
+.*
+
+# But keep Git's own files
+!.gitignore
+!.gitattributes
+!.gitkeep
+!.git

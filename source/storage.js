@@ -185,17 +185,18 @@ async function idb_getFilesInFolder(folder) {
 
 // Add all files from an IndexedDB folder to a playlist
 async function addIndexedDBFolderToPlaylist(folderName) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     try {
         const files = await idb_getFilesInFolder(folderName);
         if (!files || files.length === 0) {
-            alert(`No files found in folder "${folderName}".`);
+            alert(`${t('noFilesInFolder', 'No files found in folder')} "${folderName}".`);
             return;
         }
 
         // Filter to only playable files
         const playableFiles = files.filter(f => isPlaylistFile(f.name));
         if (playableFiles.length === 0) {
-            alert(`No playable files found in folder "${folderName}".`);
+            alert(`${t('noPlayableFiles', 'No playable files found in folder')} "${folderName}".`);
             return;
         }
 
@@ -204,12 +205,12 @@ async function addIndexedDBFolderToPlaylist(folderName) {
         const names = Object.keys(playlists);
 
         if (names.length === 0) {
-            alert("No playlists available. Please create a playlist first.");
+            alert(t('noPlaylistsAvailable', "No playlists available. Please create a playlist first."));
             return;
         }
 
         const choice = prompt(
-            "Add to which playlist?\n" +
+            t('addToWhichPlaylist', "Add to which playlist?") + "\n" +
             names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
             "1"
         );
@@ -218,7 +219,7 @@ async function addIndexedDBFolderToPlaylist(folderName) {
 
         const index = parseInt(choice, 10) - 1;
         if (index < 0 || index >= names.length) {
-            alert("Invalid selection.");
+            alert(t('invalidSelection', "Invalid selection."));
             return;
         }
 
@@ -230,23 +231,24 @@ async function addIndexedDBFolderToPlaylist(folderName) {
 
         playlists[selectedName].push(...items);
         await playlists_save(playlists);
-        alert(`Added ${items.length} file(s) from "${folderName}" to playlist "${selectedName}".`);
+        alert(`${t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', items.length)} "${selectedName}".`);
     } catch (err) {
         console.error("Failed to add IndexedDB folder to playlist:", err);
-        alert("Failed to add files to playlist.");
+        alert(t('failedToAddToPlaylist', "Failed to add files to playlist."));
     }
 }
 
 // Export all files from an IndexedDB folder
 async function exportIndexedDBFolder(folderName) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     try {
         const files = await idb_getFilesInFolder(folderName);
         if (!files || files.length === 0) {
-            alert(`No files found in folder "${folderName}".`);
+            alert(`${t('noFilesInFolder', 'No files found in folder')} "${folderName}".`);
             return;
         }
 
-        const ok = confirm(`Export ${files.length} file(s) from "${folderName}"?`);
+        const ok = confirm(t('exportFilesConfirm', 'Export {count} file(s)?').replace('{count}', files.length));
         if (!ok) return;
 
         let exported = 0;
@@ -266,10 +268,10 @@ async function exportIndexedDBFolder(folderName) {
             }
         }
 
-        alert(`Exported ${exported} file(s).`);
+        alert(t('exportedFiles', 'Exported {count} file(s).').replace('{count}', exported));
     } catch (err) {
         console.error("Failed to export IndexedDB folder:", err);
-        alert("Failed to export files.");
+        alert(t('failedToExport', "Failed to export files."));
     }
 }
 
@@ -306,11 +308,12 @@ async function dirExists(name, parentHandle) {
 // Prompt user for a unique directory name
 // ============================================================
 async function promptForUniqueName(baseName, parentHandle) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     let attempts = 0;
 
     while (attempts < 3) {
         const name = prompt(
-            `Directory "${baseName}" already exists.\nEnter a new name (no slashes):`,
+            `${t('directoryExists', 'Directory')} "${baseName}" ${t('alreadyExists', 'already exists.')} ${t('enterNewName', 'Enter a new name (no slashes):')}`,
             baseName
         );
 
@@ -318,13 +321,13 @@ async function promptForUniqueName(baseName, parentHandle) {
 
         const trimmed = name.trim();
         if (!trimmed || trimmed.includes('/')) {
-            alert("Invalid name. Directory names must not be empty or contain slashes.");
+            alert(t('invalidName', "Invalid name. Directory names must not be empty or contain slashes."));
             return null;
         }
 
         if (trimmed === baseName) {
             ++attempts;
-            alert(`"${baseName}" already exists. Please choose a different name.`);
+            alert(`"${baseName}" ${t('alreadyExistsChooseDifferent', 'already exists. Please choose a different name.')}`);
             continue;
         }
 
@@ -333,10 +336,10 @@ async function promptForUniqueName(baseName, parentHandle) {
         }
 
         ++attempts;
-        alert(`"${trimmed}" already exists. Try again.`);
+        alert(`"${trimmed}" ${t('tryAgain', 'already exists. Try again.')}`);
     }
 
-    alert("Too many attempts. Import cancelled.");
+    alert(t('tooManyAttempts', "Too many attempts. Import cancelled."));
     return null;
 }
 
@@ -506,6 +509,7 @@ async function collectPointers(dirHandle, schema, basePath) {
 // Add all pointers from a directory (any root) to a playlist
 // ============================================================
 async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, playlistName) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     try {
         let targetDir;
 
@@ -527,14 +531,14 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
             targetDir = rootDirHandle[topLevelName];
 
             if (!targetDir) {
-                alert(`External directory "${topLevelName}" not found.`);
+                alert(`${t('externalDirNotFound', 'External directory not found')} "${topLevelName}".`);
                 return;
             }
 
             // Ensure permission is granted
             const ok = await verifyPermission(targetDir);
             if (!ok) {
-                alert("Permission denied for external directory.");
+                alert(t('permissionDeniedExternal', "Permission denied for external directory."));
                 return;
             }
 
@@ -544,7 +548,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
             }
 
         } else {
-            alert("Unknown storage schema.");
+            alert(t('unknownStorageSchema', "Unknown storage schema."));
             return;
         }
 
@@ -552,7 +556,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
         const pointers = await collectPointers(targetDir, schema, basePath);
 
         if (pointers.length === 0) {
-            alert(`No files found in "${dirPath}".`);
+            alert(`${t('noFilesInFolder', 'No files found in')} "${dirPath}".`);
             return;
         }
 
@@ -564,10 +568,10 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
         playlists[playlistName].push(...pointers);
         await playlists_save(playlists);
 
-        alert(`Added ${pointers.length} items to playlist "${playlistName}".`);
+        alert(t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', pointers.length) + ` "${playlistName}".`);
     } catch (err) {
         console.error(err);
-        alert("Failed to add directory to playlist.");
+        alert(t('failedToAddToPlaylist', "Failed to add directory to playlist."));
     }
 }
 
@@ -575,11 +579,12 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
 // Choose playlist and add directory contents
 // ============================================================
 async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     const playlists = await playlists_load();
     const names = Object.keys(playlists);
 
     const choice = prompt(
-        "Add to which playlist?\n" +
+        t('addToWhichPlaylist', "Add to which playlist?") + "\n" +
         names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
         "1"
     );
@@ -588,7 +593,7 @@ async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
 
     const index = parseInt(choice, 10) - 1;
     if (index < 0 || index >= names.length) {
-        alert("Invalid selection");
+        alert(t('invalidSelection', "Invalid selection"));
         return;
     }
 
@@ -605,6 +610,7 @@ async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
 
 // Export/Download files from a directory
 async function exportDirectory(entry, dirPath, parent) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     try {
         let targetDir;
 
@@ -621,14 +627,14 @@ async function exportDirectory(entry, dirPath, parent) {
             targetDir = parent[topLevelName];
 
             if (!targetDir) {
-                alert(`External directory "${topLevelName}" not found.`);
+                alert(`${t('externalDirNotFound', 'External directory not found')} "${topLevelName}".`);
                 return;
             }
 
             // Ensure permission
             const ok = await verifyPermission(targetDir);
             if (!ok) {
-                alert("Permission denied for external directory.");
+                alert(t('permissionDeniedExternal', "Permission denied for external directory."));
                 return;
             }
 
@@ -637,7 +643,7 @@ async function exportDirectory(entry, dirPath, parent) {
                 targetDir = await targetDir.getDirectoryHandle(parts[i], { create: false });
             }
         } else {
-            alert("Unknown storage schema.");
+            alert(t('unknownStorageSchema', "Unknown storage schema."));
             return;
         }
 
@@ -645,12 +651,12 @@ async function exportDirectory(entry, dirPath, parent) {
         const files = await collectFilesForExport(targetDir, "");
 
         if (files.length === 0) {
-            alert("No files found to export.");
+            alert(t('noFilesToExport', "No files found to export."));
             return;
         }
 
         // Ask user confirmation
-        const ok = confirm(`Export all files from "${dirPath}"?\n\nFound ${files.length} file(s).`);
+        const ok = confirm(`${t('exportAllFilesFrom', 'Export all files from')} "${dirPath}"?\n\n${t('foundFiles', 'Found {count} file(s).').replace('{count}', files.length)}`);
         if (!ok) return;
 
         // Download each file
@@ -672,11 +678,11 @@ async function exportDirectory(entry, dirPath, parent) {
             }
         }
 
-        alert(`Exported ${downloaded} file(s).`);
+        alert(t('exportedFiles', 'Exported {count} file(s).').replace('{count}', downloaded));
 
     } catch (err) {
         console.error(err);
-        alert("Failed to export directory.");
+        alert(t('failedToExportDirectory', "Failed to export directory."));
     }
 }
 
@@ -843,7 +849,7 @@ function showStorageDirMenu(entry, dirName, button) {
                 parent = null;
             }
             else {
-                alert("Unknown storage schema.");
+                alert(t('unknownStorageSchema', "Unknown storage schema."));
                 return;
             }
 
@@ -866,14 +872,14 @@ function showStorageDirMenu(entry, dirName, button) {
 
             if (action === "rename") {
                 if (entry.schema === "indexeddb") {
-                    alert("Rename not available for IndexedDB.");
+                    alert(t('renameNotAvailable', "Rename not available for IndexedDB."));
                 } else {
                     // For nested paths, get just the folder name
                     const parts = dirName.split("/");
                     const oldName = parts.pop();
                     const pathToParent = parts.join("/");
 
-                    const newName = prompt("New folder name:", oldName);
+                    const newName = prompt(t('newFolderName', "New folder name:"), oldName);
                     if (newName && newName.trim() && newName.trim() !== oldName) {
                         const trimmed = newName.trim();
 
@@ -898,17 +904,17 @@ function showStorageDirMenu(entry, dirName, button) {
                 let confirmMsg;
                 if (entry.schema === "indexeddb") {
                     confirmMsg = dirName
-                        ? `Delete folder "${dirName}" and all its files?`
-                        : `Delete all files from IndexedDB storage?`;
+                        ? `${t('deleteFolderConfirm', 'Delete folder')} "${dirName}"?`
+                        : t('deleteAllFilesConfirm', "Delete all files from storage?");
                 } else if (isEntryRemoval) {
                     // Entry removal - only remove reference, not actual files
                     confirmMsg = dirName
-                        ? `Remove entry "${dirName}"?\n\nNote: The actual folder on your device will NOT be deleted.`
-                        : `Remove all entries from "${entry.rootName}"?\n\nNote: The actual folders on your device will NOT be deleted.`;
+                        ? `${t('removeEntry', 'Remove entry')} "${dirName}"?\n\n${t('removeEntryNote', 'Note: The actual folder on your device will NOT be deleted.')}`
+                        : `${t('removeAllEntries', 'Remove all entries')} "${entry.rootName}"?\n\n${t('removeAllEntriesNote', 'Note: The actual folders on your device will NOT be deleted.')}`;
                 } else {
                     confirmMsg = dirName
-                        ? `Delete folder "${dirName}"?`
-                        : `Delete entire "${entry.rootName}" storage?`;
+                        ? `${t('deleteFolderConfirm', 'Delete folder')} "${dirName}"?`
+                        : `${t('deleteEntireStorage', 'Delete entire storage')} "${entry.rootName}"?`;
                 }
 
                 if (confirm(confirmMsg)) {
@@ -1106,7 +1112,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     await play_source(handle, { entryPath });
                     closeActiveView();
                 } else {
-                    alert("This file type cannot be played directly.");
+                    alert(t('fileCannotBePlayed', "This file type cannot be played directly."));
                 }
                 closeMenu();
                 return;
@@ -1117,7 +1123,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
                     await play_source(handle, { entryPath });
                 } else {
-                    alert("This file type cannot be played directly.");
+                    alert(t('fileCannotBePlayed', "This file type cannot be played directly."));
                 }
                 closeMenu();
                 return;
@@ -1125,7 +1131,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
 
             if (action === "add") {
                 if (!isPlaylistFile(name)) {
-                    alert("This file type cannot be added to playlist.");
+                    alert(t('fileCannotBeAdded', "This file type cannot be added to playlist."));
                     closeMenu();
                     return;
                 }
@@ -1134,7 +1140,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 const names = Object.keys(playlists);
 
                 const choice = prompt(
-                    "Add to which playlist?\n" +
+                    t('addToWhichPlaylist', "Add to which playlist?") + "\n" +
                     names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
                     "1"
                 );
@@ -1146,7 +1152,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                         const path = `${entry.schema}://${entry.rootName}/${fullPath}`;
                         playlists[selectedName].push({ name, path });
                         await playlists_save(playlists);
-                        alert(`Added "${name}" to playlist "${selectedName}".`);
+                        alert(`${t('addedToPlaylistSuccess', 'Added')} "${name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
                     }
                 }
                 closeMenu();
@@ -1157,13 +1163,13 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 if (typeof window.loadSubtitle === 'function') {
                     try {
                         await window.loadSubtitle(handle);
-                        alert(`Subtitle "${name}" loaded.`);
+                        alert(`${t('subtitleLoaded', 'Subtitle')} "${name}" ${t('loaded', 'loaded.')}`);
                     } catch (err) {
                         console.error("Failed to load subtitle:", err);
-                        alert("Failed to load subtitle.");
+                        alert(t('failedToLoadSubtitle', "Failed to load subtitle."));
                     }
                 } else {
-                    alert("Subtitle loading not available.");
+                    alert(t('subtitleNotAvailable', "Subtitle loading not available."));
                 }
                 closeMenu();
                 return;
@@ -1180,7 +1186,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     URL.revokeObjectURL(url);
                 } catch (err) {
                     console.error("Failed to export file:", err);
-                    alert("Failed to export file.");
+                    alert(t('failedToExport', "Failed to export file."));
                 }
             }
 
@@ -1208,7 +1214,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
             const canModify = entry.allowModification;
 
             if (action === "rename" && canModify) {
-                const newName = prompt("New file name:", name);
+                const newName = prompt(t('newFileName', "New file name:"), name);
                 if (newName && newName.trim() && newName.trim() !== name) {
                     const trimmed = newName.trim();
                     let writable = null;
@@ -1244,7 +1250,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                         renderStorage();
                     } catch (err) {
                         console.error("Rename failed:", err);
-                        alert("Failed to rename file.");
+                        alert(t('failedToRename', "Failed to rename file."));
                     } finally {
                         if (writable) await writable.close();
                     }
@@ -1252,7 +1258,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
             }
 
             if (action === "delete" && canModify) {
-                const ok = confirm(`Delete file "${name}"?`);
+                const ok = confirm(`${t('deleteFileConfirm', 'Delete file')} "${name}"?`);
                 if (ok) {
                     try {
                         let parent;
@@ -1276,7 +1282,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                         renderStorage();
                     } catch (err) {
                         console.error("Delete failed:", err);
-                        alert("Failed to delete file.");
+                        alert(t('failedToDelete', "Failed to delete file."));
                     }
                 }
             }
@@ -1287,6 +1293,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
 }
 
 function renderFileItem(subList, name, handle, entry, currentPath = "") {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     const li = document.createElement("li");
     li.className = "storage-file-item";
 
@@ -1326,13 +1333,13 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
             if (typeof window.loadSubtitle === 'function') {
                 try {
                     await window.loadSubtitle(handle);
-                    alert(`Subtitle "${name}" loaded.`);
+                    alert(`${t('subtitleLoaded', 'Subtitle')} "${name}" ${t('loaded', 'loaded.')}`);
                 } catch (err) {
                     console.error("Failed to load subtitle:", err);
-                    alert("Failed to load subtitle.");
+                    alert(t('failedToLoadSubtitle', "Failed to load subtitle."));
                 }
             } else {
-                alert("Subtitle loading not available.");
+                alert(t('subtitleNotAvailable', "Subtitle loading not available."));
             }
         });
     }
@@ -1350,6 +1357,7 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
 // Render IndexedDB file item
 // ============================================================
 function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "") {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     const li = document.createElement("li");
     li.className = "storage-file-item";
 
@@ -1384,7 +1392,7 @@ function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "
                 }
             } catch (err) {
                 console.error("Failed to play IndexedDB file:", err);
-                alert("Failed to play file.");
+                alert(t('failedToPlay', "Failed to play file."));
             }
         });
     }
@@ -1397,13 +1405,13 @@ function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "
                 try {
                     const file = new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "text/vtt" });
                     await window.loadSubtitle(file);
-                    alert(`Subtitle "${name}" loaded.`);
+                    alert(`${t('subtitleLoaded', 'Subtitle')} "${name}" ${t('loaded', 'loaded.')}`);
                 } catch (err) {
                     console.error("Failed to load subtitle:", err);
-                    alert("Failed to load subtitle.");
+                    alert(t('failedToLoadSubtitle', "Failed to load subtitle."));
                 }
             } else {
-                alert("Subtitle loading not available.");
+                alert(t('subtitleNotAvailable', "Subtitle loading not available."));
             }
         });
     }
@@ -1474,10 +1482,10 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                         }
                     } catch (err) {
                         console.error("Failed to play IndexedDB file:", err);
-                        alert("Failed to play file.");
+                        alert(t('failedToPlay', "Failed to play file."));
                     }
                 } else {
-                    alert("This file type cannot be played directly.");
+                    alert(t('fileCannotBePlayed', "This file type cannot be played directly."));
                 }
                 closeMenu();
                 return;
@@ -1485,7 +1493,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
 
             if (action === "add") {
                 if (!isPlaylistFile(name)) {
-                    alert("This file type cannot be added to playlist.");
+                    alert(t('fileCannotBeAdded', "This file type cannot be added to playlist."));
                     closeMenu();
                     return;
                 }
@@ -1494,7 +1502,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                 const names = Object.keys(playlists);
 
                 const choice = prompt(
-                    "Add to which playlist?\n" +
+                    t('addToWhichPlaylist', "Add to which playlist?") + "\n" +
                     names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
                     "1"
                 );
@@ -1505,7 +1513,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                         const selectedName = names[index];
                         playlists[selectedName].push({ name, path: entryPath });
                         await playlists_save(playlists);
-                        alert(`Added "${name}" to playlist "${selectedName}".`);
+                        alert(`${t('addedToPlaylistSuccess', 'Added')} "${name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
                     }
                 }
                 closeMenu();
@@ -1517,13 +1525,13 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                     try {
                         const file = new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "text/vtt" });
                         await window.loadSubtitle(file);
-                        alert(`Subtitle "${name}" loaded.`);
+                        alert(`${t('subtitleLoaded', 'Subtitle')} "${name}" ${t('loaded', 'loaded.')}`);
                     } catch (err) {
                         console.error("Failed to load subtitle:", err);
-                        alert("Failed to load subtitle.");
+                        alert(t('failedToLoadSubtitle', "Failed to load subtitle."));
                     }
                 } else {
-                    alert("Subtitle loading not available.");
+                    alert(t('subtitleNotAvailable', "Subtitle loading not available."));
                 }
                 closeMenu();
                 return;
@@ -1539,7 +1547,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                     URL.revokeObjectURL(url);
                 } catch (err) {
                     console.error("Failed to export file:", err);
-                    alert("Failed to export file.");
+                    alert(t('failedToExport', "Failed to export file."));
                 }
             }
 
@@ -1559,7 +1567,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
             }
 
             if (action === "rename" && entry.allowModification) {
-                const newName = prompt("New file name:", name);
+                const newName = prompt(t('newFileName', "New file name:"), name);
                 if (newName && newName.trim() && newName.trim() !== name) {
                     const trimmed = newName.trim();
                     try {
@@ -1570,20 +1578,20 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                         renderStorage();
                     } catch (err) {
                         console.error("Rename failed:", err);
-                        alert("Failed to rename file.");
+                        alert(t('failedToRename', "Failed to rename file."));
                     }
                 }
             }
 
             if (action === "delete" && entry.allowModification) {
-                const ok = confirm(`Delete file "${name}"?`);
+                const ok = confirm(`${t('deleteFileConfirm', 'Delete file')} "${name}"?`);
                 if (ok) {
                     try {
                         await idb_deleteFile(fileEntry.path);
                         renderStorage();
                     } catch (err) {
                         console.error("Delete failed:", err);
-                        alert("Failed to delete file.");
+                        alert(t('failedToDelete', "Failed to delete file."));
                     }
                 }
             }
@@ -1624,11 +1632,12 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPat
     {
         // Click to expand/collapse subdirectories (recursive)
         header.addEventListener("click", async () => {
+            const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
             // For external storage, check/request permission first
             if (entry.schema === "external_storage" && handle) {
                 const hasPermission = await verifyPermission(handle);
                 if (!hasPermission) {
-                    alert("Permission denied for this directory.");
+                    alert(t('permissionDenied', "Permission denied for this directory."));
                     return;
                 }
             }
@@ -1803,6 +1812,7 @@ async function renderStorage() {
 // Import directory (showDirectoryPicker)
 // ============================================================
 document.getElementById("addImportBtn").addEventListener("click", async () => {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     try {
         const sourceDir = await window.showDirectoryPicker({ startIn: "music" });
         const permission = await verifyPermission(sourceDir);
@@ -1822,9 +1832,9 @@ document.getElementById("addImportBtn").addEventListener("click", async () => {
 
         renderStorage();
 
-        let message = `Imported ${result.count} file(s).`;
+        let message = t('importedFiles', 'Imported {count} file(s).').replace('{count}', result.count);
         if (result.errors.length > 0) {
-            message += "\n\nSome items could not be copied:\n" + result.errors.join("\n");
+            message += "\n\n" + result.errors.join("\n");
         }
 
         alert(message);
@@ -1837,10 +1847,11 @@ document.getElementById("addImportBtn").addEventListener("click", async () => {
 // Clear all import roots
 // ============================================================
 document.getElementById("clearImports").addEventListener("click", async () => {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     const confirmed = confirm(
-        "This will permanently delete all imported directories:\n" +
+        t('clearAllImportsConfirm', "This will permanently delete all imported directories:\n") +
         IMPORT_ROOTS.map(r => `• "${r.dirName}"`).join("\n") +
-        "\n\nThis will also clear IndexedDB storage.\n\nAre you sure you want to proceed?"
+        "\n\n" + t('clearAllImportsNote', "This will also clear IndexedDB storage.\n\nAre you sure you want to proceed?")
     );
     if (!confirmed) return;
 
@@ -1881,11 +1892,11 @@ document.getElementById("clearImports").addEventListener("click", async () => {
             }
         }
 
-        alert(removedAny ? "All import folders have been removed." : "No import folders found.");
+        alert(removedAny ? t('allImportsRemoved', "All import folders have been removed.") : t('noImportFoldersFound', "No import folders found."));
         renderStorage();
     } catch (err) {
         console.error(err);
-        alert("Failed to clear imports.");
+        alert(t('failedToClearImports', "Failed to clear imports."));
     }
 });
 
@@ -1904,6 +1915,7 @@ document.getElementById("addFilesBtn").addEventListener("click", () => {
 });
 
 document.getElementById("filePicker").addEventListener("change", async (event) => {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -1920,7 +1932,7 @@ document.getElementById("filePicker").addEventListener("change", async (event) =
         const filename = file.name;
         if (!filename)
         {
-            errors.push(`Failed to import a file`);
+            errors.push(t('failedToImportFile', 'Failed to import a file'));
             continue;
         }
         try {
@@ -1937,15 +1949,15 @@ document.getElementById("filePicker").addEventListener("change", async (event) =
             }
             ++count;
         } catch (err) {
-            errors.push(`Failed to import ${filename}: ${err.message}`);
+            errors.push(`${t('failedToImport', 'Failed to import')} ${filename}: ${err.message}`);
         }
     }
 
     renderStorage();
 
-    let msg = `Imported ${count} file(s).`;
+    let msg = t('importedFiles', 'Imported {count} file(s).').replace('{count}', count);
     if (errors.length > 0) {
-        msg += "\n\nErrors:\n" + errors.join("\n");
+        msg += "\n\n" + errors.join("\n");
     }
     alert(msg);
 });
@@ -1964,6 +1976,7 @@ async function loadExternalDirs() {
 
 
 document.getElementById("addExternalBtn").addEventListener("click", async () => {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     try {
         const dir = await window.showDirectoryPicker();
         const ok = await verifyPermission(dir);
@@ -1976,7 +1989,7 @@ document.getElementById("addExternalBtn").addEventListener("click", async () => 
 
         // Prevent overwriting an existing entry
         if (dirs[name]) {
-            alert(`External directory "${name}" already exists.`);
+            alert(`${t('externalDirAlreadyExists', 'External directory')} "${name}" ${t('alreadyExists', 'already exists.')}`);
             return;
         }
 
@@ -1987,12 +2000,12 @@ document.getElementById("addExternalBtn").addEventListener("click", async () => 
         // Update in-memory cache
         window.externalStorageRoot = dirs;
 
-        alert(`External directory "${name}" added.`);
+        alert(`${t('externalDirAdded', 'External directory')} "${name}" ${t('added', 'added.')}`);
         renderStorage();
 
     } catch (err) {
         console.error(err);
-        alert("Failed to import external directory.");
+        alert(t('failedToImportExternal', "Failed to import external directory."));
     }
 });
 
@@ -2000,10 +2013,11 @@ document.getElementById("addExternalBtn").addEventListener("click", async () => 
 // IndexedDB Import Handler (directory picker)
 // ============================================================
 document.getElementById("addIndexedDBBtn").addEventListener("click", async () => {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     try {
         // Check if showDirectoryPicker is available
         if (typeof window.showDirectoryPicker !== "function") {
-            alert("Directory picker not supported in this browser.");
+            alert(t('directoryPickerNotSupported', "Directory picker not supported in this browser."));
             return;
         }
 
@@ -2018,9 +2032,9 @@ document.getElementById("addIndexedDBBtn").addEventListener("click", async () =>
 
         renderStorage();
 
-        let msg = `Imported ${result.count} file(s) into IndexedDB.`;
+        let msg = t('importedFilesToIDB', 'Imported {count} file(s) into IndexedDB.').replace('{count}', result.count);
         if (result.errors.length > 0) {
-            msg += "\n\nErrors:\n" + result.errors.join("\n");
+            msg += "\n\n" + result.errors.join("\n");
         }
         alert(msg);
     } catch (err) {
@@ -2059,12 +2073,10 @@ function supportsExternalDirectoryAccess() {
 function updateImportButtonsVisibility() {
     const btnImportDir = document.getElementById("addImportBtn");
     const btnImportExternal = document.getElementById("addExternalBtn");
-    const btnImportIndexedDB = document.getElementById("addIndexedDBBtn");
 
     if (!supportsExternalDirectoryAccess()) {
         btnImportDir.style.display = "none";
         btnImportExternal.style.display = "none";
-        btnImportIndexedDB.style.display = "none";
     }
 }
 

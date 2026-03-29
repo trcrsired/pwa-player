@@ -353,20 +353,21 @@ document.getElementById("playlistBackBtn").addEventListener("click", () => {
 });
 
 document.getElementById("newPlaylistBtn").addEventListener("click", async () => {
-    const name = prompt("Enter new playlist name:");
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const name = prompt(t('newPlaylistName', "Enter new playlist name:"));
 
     if (!name) return;
 
     const trimmed = name.trim();
     if (!trimmed) {
-        alert("Playlist name cannot be empty.");
+        alert(t('playlistNameCannotBeEmpty', "Playlist name cannot be empty."));
         return;
     }
 
     const playlists = await playlists_load();
 
     if (playlists[trimmed]) {
-        alert("A playlist with this name already exists.");
+        alert(t('playlistAlreadyExists', "A playlist with this name already exists."));
         return;
     }
 
