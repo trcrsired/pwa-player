@@ -172,7 +172,6 @@ function isLikelyUnsupportedVideo(filename) {
 }
 
 function getUnsupportedVideoMessage(filename) {
-  const ext = getFileExtension(filename);
   const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
   if (isLikelyUnsupportedVideo(filename)) {
@@ -442,9 +441,26 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Store filename for error messages
     const filename = mediametadata.title;
 
-    // Handle video errors
+    // Check if this is a network URL (IPTV/stream) that can be retried
+    const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
+    let retryCount = 0;
+    const maxRetries = isNetworkUrl ? 1024 : 0;
+    const retryDelay = 2000; // 2 seconds between retries
+
+    // Handle video errors with retry for network URLs
     video.onerror = (e) => {
-      console.error("Video error:", e);
+      if (isNetworkUrl && retryCount < maxRetries) {
+        ++retryCount;
+        const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+        const retryMsg = t('retryingLoad', 'Retrying ({count}/{max})...').replace('{count}', retryCount).replace('{max}', maxRetries);
+        showVideoError(retryMsg);
+        videoStatusOverlay.classList.remove("hidden");
+        videoStatusIcon.className = "video-status-icon loading";
+        setTimeout(() => {
+          video.load();
+        }, retryDelay);
+        return;
+      }
       hideVideoStatus();
       showVideoError(getUnsupportedVideoMessage(filename));
       hasActiveSource = false;

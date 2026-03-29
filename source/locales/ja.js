@@ -25,6 +25,10 @@ const JA_TRANSLATIONS = {
     playbackMode: "再生モード",
     seekTimeline: "シークバー",
     adjustVolume: "音量調整",
+    videoLoading: "読み込み中...",
+    retryingLoad: "再試行中 ({count}/{max})...",
+    videoLoadFailed: "ビデオの読み込みに失敗しました。形式が対応していない可能性があります。",
+    videoFormatNotSupported: "このビデオ形式は対応していない可能性があります。.webm は Web 標準形式で、ライセンス料なしで全てのプラットフォームで最適に動作します。例えば、Android の Microsoft Edge は .webm ビデオのみ対応しています。FFmpeg などのツールで .webm に変換するか、Google Chrome などの別のブラウザをお試しください。",
 
     // Buttons
     pickFile: "ファイルを選択",

@@ -25,6 +25,10 @@ const EN_TRANSLATIONS = {
     playbackMode: "Playback Mode",
     seekTimeline: "Seek Timeline",
     adjustVolume: "Adjust Volume",
+    videoLoading: "Loading...",
+    retryingLoad: "Retrying ({count}/{max})...",
+    videoLoadFailed: "Failed to load video. The format may not be supported.",
+    videoFormatNotSupported: "This video format may not be supported. .webm is the web standard format that works best across all platforms with no licensing fees. For example, Microsoft Edge on Android only supports .webm videos. Convert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome.",
 
     // Buttons
     pickFile: "Pick a File",

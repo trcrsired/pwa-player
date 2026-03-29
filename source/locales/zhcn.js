@@ -25,6 +25,10 @@ const ZHCN_TRANSLATIONS = {
     playbackMode: "播放模式",
     seekTimeline: "进度条",
     adjustVolume: "调节音量",
+    videoLoading: "加载中...",
+    retryingLoad: "重试中 ({count}/{max})...",
+    videoLoadFailed: "视频加载失败。格式可能不受支持。",
+    videoFormatNotSupported: "此视频格式可能不受支持。.webm 是 Web 标准格式，在所有平台上效果最佳且无许可费用。例如，Android 上的 Microsoft Edge 仅支持 .webm 视频。请使用 FFmpeg 等工具转换为 .webm，或尝试其他浏览器如 Google Chrome。",
 
     // Buttons
     pickFile: "选择文件",
