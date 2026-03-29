@@ -366,16 +366,44 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
     return;
   }
 
-  // Only for storage paths
-  if (!entryPath.startsWith('navigator_storage://') && !entryPath.startsWith('external_storage://')) {
-    return;
-  }
-
   // Get the path without extension
   const lastDot = entryPath.lastIndexOf('.');
   if (lastDot === -1) return;
 
   const basePath = entryPath.substring(0, lastDot);
+
+  // Handle IndexedDB paths
+  if (entryPath.startsWith('indexeddb://')) {
+    // Parse the path: indexeddb://idb/folder/filename.ext
+    const pathParts = entryPath.replace('indexeddb://idb/', '').split('/');
+    if (pathParts.length < 1) return;
+
+    const folder = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : pathParts[0];
+    const filename = pathParts[pathParts.length - 1];
+    const baseFilename = filename.substring(0, filename.lastIndexOf('.'));
+
+    // Query IndexedDB for subtitle file in same folder
+    try {
+      const files = await window.idb_getFilesInFolder(folder);
+      if (files) {
+        for (const file of files) {
+          if (file.name === baseFilename + '.vtt') {
+            const vttFile = new File([file.blob], file.name, { type: file.type || 'text/vtt' });
+            await loadSubtitle(vttFile);
+            return; // Success
+          }
+        }
+      }
+    } catch (err) {
+      // Subtitle not found in IndexedDB
+    }
+    return;
+  }
+
+  // Handle navigator_storage and external_storage paths
+  if (!entryPath.startsWith('navigator_storage://') && !entryPath.startsWith('external_storage://')) {
+    return;
+  }
 
   // Try .vtt
   const vttExtensions = ['.vtt'];

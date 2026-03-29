@@ -2126,3 +2126,4 @@ updateImportButtonsVisibility();
 window.idb_getFile = idb_getFile;
 window.idb_listFiles = idb_listFiles;
 window.idb_listFolders = idb_listFolders;
+window.idb_getFilesInFolder = idb_getFilesInFolder;
