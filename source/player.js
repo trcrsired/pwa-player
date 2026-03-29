@@ -446,31 +446,21 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     let retryCount = 0;
     const maxRetries = isNetworkUrl ? 3 : 0;
     const retryDelay = 2000; // 2 seconds between retries
-    const loadStartTime = Date.now();
 
-    // Check if error is likely a CORS error
-    const isCorsError = () => {
-      const elapsed = Date.now() - loadStartTime;
-      // CORS errors typically happen very quickly (< 1 second)
-      // and result in MEDIA_ERR_SRC_NOT_SUPPORTED (code 4)
-      if (elapsed < 1000 && video.error && video.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-        return true;
-      }
-      return false;
-    };
-
-    // Get CORS error message
-    const getCorsErrorMessage = () => {
-      const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
-      return t('corsError', 'CORS Error: This server blocks cross-origin requests. The server needs to allow access from this app, or you may need to use a proxy.');
+    // Check if error message indicates CORS issue
+    const isCorsErrorMessage = (msg) => {
+      if (!msg) return false;
+      const lower = msg.toLowerCase();
+      return lower.includes('cors policy') || lower.includes('access-control-allow-origin');
     };
 
     // Handle video errors with retry for network URLs
     video.onerror = (e) => {
-      // Check for CORS error first - no point retrying
-      if (isCorsError()) {
+      // Check for CORS error - no point retrying
+      if (video.error && isCorsErrorMessage(video.error.message)) {
+        const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
         hideVideoStatus();
-        showVideoError(getCorsErrorMessage());
+        showVideoError(t('corsError', 'CORS Error: This server blocks cross-origin requests. The server needs to allow access from this app, or you may need to use a proxy.'));
         hasActiveSource = false;
         return;
       }
