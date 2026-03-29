@@ -737,7 +737,15 @@ button:hover,
     gap: 16px;
     padding: 24px 32px;
     max-width: 90vw;
+    width: 100%;
     text-align: center;
+}
+
+@media (max-width: 600px) {
+    .video-status-content {
+        max-width: 95vw;
+        padding: 20px 16px;
+    }
 }
 
 .video-status-icon {
