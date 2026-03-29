@@ -2010,33 +2010,73 @@ document.getElementById("addExternalBtn").addEventListener("click", async () => 
 });
 
 // ============================================================
-// IndexedDB Import Handler (directory picker)
+// IndexedDB Import Handler (directory picker with file fallback)
 // ============================================================
 document.getElementById("addIndexedDBBtn").addEventListener("click", async () => {
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     try {
-        // Check if showDirectoryPicker is available
-        if (typeof window.showDirectoryPicker !== "function") {
-            alert(t('directoryPickerNotSupported', "Directory picker not supported in this browser."));
-            return;
-        }
-
-        const sourceDir = await window.showDirectoryPicker({ startIn: "music" });
-
         // Create a timestamp-based virtual folder for this import
         const folder = `idb_${Date.now()}`;
         const result = { count: 0, errors: [] };
 
-        // Recursively copy files from directory to IndexedDB
-        await copyDirectoryToIndexedDB(sourceDir, folder, result);
+        // Check if showDirectoryPicker is available
+        if (typeof window.showDirectoryPicker === "function") {
+            try {
+                const sourceDir = await window.showDirectoryPicker({ startIn: "music" });
 
-        renderStorage();
+                // Recursively copy files from directory to IndexedDB
+                await copyDirectoryToIndexedDB(sourceDir, folder, result);
 
-        let msg = t('importedFilesToIDB', 'Imported {count} file(s) into IndexedDB.').replace('{count}', result.count);
-        if (result.errors.length > 0) {
-            msg += "\n\n" + result.errors.join("\n");
+                renderStorage();
+
+                let msg = t('importedFilesToIDB', 'Imported {count} file(s) into IndexedDB.').replace('{count}', result.count);
+                if (result.errors.length > 0) {
+                    msg += "\n\n" + result.errors.join("\n");
+                }
+                alert(msg);
+                return;
+            } catch (err) {
+                // User cancelled or directory picker failed - fall through to file picker
+                if (err.name === 'AbortError') {
+                    return; // User cancelled
+                }
+                console.warn("Directory picker failed, falling back to file picker:", err);
+            }
         }
-        alert(msg);
+
+        // Fallback: use file picker
+        const input = document.createElement("input");
+        input.type = "file";
+        input.multiple = true;
+        input.accept = Array.from(ALLOWED_EXTENSIONS).join(",");
+
+        input.addEventListener("change", async (e) => {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            for (const file of files) {
+                const filename = file.name;
+                if (!filename || !isAllowedFile(filename)) {
+                    continue;
+                }
+                try {
+                    await idb_putFile(folder, filename, file, file.type || "application/octet-stream");
+                    ++result.count;
+                } catch (err) {
+                    result.errors.push(`Failed to import '${filename}': ${err.message}`);
+                }
+            }
+
+            renderStorage();
+
+            let msg = t('importedFilesToIDB', 'Imported {count} file(s) into IndexedDB.').replace('{count}', result.count);
+            if (result.errors.length > 0) {
+                msg += "\n\n" + result.errors.join("\n");
+            }
+            alert(msg);
+        });
+
+        input.click();
     } catch (err) {
         console.warn(err);
     }
