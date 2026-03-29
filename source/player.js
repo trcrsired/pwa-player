@@ -111,9 +111,10 @@ const videoStatusText = document.getElementById("videoStatusText");
 
 function showVideoLoading() {
   if (!videoStatusOverlay) return;
+  const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
   videoStatusIcon.className = "video-status-icon loading";
   videoStatusIcon.textContent = "";
-  videoStatusText.textContent = "";
+  videoStatusText.textContent = t("videoLoading", "Loading...");
   videoStatusOverlay.classList.remove("hidden");
 }
 
