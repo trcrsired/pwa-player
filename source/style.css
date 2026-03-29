@@ -718,12 +718,14 @@ button:hover,
 .video-status-overlay {
     position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 500;
+    padding: 0 16px;
 }
 
 .video-status-overlay.hidden {
@@ -736,14 +738,13 @@ button:hover,
     align-items: center;
     gap: 16px;
     padding: 24px 32px;
-    max-width: 90vw;
     width: 100%;
+    max-width: calc(100% - 32px);
     text-align: center;
 }
 
 @media (max-width: 600px) {
     .video-status-content {
-        max-width: 95vw;
         padding: 20px 16px;
     }
 }
