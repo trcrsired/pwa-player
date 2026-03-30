@@ -131,7 +131,10 @@ export const iptvChannels = [
   {
     name: "Yanbian Satellite TV (延边卫视)",
     nameLocalized: { zhcn: "延边卫视" },
-    url: "https://srs.iyb983.cn/video/CYS/index.m3u8"
+    urls: [
+      "https://srs.iyb983.cn/video/CYS/index.m3u8",
+      "https://srs.iyb983.cn:443/video/CYS/index.m3u8"
+    ]
   },
   {
     name: "Anduo TV – Life Service (安多卫视生活服务)",
@@ -670,14 +673,6 @@ export const iptvChannels = [
     ]
   },
   {
-    name: "Yanbian TV (延边卫视)",
-    nameLocalized: { zhcn: "延边卫视" },
-    urls: [
-      "https://srs.iyb983.cn/video/CYS/index.m3u8",
-      "https://srs.iyb983.cn:443/video/CYS/index.m3u8"
-    ]
-  },
-  {
     name: "Xinjiang TV (新疆卫视)",
     nameLocalized: { zhcn: "新疆卫视" },
     urls: [
@@ -721,11 +716,7 @@ export const iptvChannels = [
   {
     name: "Zhejiang TV (浙江卫视)",
     nameLocalized: { zhcn: "浙江卫视" },
-    urls: [
-      "http://115.48.160.62:9901/tsfile/live/0124_1.m3u8?key=txiptv&playlive=1&authid=0",
-      "http://221.13.234.128:9901/tsfile/live/0124_1.m3u8?key=txiptv&playlive=1&authid=0",
-      "http://ali-xwl.cztv.com/live/channel01720Plxw.m3u8"
-    ]
+    url: "http://ali-xwl.cztv.com/live/channel01720Plxw.m3u8"
   },
   {
     name: "Hainan TV (海南卫视)",
