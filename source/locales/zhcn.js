@@ -122,6 +122,8 @@ const ZHCN_TRANSLATIONS = {
     network: "网络",
     corsBypassServer: "CORS绕过服务器",
     corsBypassHint: "网络URL将通过此服务器前缀以绕过CORS限制。留空则禁用。",
+    networkRetryCount: "重试次数",
+    networkRetryHint: "网络流的重试次数。设为0则禁用重试。",
 
     version: "版本",
     sourceCode: "源代码",

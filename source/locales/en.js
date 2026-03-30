@@ -122,6 +122,8 @@ const EN_TRANSLATIONS = {
     network: "Network",
     corsBypassServer: "CORS Bypass Server",
     corsBypassHint: "Network URLs will be prefixed with this server to bypass CORS restrictions. Leave empty to disable.",
+    networkRetryCount: "Retry Count",
+    networkRetryHint: "Number of retry attempts for network streams. Set to 0 to disable retries.",
 
     version: "Version",
     sourceCode: "Source Code",

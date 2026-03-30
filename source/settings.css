@@ -489,6 +489,11 @@ html, body {
     color: var(--subtle);
 }
 
+.setting-input[type="number"] {
+    width: 80px;
+    text-align: center;
+}
+
 /* Setting hint text */
 .setting-hint {
     font-size: 12px;

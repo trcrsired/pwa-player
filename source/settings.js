@@ -243,3 +243,25 @@ function applyCorsBypass(url) {
     }
     return url;
 }
+
+// Network retry count setting
+const networkRetryInput = document.getElementById("networkRetryCount");
+
+if (networkRetryInput) {
+    networkRetryInput.value = localStorage.getItem("networkRetryCount") || "10";
+    networkRetryInput.addEventListener("change", () => {
+        const count = parseInt(networkRetryInput.value, 10);
+        if (count >= 0 && count <= 100) {
+            localStorage.setItem("networkRetryCount", count.toString());
+        } else {
+            localStorage.setItem("networkRetryCount", "10");
+            networkRetryInput.value = "10";
+        }
+    });
+}
+
+// Helper function to get network retry count
+function getNetworkRetryCount() {
+    const count = parseInt(localStorage.getItem("networkRetryCount") || "10", 10);
+    return Math.max(0, Math.min(100, count));
+}

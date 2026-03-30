@@ -122,6 +122,8 @@ const JA_TRANSLATIONS = {
     network: "ネットワーク",
     corsBypassServer: "CORSバイパスサーバー",
     corsBypassHint: "ネットワークURLはこのサーバーを介してCORS制限を回避します。空の場合は無効。",
+    networkRetryCount: "再試行回数",
+    networkRetryHint: "ネットワークストリームの再試行回数。0に設定すると再試行を無効化。",
 
     version: "バージョン",
     sourceCode: "ソースコード",
