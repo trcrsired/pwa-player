@@ -552,7 +552,10 @@ export const iptvChannels = [
   {
     name: "Hunan TV (湖南卫视)",
     nameLocalized: { zhcn: "湖南卫视" },
-    url: "http://69.30.246.194/live/hnws.m3u8"
+    urls: [
+      "http://69.30.246.194/live/hnws.m3u8",
+      "http://74.91.26.218:82/live/hnwshd.m3u8"
+    ]
   },
   {
     name: "Dragon TV (东方卫视)",
@@ -566,6 +569,242 @@ export const iptvChannels = [
       "http://222.214.208.34:59901/tsfile/live/0125_1.m3u8",
       "http://120.238.94.82:9901/tsfile/live/1009_1.m3u8"
     ]
+  },
+  {
+    name: "Dongnan TV (东南卫视)",
+    nameLocalized: { zhcn: "东南卫视" },
+    urls: [
+      "http://live.zohi.tv/video/s10001-fztv-3/index.m3u8",
+      "http://38.75.136.137:98/gslb/dsdqpub/dnwshd.m3u8?auth=testpub",
+      "http://107.150.60.122/live/dnwshd.m3u8",
+      "http://112.123.243.37:50085/tsfile/live/0113_1.m3u8?key=txiptv&playlive=0&authid=0",
+      "http://153.0.171.163:9901/tsfile/live/0137_1.m3u8?key=txiptv&playlive=1&authid=0"
+    ]
+  },
+  {
+    name: "Yunnan TV (云南卫视)",
+    nameLocalized: { zhcn: "云南卫视" },
+    url: "http://38.75.136.137:98/gslb/dsdqpub/ynwshd.m3u8?auth=testpub",
+  },
+  {
+    name: "Bingtuan TV (兵团卫视)",
+    nameLocalized: { zhcn: "兵团卫视" },
+    url: "http://38.75.136.137:98/gslb/dsdqpub/btws.m3u8?auth=testpub"
+  },
+  {
+    name: "Inner Mongolia TV (内蒙古卫视)",
+    nameLocalized: { zhcn: "内蒙古卫视" },
+    url: "http://38.75.136.137:98/gslb/dsdqpub/nmgws.m3u8?auth=testpub"
+  },
+  {
+    name: "Beijing TV (北京卫视)",
+    nameLocalized: { zhcn: "北京卫视" },
+    url: "http://38.75.136.137:98/gslb/dsdqpub/bjwshd.m3u8?auth=testpub"
+  },
+  {
+    name: "Jilin TV (吉林卫视)",
+    nameLocalized: { zhcn: "吉林卫视" },
+    urls: [
+      "http://38.75.136.137:98/gslb/dsdqpub/jlwshd.m3u8?auth=testpub",
+      "http://36.32.174.67:60080/newlive/live/hls/40/live.m3u8"
+    ]
+  },
+  {
+    name: "Sichuan TV (四川卫视)",
+    nameLocalized: { zhcn: "四川卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0123_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://112.123.243.37:50085/tsfile/live/0139_1.m3u8?key=txiptv&playlive=0&authid=0"
+    ]
+  },
+  {
+    name: "Tianjin TV (天津卫视)",
+    nameLocalized: { zhcn: "天津卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0135_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://107.150.60.122/live/tjwshd.m3u8",
+      "http://38.75.136.137:98/gslb/dsdqpub/tjwshd.m3u8?auth=testpub",
+      "https://piccpndks.v.kcdnvip.com/audio/tianjin_2/index.m3u8"
+    ]
+  },
+  {
+    name: "Ningxia TV (宁夏卫视)",
+    nameLocalized: { zhcn: "宁夏卫视" },
+    urls: [
+      "http://38.75.136.137:98/gslb/dsdqpub/nxws.m3u8?auth=testpub",
+      "http://112.123.243.37:50085/tsfile/live/0125_1.m3u8?key=txiptv&playlive=0&authid=0"
+    ]
+  },
+  {
+    name: "Anhui TV (安徽卫视)",
+    nameLocalized: { zhcn: "安徽卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0130_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://38.75.136.137:98/gslb/dsdqpub/ahwshd.m3u8?auth=testpub"
+    ]
+  },
+  {
+    name: "Shandong TV (山东卫视)",
+    nameLocalized: { zhcn: "山东卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0131_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://38.75.136.137:98/gslb/dsdqpub/sdwshd.m3u8?auth=testpub",
+      "http://107.150.60.122/live/sdwshd.m3u8"
+    ]
+  },
+  {
+    name: "Shanxi TV (山西卫视)",
+    nameLocalized: { zhcn: "山西卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0118_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://112.123.243.37:50085/tsfile/live/0120_1.m3u8?key=txiptv&playlive=0&authid=0"
+    ]
+  },
+  {
+    name: "Guangxi TV (广西卫视)",
+    nameLocalized: { zhcn: "广西卫视" },
+    urls: [
+      "http://107.150.60.122/live/gxwshd.m3u8",
+      "http://38.75.136.137:98/gslb/dsdqpub/gxwshd.m3u8?auth=testpub",
+      "http://112.123.243.37:50085/tsfile/live/0137_1.m3u8?key=txiptv&playlive=0&authid=0"
+    ]
+  },
+  {
+    name: "Yanbian TV (延边卫视)",
+    nameLocalized: { zhcn: "延边卫视" },
+    urls: [
+      "https://srs.iyb983.cn/video/CYS/index.m3u8",
+      "https://srs.iyb983.cn:443/video/CYS/index.m3u8"
+    ]
+  },
+  {
+    name: "Xinjiang TV (新疆卫视)",
+    nameLocalized: { zhcn: "新疆卫视" },
+    urls: [
+      "http://112.123.243.37:50085/tsfile/live/0143_1.m3u8?key=txiptv&playlive=0&authid=0",
+      "http://38.75.136.137:98/gslb/dsdqpub/xjws.m3u8?auth=testpub"
+    ]
+  },
+  {
+    name: "Jiangsu TV (江苏卫视)",
+    nameLocalized: { zhcn: "江苏卫视" },
+    urls: [
+      "http://221.13.234.128:9901/tsfile/live/0127_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://115.48.160.62:9901/tsfile/live/0127_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://23.237.228.134/live3/jiangsu.m3u8"
+    ]
+  },
+  {
+    name: "Jiangxi TV (江西卫视)",
+    nameLocalized: { zhcn: "江西卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0138_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://112.123.243.37:50085/tsfile/live/0132_1.m3u8?key=txiptv&playlive=0&authid=0"
+    ]
+  },
+  {
+    name: "Hebei TV (河北卫视)",
+    nameLocalized: { zhcn: "河北卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0117_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://38.75.136.137:98/gslb/dsdqpub/hewshd.m3u8?auth=testpub"
+    ]
+  },
+  {
+    name: "Henan TV (河南卫视)",
+    nameLocalized: { zhcn: "河南卫视" },
+    urls: [
+      "http://221.13.234.128:9901/tsfile/live/0139_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://115.48.160.62:9901/tsfile/live/0139_1.m3u8?key=txiptv&playlive=1&authid=0"
+    ]
+  },
+  {
+    name: "Zhejiang TV (浙江卫视)",
+    nameLocalized: { zhcn: "浙江卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0124_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://221.13.234.128:9901/tsfile/live/0124_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://ali-xwl.cztv.com/live/channel01720Plxw.m3u8"
+    ]
+  },
+  {
+    name: "Hainan TV (海南卫视)",
+    nameLocalized: { zhcn: "海南卫视" },
+    url: "http://36.32.174.67:60080/newlive/live/hls/46/live.m3u8"
+  },
+  {
+    name: "Shenzhen TV (深圳卫视)",
+    nameLocalized: { zhcn: "深圳卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0126_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://112.123.243.37:50085/tsfile/live/1000_1.m3u8?key=txiptv&playlive=0&authid=0"
+    ]
+  },
+  {
+    name: "Hubei TV (湖北卫视)",
+    nameLocalized: { zhcn: "湖北卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0132_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://153.0.171.163:9901/tsfile/live/0132_1.m3u8?key=txiptv&playlive=1&authid=0"
+    ]
+  },
+  {
+    name: "Gansu TV (甘肃卫视)",
+    nameLocalized: { zhcn: "甘肃卫视" },
+    urls: [
+      "http://38.75.136.137:98/gslb/dsdqpub/gswshd.m3u8?auth=testpub",
+      "http://36.32.174.67:60080/newlive/live/hls/40/live.m3u8"
+    ]
+  },
+  {
+    name: "Tibet TV (西藏卫视)",
+    nameLocalized: { zhcn: "西藏卫视" },
+    url: "http://36.32.174.67:60080/newlive/live/hls/48/live.m3u8"
+  },
+  {
+    name: "Guizhou TV (贵州卫视)",
+    nameLocalized: { zhcn: "贵州卫视" },
+    urls: [
+      "http://222.214.208.34:59901/tsfile/live/0120_1.m3u8",
+      "http://38.75.136.137:98/gslb/dsdqpub/gzwshd.m3u8?auth=testpub"
+    ]
+  },
+  {
+    name: "Liaoning TV (辽宁卫视)",
+    nameLocalized: { zhcn: "辽宁卫视" },
+    urls: [
+      "http://gfr.x3322.net:9901/tsfile/live/1097_1.m3u8",
+      "http://153.0.171.163:9901/tsfile/live/0121_1.m3u8?key=txiptv&playlive=1&authid=0"
+    ]
+  },
+  {
+    name: "Chongqing TV (重庆卫视)",
+    nameLocalized: { zhcn: "重庆卫视" },
+    urls: [
+      "http://38.75.136.137:98/gslb/dsdqpub/cqwshd.m3u8?auth=testpub",
+      "http://107.150.60.122/live/cqwshd.m3u8"
+    ]
+  },
+  {
+    name: "Shaanxi TV (陕西卫视)",
+    nameLocalized: { zhcn: "陕西卫视" },
+    urls: [
+      "http://38.75.136.137:98/gslb/dsdqpub/snwshd.m3u8?auth=testpub",
+      "http://107.150.60.122/live/snwshd.m3u8"
+    ]
+  },
+  {
+    name: "Qinghai TV (青海卫视)",
+    nameLocalized: { zhcn: "青海卫视" },
+    urls: [
+      "http://115.48.160.62:9901/tsfile/live/0140_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://153.0.171.163:9901/tsfile/live/0140_1.m3u8?key=txiptv&playlive=1&authid=0"
+    ]
+  },
+  {
+    name: "Heilongjiang TV (黑龙江卫视)",
+    nameLocalized: { zhcn: "黑龙江卫视" },
+    url:"http://38.75.136.137:98/gslb/dsdqpub/hljwshd.m3u8?auth=testpub"
   },
   {
     name: "Babes TV",
