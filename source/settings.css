@@ -494,6 +494,22 @@ html, body {
     text-align: center;
 }
 
+.setting-input-small {
+    width: 60px;
+    padding: 6px 8px;
+    font-size: 14px;
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--fg);
+    text-align: center;
+}
+
+.setting-input-small:focus {
+    outline: none;
+    border-color: var(--primary-bg);
+}
+
 /* Setting hint text */
 .setting-hint {
     font-size: 12px;
