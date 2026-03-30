@@ -231,7 +231,7 @@ if (corsBypassUrlInput) {
 const corsBypassToggle = document.getElementById("corsBypassToggle");
 
 if (corsBypassToggle) {
-    corsBypassToggle.checked = localStorage.getItem("corsBypassEnabled") !== "false";
+    corsBypassToggle.checked = localStorage.getItem("corsBypassEnabled") === "true";
     corsBypassToggle.addEventListener("change", () => {
         localStorage.setItem("corsBypassEnabled", corsBypassToggle.checked ? "true" : "false");
     });
@@ -244,7 +244,7 @@ function getCorsBypassUrl() {
 
 // Helper function to check if CORS bypass is enabled
 function isCorsBypassEnabled() {
-    return localStorage.getItem("corsBypassEnabled") !== "false";
+    return localStorage.getItem("corsBypassEnabled") === "true";
 }
 
 // Helper function to apply CORS bypass to a URL
