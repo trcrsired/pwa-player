@@ -448,7 +448,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Store filename for error messages
     const filename = mediametadata.title;
     let retryCount = 0;
-    const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 10) : 0;
+    const maxRetries = isNetworkUrl ? getNetworkRetryCount() : 0;
     const retryDelay = 2000; // 2 seconds between retries
 
     // Handle video errors with retry for network URLs

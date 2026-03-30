@@ -1,6 +1,9 @@
 const settingsYearEl = document.getElementById("settingsYear");
 settingsYearEl.textContent = `2025–${new Date().getFullYear()}`;
 
+// Default network retry count (used across the project)
+const DEFAULT_NETWORK_RETRY_COUNT = 10;
+
 let settingsClickCount = 0;
 
 function showToast(msg) {
@@ -267,20 +270,20 @@ function applyCorsBypass(url, corsBypass) {
 const networkRetryInput = document.getElementById("networkRetryCount");
 
 if (networkRetryInput) {
-    networkRetryInput.value = localStorage.getItem("networkRetryCount") || "10";
+    networkRetryInput.value = localStorage.getItem("networkRetryCount") || DEFAULT_NETWORK_RETRY_COUNT.toString();
     networkRetryInput.addEventListener("change", () => {
         const count = parseInt(networkRetryInput.value, 10);
         if (count >= 0 && count <= 100) {
             localStorage.setItem("networkRetryCount", count.toString());
         } else {
-            localStorage.setItem("networkRetryCount", "10");
-            networkRetryInput.value = "10";
+            localStorage.setItem("networkRetryCount", DEFAULT_NETWORK_RETRY_COUNT.toString());
+            networkRetryInput.value = DEFAULT_NETWORK_RETRY_COUNT.toString();
         }
     });
 }
 
 // Helper function to get network retry count
 function getNetworkRetryCount() {
-    const count = parseInt(localStorage.getItem("networkRetryCount") || "10", 10);
+    const count = parseInt(localStorage.getItem("networkRetryCount"), 10) || DEFAULT_NETWORK_RETRY_COUNT;
     return Math.max(0, Math.min(100, count));
 }
