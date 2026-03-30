@@ -30,12 +30,33 @@ function showIPTVChannelMenu(channel, url, button) {
     const menu = document.createElement("div");
     menu.className = "context-menu";
 
-    menu.innerHTML = `
-        <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
-        <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
-        <div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>
-        <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
-    `;
+    const corsBypassUrl = localStorage.getItem("corsBypassUrl") || "";
+    const corsEnabled = localStorage.getItem("corsBypassEnabled") !== "false";
+
+    // Build menu items
+    const items = [
+        { action: "play", label: t('playThis', 'Play'), cors: null, close: true },
+        { action: "play-keep-open", label: t('playKeepPanel', 'Play (keep panel open)'), cors: null, close: false }
+    ];
+
+    // Add CORS options only if bypass server is configured
+    if (corsBypassUrl) {
+        const corsOverride = corsEnabled ? false : true;
+        const corsLabel = corsEnabled ? t('playWithoutCors', 'Play without CORS') : t('playWithCors', 'Play with CORS');
+        const corsKeepOpenLabel = corsEnabled ? t('playWithoutCorsKeepOpen', 'Play without CORS (keep open)') : t('playWithCorsKeepOpen', 'Play with CORS (keep open)');
+
+        items.push(
+            { action: "play-cors", label: corsLabel, cors: corsOverride, close: true },
+            { action: "play-cors-keep-open", label: corsKeepOpenLabel, cors: corsOverride, close: false }
+        );
+    }
+
+    items.push(
+        { action: "add", label: t('addToPlaylist', 'Add to Playlist') },
+        { action: "close", label: t('close', 'Close') }
+    );
+
+    menu.innerHTML = items.map(item => `<div class="menu-item" data-action="${item.action}">${item.label}</div>`).join("");
 
     if (!positionMenu(menu, button)) return;
 
@@ -44,16 +65,11 @@ function showIPTVChannelMenu(channel, url, button) {
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
+            const menuItem = items.find(i => i.action === action);
 
-            if (action === "play") {
-                play_source_title(url, channel.name, null);
-                closeActiveView();
-                closeMenu();
-                return;
-            }
-
-            if (action === "play-keep-open") {
-                play_source_title(url, channel.name, null);
+            if (menuItem && action.startsWith("play")) {
+                play_source_title(url, channel.name, null, menuItem.cors);
+                if (menuItem.close) closeActiveView();
                 closeMenu();
                 return;
             }
@@ -80,19 +96,31 @@ function showIPTVChannelMenu(channel, url, button) {
                     return;
                 }
 
-                const selectedName = names[index];
-
-                playlists[selectedName].push({
-                    name: channel.name,
-                    path: url
-                });
+                playlists[names[index]].push({ name: channel.name, path: url });
                 await playlists_save(playlists);
-                alert(`${t('addedToPlaylistSuccess', 'Added')} "${channel.name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
+                alert(`${t('addedToPlaylistSuccess', 'Added')} "${channel.name}" ${t('toPlaylist', 'to playlist')} "${names[index]}".`);
             }
 
             closeMenu();
         });
     });
+}
+
+// Check if URL is an IP address (local network)
+function isIpAddressUrl(url) {
+    try {
+        const u = new URL(url);
+        const host = u.hostname;
+        // Check for IP patterns (local network, loopback, etc.)
+        return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(host) || /^\[?[0-9a-f:]+\]?$/i.test(host);
+    } catch {
+        return false;
+    }
+}
+
+// Check if URL is HTTP (not HTTPS)
+function isHttpUrl(url) {
+    return url && url.startsWith('http://');
 }
 
 // Render IPTV channels
@@ -143,15 +171,34 @@ function renderIPTVList(searchFilter = "") {
         nameSpan.className = "iptv-name";
         nameSpan.textContent = channel.name;
 
-        // Add NSFW badge only when unlocked
-        if (channel.nsfw && isUnlocked) {
-            const badge = document.createElement("span");
-            badge.textContent = "NSFW";
-            badge.className = "iptv-nsfw-badge";
-            nameSpan.appendChild(badge);
-        }
-
         const primaryUrl = channel.url || (channel.urls && channel.urls[0]);
+
+        // Add badges for URL characteristics
+        if (primaryUrl) {
+            // NSFW badge (only when unlocked)
+            if (channel.nsfw && isUnlocked) {
+                const badge = document.createElement("span");
+                badge.textContent = "NSFW";
+                badge.className = "iptv-badge iptv-nsfw-badge";
+                nameSpan.appendChild(badge);
+            }
+
+            // IP address badge (needs CORS bypass)
+            if (isIpAddressUrl(primaryUrl)) {
+                const badge = document.createElement("span");
+                badge.textContent = "IP";
+                badge.className = "iptv-badge iptv-ip-badge";
+                badge.title = "IP address - may need CORS bypass server";
+                nameSpan.appendChild(badge);
+            } else if (isHttpUrl(primaryUrl)) {
+                // HTTP badge (may need CORS)
+                const badge = document.createElement("span");
+                badge.textContent = "HTTP";
+                badge.className = "iptv-badge iptv-http-badge";
+                badge.title = "HTTP - may require CORS bypass";
+                nameSpan.appendChild(badge);
+            }
+        }
 
         // Menu button (⋮)
         const menuBtn = document.createElement("button");
@@ -184,6 +231,19 @@ function renderIPTVList(searchFilter = "") {
             const urlSpan = document.createElement("span");
             urlSpan.className = "iptv-url-text";
             urlSpan.textContent = url;
+
+            // Add small badges for sub-URLs too
+            if (isIpAddressUrl(url)) {
+                const badge = document.createElement("span");
+                badge.textContent = "IP";
+                badge.className = "iptv-badge iptv-ip-badge";
+                urlSpan.appendChild(badge);
+            } else if (isHttpUrl(url)) {
+                const badge = document.createElement("span");
+                badge.textContent = "HTTP";
+                badge.className = "iptv-badge iptv-http-badge";
+                urlSpan.appendChild(badge);
+            }
 
             // Click on URL plays it
             urlSpan.addEventListener("click", () => {

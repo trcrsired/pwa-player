@@ -95,6 +95,11 @@ const EN_TRANSLATIONS = {
     // IPTV
     iptvChannels: "📺 IPTV Channels",
     searchChannels: "Search channels...",
+    iptvCorsHint: "IP addresses need CORS bypass server. HTTP URLs may also need CORS.",
+    playWithoutCors: "Play without CORS",
+    playWithoutCorsKeepOpen: "Play without CORS (keep open)",
+    playWithCors: "Play with CORS",
+    playWithCorsKeepOpen: "Play with CORS (keep open)",
 
     // Settings
     language: "Language",
@@ -122,6 +127,8 @@ const EN_TRANSLATIONS = {
     network: "Network",
     corsBypassServer: "CORS Bypass Server",
     corsBypassHint: "Network URLs will be prefixed with this server to bypass CORS restrictions. Leave empty to disable.",
+    corsServerLink: "Simple Node.js CORS server available here",
+    corsBypassEnabled: "Enable CORS Bypass",
     networkRetryCount: "Retry Count",
     networkRetryHint: "Number of retry attempts for network streams. Set to 0 to disable retries.",
 

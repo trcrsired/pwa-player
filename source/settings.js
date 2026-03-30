@@ -227,16 +227,46 @@ if (corsBypassUrlInput) {
     });
 }
 
+// CORS Bypass toggle
+const corsBypassToggle = document.getElementById("corsBypassToggle");
+
+if (corsBypassToggle) {
+    corsBypassToggle.checked = localStorage.getItem("corsBypassEnabled") !== "false";
+    corsBypassToggle.addEventListener("change", () => {
+        localStorage.setItem("corsBypassEnabled", corsBypassToggle.checked ? "true" : "false");
+    });
+}
+
 // Helper function to get CORS bypass URL
 function getCorsBypassUrl() {
     return localStorage.getItem("corsBypassUrl") || "";
 }
 
+// Helper function to check if CORS bypass is enabled
+function isCorsBypassEnabled() {
+    return localStorage.getItem("corsBypassEnabled") !== "false";
+}
+
 // Helper function to apply CORS bypass to a URL
-function applyCorsBypass(url) {
+// corsBypass param: null = use setting, true = force enable, false = force disable
+function applyCorsBypass(url, corsBypass = null) {
     if (!url || typeof url !== 'string') return url;
+
+    // Determine if CORS bypass should be applied
+    let useBypass;
+    if (corsBypass === true) {
+        useBypass = true;
+    } else if (corsBypass === false) {
+        useBypass = false;
+    } else {
+        useBypass = isCorsBypassEnabled();
+    }
+
+    if (!useBypass) return url;
+
     const bypassUrl = getCorsBypassUrl();
     if (!bypassUrl) return url;
+
     // Only apply to http/https URLs
     if (url.startsWith('http://') || url.startsWith('https://')) {
         return bypassUrl + url;

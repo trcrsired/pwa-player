@@ -400,6 +400,35 @@ html, body {
     border-radius: 3px;
 }
 
+/* Generic IPTV badge styles */
+.iptv-badge {
+    margin-left: 6px;
+    padding: 2px 4px;
+    font-size: 10px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.iptv-ip-badge {
+    background: #ff9500;
+    color: white;
+}
+
+.iptv-http-badge {
+    background: #007aff;
+    color: white;
+}
+
+/* IPTV hint */
+.iptv-hint {
+    font-size: 12px;
+    color: var(--subtle);
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: var(--card-bg);
+    border-radius: 6px;
+}
+
 /* Search input */
 .search-input {
     width: 100%;

@@ -187,6 +187,7 @@
             </header>
 
             <main class="content">
+                <p class="iptv-hint" data-i18n="iptvCorsHint">IP addresses need CORS bypass server. HTTP URLs may also need CORS.</p>
                 <input type="search" id="iptvSearch" class="search-input" placeholder="Search channels..." data-i18n-placeholder="searchChannels" />
                 <ul id="iptvList" class="list"></ul>
             </main>
@@ -245,6 +246,11 @@
                     <input type="text" id="corsBypassUrl" class="setting-input" placeholder="http://localhost:8432/">
                 </label>
                 <p class="setting-hint" data-i18n="corsBypassHint">Network URLs will be prefixed with this server to bypass CORS restrictions. Leave empty to disable.</p>
+                <p class="setting-hint"><a href="https://github.com/trcrsired/pwa-player/blob/main/cors-bypass/server.js" target="_blank" data-i18n="corsServerLink">Simple Node.js CORS server available here</a></p>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="corsBypassToggle" checked>
+                    <span data-i18n="corsBypassEnabled">Enable CORS Bypass</span>
+                </label>
                 <label class="setting-label">
                     <span data-i18n="networkRetryCount">Retry Count</span>
                     <input type="number" id="networkRetryCount" class="setting-input-small" min="0" max="100" placeholder="10">

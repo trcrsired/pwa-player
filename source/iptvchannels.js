@@ -91,8 +91,8 @@ export const iptvChannels = [
     url: "https://gcalic.v.myalicdn.com/gc/wgw05_1/index.m3u8?contentid=2820180516001"
   },
   {
-    name: "Hunan TV (湖南卫视)",
-    nameLocalized: { zhcn: "湖南卫视" },
+    name: "Hunan TV Recorded (湖南卫视录播)",
+    nameLocalized: { zhcn: "湖南卫视录播" },
     url: "https://txmov2.a.kwimgs.com/bs3/video-hls/5199687338554291078_hlsb.m3u8"
   },
   {
@@ -101,8 +101,8 @@ export const iptvChannels = [
     url: "https://srs.ssws.tv/video/sstv-10/index.m3u8"
   },
   {
-    name: "Dragon TV (东方卫视)",
-    nameLocalized: { zhcn: "东方卫视" },
+    name: "Dragon TV Recorded (东方卫视录播)",
+    nameLocalized: { zhcn: "东方卫视录播" },
     url: "https://txmov2.a.kwimgs.com/bs3/video-hls/5219953535631090825_hlsb.m3u8"
   },
   {
@@ -414,6 +414,124 @@ export const iptvChannels = [
   {
     name: "CBS News Texas",
     url: "https://cbsn-dal.cbsnstream.cbsnews.com/out/v1/ffa98bbf7d2b4c038c229bd4d9122708/master.m3u8"
+  },
+  {
+    name: "Gansu TV (甘肃卫视)",
+    nameLocalized: { zhcn: "甘肃卫视" },
+    url: "http://live.zohi.tv/video/s10001-fztv-3/index.m3u8"
+  },
+  {
+    name: "Guangzhou News (广州新闻)",
+    nameLocalized: { zhcn: "广州新闻" },
+    url: "http://tencentplay.gztv.com/live/xinwen.m3u8?txSecret=d2c2db0b598c02ec1b5623728434d367&txTime=18d57929bd3"
+  },
+  {
+    name: "CCTV-1 (CCTV-1 综合)",
+    nameLocalized: { zhcn: "CCTV-1 综合" },
+    url: "http://69.30.246.194/live/cctv1.m3u8"
+  },
+  {
+    name: "CCTV-2 (CCTV-2 财经)",
+    nameLocalized: { zhcn: "CCTV-2 财经" },
+    url: "http://69.30.246.194/live/cctv2.m3u8"
+  },
+  {
+    name: "CCTV-3 (CCTV-3 综艺)",
+    nameLocalized: { zhcn: "CCTV-3 综艺" },
+    url: "http://69.30.246.194/live/cctv3.m3u8"
+  },
+  {
+    name: "CCTV-4 (CCTV-4 中文国际)",
+    nameLocalized: { zhcn: "CCTV-4 中文国际" },
+    url: "http://69.30.246.194/live/cctv4.m3u8"
+  },
+  {
+    name: "CCTV-5 (CCTV-5 体育)",
+    nameLocalized: { zhcn: "CCTV-5 体育" },
+    url: "http://69.30.246.194/live/cctv5.m3u8"
+  },
+  {
+    name: "CCTV-5+ (CCTV-5+ 体育赛事)",
+    nameLocalized: { zhcn: "CCTV-5+ 体育赛事" },
+    url: "http://69.30.246.194/live/cctv5p.m3u8"
+  },
+  {
+    name: "CCTV-6 (CCTV-6 电影)",
+    nameLocalized: { zhcn: "CCTV-6 电影" },
+    url: "http://69.30.246.194/live/cctv6.m3u8"
+  },
+  {
+    name: "CCTV-7 (CCTV-7 国防军事)",
+    nameLocalized: { zhcn: "CCTV-7 国防军事" },
+    url: "http://69.30.246.194/live/cctv7.m3u8"
+  },
+  {
+    name: "CCTV-8 (CCTV-8 电视剧)",
+    nameLocalized: { zhcn: "CCTV-8 电视剧" },
+    url: "http://69.30.246.194/live/cctv8.m3u8"
+  },
+  {
+    name: "CCTV-9 (CCTV-9 纪录)",
+    nameLocalized: { zhcn: "CCTV-9 纪录" },
+    url: "http://69.30.246.194/live/cctv9.m3u8"
+  },
+  {
+    name: "CCTV-10 (CCTV-10 科教)",
+    nameLocalized: { zhcn: "CCTV-10 科教" },
+    url: "http://69.30.246.194/live/cctv10.m3u8"
+  },
+  {
+    name: "CCTV-11 (CCTV-11 戏曲)",
+    nameLocalized: { zhcn: "CCTV-11 戏曲" },
+    url: "http://69.30.246.194/live/cctv11.m3u8"
+  },
+  {
+    name: "CCTV-12 (CCTV-12 社会与法)",
+    nameLocalized: { zhcn: "CCTV-12 社会与法" },
+    url: "http://69.30.246.194/live/cctv12.m3u8"
+  },
+  {
+    name: "CCTV-13 (CCTV-13 新闻)",
+    nameLocalized: { zhcn: "CCTV-13 新闻" },
+    url: "http://69.30.246.194/live/cctv13.m3u8"
+  },
+  {
+    name: "CCTV-14 (CCTV-14 少儿)",
+    nameLocalized: { zhcn: "CCTV-14 少儿" },
+    url: "http://69.30.246.194/live/cctv14.m3u8"
+  },
+  {
+    name: "CCTV-15 (CCTV-15 音乐)",
+    nameLocalized: { zhcn: "CCTV-15 音乐" },
+    url: "http://69.30.246.194/live/cctv15.m3u8"
+  },
+  {
+    name: "CCTV-16 (CCTV-16 奥林匹克)",
+    nameLocalized: { zhcn: "CCTV-16 奥林匹克" },
+    url: "http://69.30.246.194/live/cctv16.m3u8"
+  },
+  {
+    name: "CCTV-17 (CCTV-17 农业农村)",
+    nameLocalized: { zhcn: "CCTV-17 农业农村" },
+    url: "http://69.30.246.194/live/cctv17.m3u8"
+  },
+  {
+    name: "Hunan TV (湖南卫视)",
+    nameLocalized: { zhcn: "湖南卫视" },
+    url: "http://69.30.246.194/live/hnws.m3u8"
+  },
+  {
+    name: "Dragon TV (东方卫视)",
+    nameLocalized: { zhcn: "东方卫视" },
+    url: "http://69.30.246.194/live/dfws.m3u8"
+  },
+  {
+    name: "Guangdong TV (广东卫视)",
+    nameLocalized: { zhcn: "广东卫视" },
+    urls: [
+      "http://222.214.208.34:59901/tsfile/live/0125_1.m3u8",
+      "http://120.238.94.82:9901/tsfile/live/1009_1.m3u8"
+    ]
   },
   {
     name: "Babes TV",

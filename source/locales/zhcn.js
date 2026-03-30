@@ -95,6 +95,11 @@ const ZHCN_TRANSLATIONS = {
     // IPTV
     iptvChannels: "📺 网络电视频道",
     searchChannels: "搜索频道...",
+    iptvCorsHint: "IP地址需要CORS绕过服务器。HTTP URL也可能需要CORS。",
+    playWithoutCors: "不使用CORS播放",
+    playWithoutCorsKeepOpen: "不使用CORS播放(保持打开)",
+    playWithCors: "使用CORS播放",
+    playWithCorsKeepOpen: "使用CORS播放(保持打开)",
 
     // Settings
     language: "语言",
@@ -122,6 +127,8 @@ const ZHCN_TRANSLATIONS = {
     network: "网络",
     corsBypassServer: "CORS绕过服务器",
     corsBypassHint: "网络URL将通过此服务器前缀以绕过CORS限制。留空则禁用。",
+    corsServerLink: "简单的Node.js CORS服务器可在此获取",
+    corsBypassEnabled: "启用CORS绕过",
     networkRetryCount: "重试次数",
     networkRetryHint: "网络流的重试次数。设为0则禁用重试。",
 

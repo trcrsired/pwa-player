@@ -95,6 +95,11 @@ const JA_TRANSLATIONS = {
     // IPTV
     iptvChannels: "📺 IPTVチャンネル",
     searchChannels: "チャンネルを検索...",
+    iptvCorsHint: "IPアドレスはCORSバイパスサーバーが必要です。HTTP URLもCORSが必要な場合があります。",
+    playWithoutCors: "CORSなしで再生",
+    playWithoutCorsKeepOpen: "CORSなしで再生(開いたまま)",
+    playWithCors: "CORSで再生",
+    playWithCorsKeepOpen: "CORSで再生(開いたまま)",
 
     // Settings
     language: "言語",
@@ -122,6 +127,8 @@ const JA_TRANSLATIONS = {
     network: "ネットワーク",
     corsBypassServer: "CORSバイパスサーバー",
     corsBypassHint: "ネットワークURLはこのサーバーを介してCORS制限を回避します。空の場合は無効。",
+    corsServerLink: "シンプルなNode.js CORSサーバーはこちら",
+    corsBypassEnabled: "CORSバイパスを有効化",
     networkRetryCount: "再試行回数",
     networkRetryHint: "ネットワークストリームの再試行回数。0に設定すると再試行を無効化。",
 

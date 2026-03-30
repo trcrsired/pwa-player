@@ -423,7 +423,7 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
   }
 }
 
-async function play_source_internal(blobURL, mediametadata, sourceobject, playlist) {
+async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
   try {
     revokeBlobURL();
     currentBlobURL = blobURL;
@@ -438,7 +438,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     let videoSrc = blobURL;
     const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
     if (isNetworkUrl && typeof applyCorsBypass === 'function') {
-      videoSrc = applyCorsBypass(blobURL);
+      videoSrc = applyCorsBypass(blobURL, corsBypass);
     }
 
     video.src = videoSrc;
@@ -540,7 +540,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
   }
 }
 
-async function play_source_title(sourceobject, customTitle, playlist) {
+async function play_source_title(sourceobject, customTitle, playlist, corsBypass = null) {
   try {
     // Get metadata as usual
     const result = await getMediaMetadataFromSource(sourceobject);
@@ -553,13 +553,13 @@ async function play_source_title(sourceobject, customTitle, playlist) {
     mediametadata.title = customTitle;
 
     // Now call the internal playback handler
-    await play_source_internal(blobURL, mediametadata, sourceobject, playlist);
+    await play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass);
   } catch (err) {
     console.warn(err);
   }
 }
 
-async function play_source(sourceobject, playlist) {
+async function play_source(sourceobject, playlist, corsBypass = null) {
   try {
     const result = await getMediaMetadataFromSource(sourceobject);
     if (!result) return;
@@ -568,7 +568,7 @@ async function play_source(sourceobject, playlist) {
     const mediametadata = result[2];
 
     // Call the shared internal logic
-    await play_source_internal(blobURL, mediametadata, sourceobject, playlist);
+    await play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass);
 
   } catch (err) {
     console.warn(err);
@@ -929,7 +929,8 @@ webBtn.onclick = () => {
 
     if (url)
     {
-      play_source(url).catch(nop);
+      // Web URLs entered directly should not use CORS bypass
+      play_source(url, null, false).catch(nop);
     }
   }
   catch (err) {
