@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "196";
+const PWAPLAYER_VERSION = "203";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "/",
@@ -52,8 +52,5 @@ self.addEventListener("fetch", event => {
 self.addEventListener("message", event => {
   if (event.data === "SKIP_WAITING") {
     self.skipWaiting();
-  }
-  if (event.data === "GET_VERSION") {
-    event.ports[0]?.postMessage({ version: PWAPLAYER_VERSION });
   }
 });
