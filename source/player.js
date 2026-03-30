@@ -575,6 +575,138 @@ async function play_source(sourceobject, playlist, corsBypass = null) {
   }
 }
 
+// Play IPTV channel with multiple URLs and fallback
+// urls: array of URL strings
+// title: channel name
+// corsBypass: whether to use CORS bypass
+async function play_iptv_with_fallback(urls, title, corsBypass = null) {
+  if (!urls || urls.length === 0) return;
+
+  const retryPerSource = typeof getIptvSourceRetryCount === 'function' ? getIptvSourceRetryCount() : 3;
+  const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+  for (let i = 0; i != urls.length; ++i) {
+    const url = urls[i];
+    const attemptNum = i + 1;
+    const totalSources = urls.length;
+
+    // Show which source we're trying
+    if (totalSources > 1) {
+      showVideoLoading();
+      videoStatusText.textContent = t('tryingSource', `Source ${attemptNum}/${totalSources}...`);
+    }
+
+    // Try this URL
+    const success = await tryPlayUrl(url, title, corsBypass, retryPerSource, attemptNum, totalSources);
+
+    if (success) {
+      return; // Playing successfully
+    }
+
+    // Failed - try next source if available
+    if (i < urls.length - 1) {
+      console.log(`[IPTV] Source ${attemptNum} failed, trying next...`);
+    }
+  }
+
+  // All sources failed
+  showVideoError(t('allSourcesFailed', 'All sources failed'));
+}
+
+// Try to play a single URL with retry
+// Returns true if successful, false if failed
+function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources) {
+  return new Promise((resolve) => {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    revokeBlobURL();
+    currentBlobURL = url;
+    clearSubtitles();
+    showVideoLoading();
+
+    // Apply CORS bypass
+    let videoSrc = url;
+    const isNetworkUrl = typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
+    if (isNetworkUrl && typeof applyCorsBypass === 'function') {
+      videoSrc = applyCorsBypass(url, corsBypass);
+    }
+
+    video.src = videoSrc;
+    hasActiveSource = true;
+    hideControls();
+
+    let retryCount = 0;
+    let resolved = false;
+
+    const cleanup = () => {
+      video.onerror = null;
+      video.oncanplay = null;
+      video.onplaying = null;
+      video.onloadedmetadata = null;
+    };
+
+    const fail = () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      video.removeAttribute('src');
+      video.load();
+      resolve(false);
+    };
+
+    const succeed = () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      resolve(true);
+    };
+
+    video.onerror = () => {
+      if (retryCount < maxRetries) {
+        ++retryCount;
+        const retryMsg = totalSources > 1
+          ? t('retryingSource', `Source ${sourceNum}/${totalSources} - Retry ${retryCount}/${maxRetries}`)
+          : t('retryingLoad', `Retrying (${retryCount}/${maxRetries})...`);
+        showVideoError(retryMsg);
+        setTimeout(() => {
+          video.load();
+        }, 2000);
+      } else {
+        fail();
+      }
+    };
+
+    video.oncanplay = () => {
+      hideVideoStatus();
+      succeed();
+    };
+
+    video.onplaying = () => {
+      hideVideoStatus();
+      succeed();
+    };
+
+    video.onloadedmetadata = () => {
+      hideVideoStatus();
+      video.play().catch(err => console.warn("Play failed:", err));
+      if (typeof resizeWindowToVideo === 'function') {
+        resizeWindowToVideo(video.videoWidth, video.videoHeight);
+      }
+      succeed();
+    };
+
+    video.load();
+
+    // Update UI
+    playBtn.textContent = "⏸️";
+    currentMediaMetadata = { title };
+    navigator.mediaSession.metadata = new MediaMetadata({ title });
+    document.title = `PWA Player ▶️ ${title}`;
+
+    updateNowPlayingInfo({ name: title, path: url });
+  });
+}
+
 const player = video;
 const container = document.getElementById("playerContainer");
 

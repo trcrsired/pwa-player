@@ -232,11 +232,18 @@ function renderIPTVList(searchFilter = "") {
             }
         });
 
-        // Click on name plays the channel
+        // Click on name plays the channel (with fallback to other URLs if multiple)
         nameSpan.addEventListener("click", () => {
             if (!primaryUrl) return;
             const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
-            play_source_title(primaryUrl, channel.name, null, corsEnabled);
+
+            // If multiple URLs, use fallback logic
+            if (urlList.length > 1 && typeof play_iptv_with_fallback === 'function') {
+                play_iptv_with_fallback(urlList, channel.name, corsEnabled);
+            } else {
+                play_source_title(primaryUrl, channel.name, null, corsEnabled);
+            }
+
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
             }

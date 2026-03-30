@@ -428,92 +428,126 @@ export const iptvChannels = [
   {
     name: "CCTV-1 (CCTV-1 综合)",
     nameLocalized: { zhcn: "CCTV-1 综合" },
-    url: "http://69.30.246.194/live/cctv1.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv1hd.m3u8",
+      "http://69.30.246.194/live/cctv1.m3u8"
+    ]
   },
   {
     name: "CCTV-2 (CCTV-2 财经)",
     nameLocalized: { zhcn: "CCTV-2 财经" },
-    url: "http://69.30.246.194/live/cctv2.m3u8"
+    url: "http://63.141.230.178/live/cctv2hd.m3u8"
   },
   {
     name: "CCTV-3 (CCTV-3 综艺)",
     nameLocalized: { zhcn: "CCTV-3 综艺" },
-    url: "http://69.30.246.194/live/cctv3.m3u8"
+    url: "http://63.141.230.178/live/cctv3hd.m3u8"
   },
   {
     name: "CCTV-4 (CCTV-4 中文国际)",
     nameLocalized: { zhcn: "CCTV-4 中文国际" },
-    url: "http://69.30.246.194/live/cctv4.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv4hd.m3u8",
+      "http://69.30.246.194/live/cctv4.m3u8"
+    ]
   },
   {
     name: "CCTV-5 (CCTV-5 体育)",
     nameLocalized: { zhcn: "CCTV-5 体育" },
-    url: "http://69.30.246.194/live/cctv5.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv5hd.m3u8",
+      "http://69.30.246.194/live/cctv5.m3u8"
+    ]
   },
   {
     name: "CCTV-5+ (CCTV-5+ 体育赛事)",
     nameLocalized: { zhcn: "CCTV-5+ 体育赛事" },
-    url: "http://69.30.246.194/live/cctv5p.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv5p.m3u8",
+      "http://69.30.246.194/live/cctv5p.m3u8",
+      "http://107.150.60.122/live/cctv5p.m3u8",
+    ]
   },
   {
     name: "CCTV-6 (CCTV-6 电影)",
     nameLocalized: { zhcn: "CCTV-6 电影" },
-    url: "http://69.30.246.194/live/cctv6.m3u8"
+    url: "http://63.141.230.178/live/cctv6hd.m3u8"
   },
   {
     name: "CCTV-7 (CCTV-7 国防军事)",
     nameLocalized: { zhcn: "CCTV-7 国防军事" },
-    url: "http://69.30.246.194/live/cctv7.m3u8"
+    url: "http://63.141.230.178/live/cctv7hd.m3u8"
   },
   {
     name: "CCTV-8 (CCTV-8 电视剧)",
     nameLocalized: { zhcn: "CCTV-8 电视剧" },
-    url: "http://69.30.246.194/live/cctv8.m3u8"
+    url: "http://63.141.230.178/live/cctv8hd.m3u8"
   },
   {
     name: "CCTV-9 (CCTV-9 纪录)",
     nameLocalized: { zhcn: "CCTV-9 纪录" },
-    url: "http://69.30.246.194/live/cctv9.m3u8"
+    url: "http://63.141.230.178/live/cctv9hd.m3u8"
   },
   {
     name: "CCTV-10 (CCTV-10 科教)",
     nameLocalized: { zhcn: "CCTV-10 科教" },
-    url: "http://69.30.246.194/live/cctv10.m3u8"
+    url: "http://63.141.230.178/live/cctv10hd.m3u8"
   },
   {
     name: "CCTV-11 (CCTV-11 戏曲)",
     nameLocalized: { zhcn: "CCTV-11 戏曲" },
-    url: "http://69.30.246.194/live/cctv11.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv11hd.m3u8",
+      "http://69.30.246.194/live/cctv11.m3u8",
+    ]
   },
   {
     name: "CCTV-12 (CCTV-12 社会与法)",
     nameLocalized: { zhcn: "CCTV-12 社会与法" },
-    url: "http://69.30.246.194/live/cctv12.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv12hd.m3u8",
+      "http://69.30.246.194/live/cctv12.m3u8"
+    ]
   },
   {
     name: "CCTV-13 (CCTV-13 新闻)",
     nameLocalized: { zhcn: "CCTV-13 新闻" },
-    url: "http://69.30.246.194/live/cctv13.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv13hd.m3u8",
+      "http://69.30.246.194/live/cctv13.m3u8"
+    ]
   },
   {
     name: "CCTV-14 (CCTV-14 少儿)",
     nameLocalized: { zhcn: "CCTV-14 少儿" },
-    url: "http://69.30.246.194/live/cctv14.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv14hd.m3u8",
+      "http://69.30.246.194/live/cctv14.m3u8"
+    ]
   },
   {
     name: "CCTV-15 (CCTV-15 音乐)",
     nameLocalized: { zhcn: "CCTV-15 音乐" },
-    url: "http://69.30.246.194/live/cctv15.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv15hd.m3u8",
+      "http://69.30.246.194/live/cctv15.m3u8"
+    ]
   },
   {
     name: "CCTV-16 (CCTV-16 奥林匹克)",
     nameLocalized: { zhcn: "CCTV-16 奥林匹克" },
-    url: "http://69.30.246.194/live/cctv16.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv16hd.m3u8",
+      "http://69.30.246.194/live/cctv16.m3u8"
+    ]
   },
   {
     name: "CCTV-17 (CCTV-17 农业农村)",
     nameLocalized: { zhcn: "CCTV-17 农业农村" },
-    url: "http://69.30.246.194/live/cctv17.m3u8"
+    urls: [
+      "http://63.141.230.178/live/cctv17hd.m3u8",
+      "http://69.30.246.194/live/cctv17.m3u8"
+    ]
   },
   {
     name: "Hunan TV (湖南卫视)",

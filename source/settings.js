@@ -287,3 +287,28 @@ function getNetworkRetryCount() {
     const count = parseInt(localStorage.getItem("networkRetryCount"), 10) || DEFAULT_NETWORK_RETRY_COUNT;
     return Math.max(0, count);
 }
+
+// Default IPTV source retry count (when multiple URLs exist)
+const DEFAULT_IPTV_SOURCE_RETRY_COUNT = 8;
+
+// Network retry count setting for IPTV sources (when multiple URLs)
+const iptvSourceRetryInput = document.getElementById("iptvSourceRetryCount");
+
+if (iptvSourceRetryInput) {
+    iptvSourceRetryInput.value = localStorage.getItem("iptvSourceRetryCount") || DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString();
+    iptvSourceRetryInput.addEventListener("change", () => {
+        const count = parseInt(iptvSourceRetryInput.value, 10);
+        if (count >= 0) {
+            localStorage.setItem("iptvSourceRetryCount", count.toString());
+        } else {
+            localStorage.setItem("iptvSourceRetryCount", DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString());
+            iptvSourceRetryInput.value = DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString();
+        }
+    });
+}
+
+// Helper function to get IPTV source retry count
+function getIptvSourceRetryCount() {
+    const count = parseInt(localStorage.getItem("iptvSourceRetryCount"), 10) || DEFAULT_IPTV_SOURCE_RETRY_COUNT;
+    return Math.max(0, count);
+}
