@@ -457,6 +457,46 @@ html, body {
     accent-color: var(--primary-bg);
 }
 
+/* Setting label with input */
+.setting-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    font-size: 15px;
+}
+
+.setting-label span {
+    flex-shrink: 0;
+}
+
+.setting-input {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--fg);
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: var(--primary-bg);
+}
+
+.setting-input::placeholder {
+    color: var(--subtle);
+}
+
+/* Setting hint text */
+.setting-hint {
+    font-size: 12px;
+    color: var(--subtle);
+    margin: 4px 0 12px 0;
+    padding-left: 0;
+}
+
 /* Now Playing item */
 .list-item {
     display: flex;

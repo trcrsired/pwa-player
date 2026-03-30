@@ -434,15 +434,19 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Show loading indicator
     showVideoLoading();
 
-    video.src = blobURL;
+    // Apply CORS bypass for network URLs
+    let videoSrc = blobURL;
+    const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
+    if (isNetworkUrl && typeof applyCorsBypass === 'function') {
+      videoSrc = applyCorsBypass(blobURL);
+    }
+
+    video.src = videoSrc;
     hasActiveSource = true;
     hideControls();
 
     // Store filename for error messages
     const filename = mediametadata.title;
-
-    // Check if this is a network URL (IPTV/stream) that can be retried
-    const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
     let retryCount = 0;
     const maxRetries = isNetworkUrl ? 10 : 0;
     const retryDelay = 2000; // 2 seconds between retries

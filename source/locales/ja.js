@@ -117,6 +117,12 @@ const JA_TRANSLATIONS = {
     disableRotateBtn: "画面回転ボタンを無効化",
     disableRotateBtnHint: "VRモード対応用に回転を無効化",
     aboutThisApp: "このアプリについて",
+
+    // Network
+    network: "ネットワーク",
+    corsBypassServer: "CORSバイパスサーバー",
+    corsBypassHint: "ネットワークURLはこのサーバーを介してCORS制限を回避します。空の場合は無効。",
+
     version: "バージョン",
     sourceCode: "ソースコード",
     license: "ライセンス",

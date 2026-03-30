@@ -117,6 +117,12 @@ const ZHCN_TRANSLATIONS = {
     disableRotateBtn: "禁用旋转屏幕按钮",
     disableRotateBtnHint: "禁用旋转以兼容VR模式",
     aboutThisApp: "关于此应用",
+
+    // Network
+    network: "网络",
+    corsBypassServer: "CORS绕过服务器",
+    corsBypassHint: "网络URL将通过此服务器前缀以绕过CORS限制。留空则禁用。",
+
     version: "版本",
     sourceCode: "源代码",
     license: "许可证",

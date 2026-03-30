@@ -117,6 +117,12 @@ const EN_TRANSLATIONS = {
     disableRotateBtn: "Disable rotate screen button",
     disableRotateBtnHint: "Disable rotation for VR mode compatibility",
     aboutThisApp: "About This App",
+
+    // Network
+    network: "Network",
+    corsBypassServer: "CORS Bypass Server",
+    corsBypassHint: "Network URLs will be prefixed with this server to bypass CORS restrictions. Leave empty to disable.",
+
     version: "Version",
     sourceCode: "Source Code",
     license: "License",
