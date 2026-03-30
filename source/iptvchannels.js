@@ -419,6 +419,21 @@ export const iptvChannels = [
     url: "https://cbsn-dal.cbsnstream.cbsnews.com/out/v1/ffa98bbf7d2b4c038c229bd4d9122708/master.m3u8"
   },
   {
+    name: "Korean Central Television (DPRK) (조선중앙텔레비죤)",
+    url: "https://tv.intchoson.com/kctv/main_stream.m3u8"
+  },
+  {
+    name: "Cubavision",
+    urls: [
+      "https://tv.picta.cu/cubavision/cubavision_0.m3u8",
+      "https://tvhd.picta.cu/cubavisionhd/cubavisionhd_master.m3u8"
+    ]
+  },
+  {
+    name: "Cubavision Internacional",
+    url: "https://tv.picta.cu/cvi/cvi_0.m3u8"
+  },
+  {
     name: "Gansu TV (甘肃卫视)",
     nameLocalized: { zhcn: "甘肃卫视" },
     url: "http://live.zohi.tv/video/s10001-fztv-3/index.m3u8"
@@ -796,6 +811,10 @@ export const iptvChannels = [
     name: "Heilongjiang TV (黑龙江卫视)",
     nameLocalized: { zhcn: "黑龙江卫视" },
     url:"http://38.75.136.137:98/gslb/dsdqpub/hljwshd.m3u8?auth=testpub"
+  },
+  {
+    name: "TVBS",
+    url: "http://38.64.72.148/hls/modn/list/4005/playlist.m3u8"
   },
   {
     name: "Babes TV",

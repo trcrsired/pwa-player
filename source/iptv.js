@@ -6,6 +6,105 @@ const iptvBackBtn = document.getElementById("iptvBackBtn");
 const iptvList = document.getElementById("iptvList");
 const iptvSearch = document.getElementById("iptvSearch");
 
+// Custom IPTV channels storage key
+const CUSTOM_IPTV_KEY = "customIptvChannels";
+
+// Load custom IPTV channels from storage
+async function loadCustomIptvChannels() {
+    try {
+        const channels = await kv_get(CUSTOM_IPTV_KEY);
+        return Array.isArray(channels) ? channels : [];
+    } catch (e) {
+        console.warn("Failed to load custom IPTV channels:", e);
+        return [];
+    }
+}
+
+// Save custom IPTV channels to storage
+async function saveCustomIptvChannels(channels) {
+    try {
+        await kv_set(CUSTOM_IPTV_KEY, channels);
+    } catch (e) {
+        console.warn("Failed to save custom IPTV channels:", e);
+    }
+}
+
+// Export custom channels to JSON file
+async function exportCustomChannels() {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    const customChannels = await loadCustomIptvChannels();
+    if (customChannels.length === 0) {
+        alert(t('noCustomChannels', 'No custom channels to export'));
+        return;
+    }
+
+    const json = JSON.stringify(customChannels, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `iptv-channels-${Date.now()}.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+// Import custom channels from JSON file
+function importCustomChannels() {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const channels = JSON.parse(text);
+
+            if (!Array.isArray(channels)) {
+                alert(t('invalidFormat', 'Invalid format: expected an array of channels'));
+                return;
+            }
+
+            // Validate channel structure
+            for (const ch of channels) {
+                if (!ch.name || (!ch.url && !ch.urls)) {
+                    alert(t('invalidChannel', 'Invalid channel: each channel needs name and url/urls'));
+                    return;
+                }
+            }
+
+            // Merge with existing channels
+            const existing = await loadCustomIptvChannels();
+            const merged = [...existing, ...channels];
+            await saveCustomIptvChannels(merged);
+
+            alert(t('importSuccess', `Imported ${channels.length} channel(s)`));
+            renderIPTVList();
+        } catch (err) {
+            alert(t('importFailed', 'Failed to import: ') + err.message);
+        }
+    };
+
+    input.click();
+}
+
+// Clear all custom channels
+async function clearCustomChannels() {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    if (!confirm(t('confirmClearChannels', 'Delete all custom channels?'))) return;
+
+    await saveCustomIptvChannels([]);
+    renderIPTVList();
+}
+
 // Open IPTV menu
 iptvBtn.addEventListener("click", () => {
     iptvSearch.value = "";
@@ -144,175 +243,314 @@ function isHttpUrl(url) {
 }
 
 // Render IPTV channels
-function renderIPTVList(searchFilter = "") {
+async function renderIPTVList(searchFilter = "") {
     iptvList.innerHTML = "";
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
+    // Add import/export buttons at top
+    const btnLi = document.createElement("li");
+    btnLi.className = "iptv-node";
+    btnLi.style.cssText = "padding:10px;border-bottom:1px solid #333;display:flex;gap:10px;flex-wrap:wrap;";
+
+    const importBtn = document.createElement("button");
+    importBtn.textContent = "📥 " + t('import', 'Import');
+    importBtn.style.cssText = "padding:8px 16px;border:1px solid #4caf50;border-radius:6px;background:transparent;color:#4caf50;cursor:pointer;font-size:13px;";
+    importBtn.addEventListener("click", importCustomChannels);
+
+    const exportBtn = document.createElement("button");
+    exportBtn.textContent = "📤 " + t('export', 'Export');
+    exportBtn.style.cssText = "padding:8px 16px;border:1px solid #2196f3;border-radius:6px;background:transparent;color:#2196f3;cursor:pointer;font-size:13px;";
+    exportBtn.addEventListener("click", exportCustomChannels);
+
+    const clearBtn = document.createElement("button");
+    clearBtn.textContent = "🗑️ " + t('clear', 'Clear');
+    clearBtn.style.cssText = "padding:8px 16px;border:1px solid #f44336;border-radius:6px;background:transparent;color:#f44336;cursor:pointer;font-size:13px;";
+    clearBtn.addEventListener("click", clearCustomChannels);
+
+    btnLi.appendChild(importBtn);
+    btnLi.appendChild(exportBtn);
+    btnLi.appendChild(clearBtn);
+    iptvList.appendChild(btnLi);
+
+    // Load and render custom channels
+    const customChannels = await loadCustomIptvChannels();
+    customChannels.forEach((channel, index) => {
+        renderChannel(channel, searchFilter, true, index);
+    });
+
+    // Render predefined channels
     iptvChannels.forEach(channel => {
+        renderChannel(channel, searchFilter, false, -1);
+    });
+}
 
-        // Skip NSFW channels unless unlocked
-        const isUnlocked = localStorage.getItem("hiddenfeatures") === "true";
-        if (channel.nsfw && !isUnlocked) {
-            return;
+// Render a single channel
+function renderChannel(channel, searchFilter, isCustom, customIndex) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    // Skip NSFW channels unless unlocked
+    const isUnlocked = localStorage.getItem("hiddenfeatures") === "true";
+    if (channel.nsfw && !isUnlocked) {
+        return;
+    }
+
+    // Filter by search
+    if (searchFilter && !channel.name.toLowerCase().includes(searchFilter)) {
+        return;
+    }
+
+    const li = document.createElement("li");
+    li.className = "iptv-node";
+    if (isCustom) {
+        li.style.borderLeft = "3px solid #4caf50";
+    }
+
+    const header = document.createElement("div");
+    header.className = "iptv-header";
+
+    const urlList = channel.url ? [channel.url] : channel.urls;
+
+    // Expand button (+) - on the left, no background
+    const expandBtn = document.createElement("button");
+    expandBtn.className = "iptv-toggle";
+
+    // Build the toggle content
+    const toggleText = document.createElement("span");
+    toggleText.className = "iptv-toggle-text";
+    toggleText.textContent = "+";
+
+    if (urlList.length > 1) {
+        const countBadge = document.createElement("span");
+        countBadge.className = "iptv-count-badge";
+        countBadge.textContent = `(${urlList.length})`;
+        expandBtn.appendChild(toggleText);
+        expandBtn.appendChild(countBadge);
+    } else {
+        expandBtn.textContent = "+";
+    }
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "iptv-name";
+    nameSpan.textContent = channel.name;
+
+    // Custom badge
+    if (isCustom) {
+        const customBadge = document.createElement("span");
+        customBadge.textContent = "CUSTOM";
+        customBadge.className = "iptv-badge";
+        customBadge.style.cssText = "background:#4caf50;color:#fff;margin-left:6px;padding:2px 6px;border-radius:4px;font-size:10px;";
+        nameSpan.appendChild(customBadge);
+    }
+
+    const primaryUrl = channel.url || (channel.urls && channel.urls[0]);
+
+    // Add badges for URL characteristics
+    if (primaryUrl) {
+        // NSFW badge (only when unlocked)
+        if (channel.nsfw && isUnlocked) {
+            const badge = document.createElement("span");
+            badge.textContent = "NSFW";
+            badge.className = "iptv-badge iptv-nsfw-badge";
+            nameSpan.appendChild(badge);
         }
 
-        // Filter by search
-        if (searchFilter && !channel.name.toLowerCase().includes(searchFilter)) {
-            return;
+        // IP address badge (needs CORS bypass)
+        if (isIpAddressUrl(primaryUrl)) {
+            const badge = document.createElement("span");
+            badge.textContent = "IP";
+            badge.className = "iptv-badge iptv-ip-badge";
+            badge.title = "IP address - may need CORS bypass server";
+            nameSpan.appendChild(badge);
+        } else if (isHttpUrl(primaryUrl)) {
+            // HTTP badge (may need CORS)
+            const badge = document.createElement("span");
+            badge.textContent = "HTTP";
+            badge.className = "iptv-badge iptv-http-badge";
+            badge.title = "HTTP - may require CORS bypass";
+            nameSpan.appendChild(badge);
         }
+    }
 
-        const li = document.createElement("li");
-        li.className = "iptv-node";
+    // Menu button (⋮)
+    const menuBtn = document.createElement("button");
+    menuBtn.className = "iptv-menu";
+    menuBtn.textContent = "⋮";
+    menuBtn.title = "Menu";
+    menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (isCustom) {
+            showCustomChannelMenu(channel, primaryUrl, e.currentTarget, customIndex);
+        } else if (primaryUrl) {
+            showIPTVChannelMenu(channel, primaryUrl, e.currentTarget);
+        }
+    });
 
-        const header = document.createElement("div");
-        header.className = "iptv-header";
+    // Click on name plays the channel (with fallback to other URLs if multiple)
+    nameSpan.addEventListener("click", () => {
+        if (!primaryUrl) return;
+        const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
 
-        const urlList = channel.url ? [channel.url] : channel.urls;
-
-        // Expand button (+) - on the left, no background
-        const expandBtn = document.createElement("button");
-        expandBtn.className = "iptv-toggle";
-
-        // Build the toggle content
-        const toggleText = document.createElement("span");
-        toggleText.className = "iptv-toggle-text";
-        toggleText.textContent = "+";
-
-        if (urlList.length > 1) {
-            const countBadge = document.createElement("span");
-            countBadge.className = "iptv-count-badge";
-            countBadge.textContent = `(${urlList.length})`;
-            expandBtn.appendChild(toggleText);
-            expandBtn.appendChild(countBadge);
+        // If multiple URLs, use fallback logic
+        if (urlList.length > 1 && typeof play_iptv_with_fallback === 'function') {
+            play_iptv_with_fallback(urlList, channel.name, corsEnabled);
         } else {
-            expandBtn.textContent = "+";
+            play_source_title(primaryUrl, channel.name, null, corsEnabled);
         }
 
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "iptv-name";
-        nameSpan.textContent = channel.name;
+        if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
+            closeActiveView();
+        }
+    });
 
-        const primaryUrl = channel.url || (channel.urls && channel.urls[0]);
+    const subList = document.createElement("ul");
+    subList.className = "iptv-sub hidden";
 
-        // Add badges for URL characteristics
-        if (primaryUrl) {
-            // NSFW badge (only when unlocked)
-            if (channel.nsfw && isUnlocked) {
-                const badge = document.createElement("span");
-                badge.textContent = "NSFW";
-                badge.className = "iptv-badge iptv-nsfw-badge";
-                nameSpan.appendChild(badge);
-            }
+    urlList.forEach(url => {
+        const subLi = document.createElement("li");
+        subLi.className = "iptv-subitem";
 
-            // IP address badge (needs CORS bypass)
-            if (isIpAddressUrl(primaryUrl)) {
-                const badge = document.createElement("span");
-                badge.textContent = "IP";
-                badge.className = "iptv-badge iptv-ip-badge";
-                badge.title = "IP address - may need CORS bypass server";
-                nameSpan.appendChild(badge);
-            } else if (isHttpUrl(primaryUrl)) {
-                // HTTP badge (may need CORS)
-                const badge = document.createElement("span");
-                badge.textContent = "HTTP";
-                badge.className = "iptv-badge iptv-http-badge";
-                badge.title = "HTTP - may require CORS bypass";
-                nameSpan.appendChild(badge);
-            }
+        const urlSpan = document.createElement("span");
+        urlSpan.className = "iptv-url-text";
+        urlSpan.textContent = url;
+
+        // Add small badges for sub-URLs too
+        if (isIpAddressUrl(url)) {
+            const badge = document.createElement("span");
+            badge.textContent = "IP";
+            badge.className = "iptv-badge iptv-ip-badge";
+            urlSpan.appendChild(badge);
+        } else if (isHttpUrl(url)) {
+            const badge = document.createElement("span");
+            badge.textContent = "HTTP";
+            badge.className = "iptv-badge iptv-http-badge";
+            urlSpan.appendChild(badge);
         }
 
-        // Menu button (⋮)
-        const menuBtn = document.createElement("button");
-        menuBtn.className = "iptv-menu";
-        menuBtn.textContent = "⋮";
-        menuBtn.title = "Menu";
-        menuBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (primaryUrl) {
-                showIPTVChannelMenu(channel, primaryUrl, e.currentTarget);
-            }
-        });
-
-        // Click on name plays the channel (with fallback to other URLs if multiple)
-        nameSpan.addEventListener("click", () => {
-            if (!primaryUrl) return;
+        // Click on URL plays it
+        urlSpan.addEventListener("click", () => {
             const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
-
-            // If multiple URLs, use fallback logic
-            if (urlList.length > 1 && typeof play_iptv_with_fallback === 'function') {
-                play_iptv_with_fallback(urlList, channel.name, corsEnabled);
-            } else {
-                play_source_title(primaryUrl, channel.name, null, corsEnabled);
-            }
-
+            play_source_title(url, channel.name, null, corsEnabled);
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
             }
         });
 
-        const subList = document.createElement("ul");
-        subList.className = "iptv-sub hidden";
-
-        urlList.forEach(url => {
-            const subLi = document.createElement("li");
-            subLi.className = "iptv-subitem";
-
-            const urlSpan = document.createElement("span");
-            urlSpan.className = "iptv-url-text";
-            urlSpan.textContent = url;
-
-            // Add small badges for sub-URLs too
-            if (isIpAddressUrl(url)) {
-                const badge = document.createElement("span");
-                badge.textContent = "IP";
-                badge.className = "iptv-badge iptv-ip-badge";
-                urlSpan.appendChild(badge);
-            } else if (isHttpUrl(url)) {
-                const badge = document.createElement("span");
-                badge.textContent = "HTTP";
-                badge.className = "iptv-badge iptv-http-badge";
-                urlSpan.appendChild(badge);
-            }
-
-            // Click on URL plays it
-            urlSpan.addEventListener("click", () => {
-                const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
-                play_source_title(url, channel.name, null, corsEnabled);
-                if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
-                    closeActiveView();
-                }
-            });
-
-            // Menu button for this URL
-            const addBtn = document.createElement("button");
-            addBtn.className = "iptv-sub-menu";
-            addBtn.textContent = "⋮";
-            addBtn.title = "Menu";
-            addBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                showIPTVChannelMenu(channel, url, e.currentTarget);
-            });
-
-            subLi.appendChild(urlSpan);
-            subLi.appendChild(addBtn);
-
-            subList.appendChild(subLi);
-        });
-
-        // Click on + expands/collapses
-        expandBtn.addEventListener("click", () => {
-            const hidden = subList.classList.toggle("hidden");
-            if (urlList.length > 1) {
-                expandBtn.querySelector(".iptv-toggle-text").textContent = hidden ? "+" : "−";
+        // Menu button for this URL
+        const addBtn = document.createElement("button");
+        addBtn.className = "iptv-sub-menu";
+        addBtn.textContent = "⋮";
+        addBtn.title = "Menu";
+        addBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (isCustom) {
+                showCustomChannelMenu(channel, url, e.currentTarget, customIndex);
             } else {
-                expandBtn.textContent = hidden ? "+" : "−";
+                showIPTVChannelMenu(channel, url, e.currentTarget);
             }
         });
 
-        header.appendChild(expandBtn);
-        header.appendChild(nameSpan);
-        header.appendChild(menuBtn);
-        li.appendChild(header);
-        li.appendChild(subList);
-        iptvList.appendChild(li);
+        subLi.appendChild(urlSpan);
+        subLi.appendChild(addBtn);
+
+        subList.appendChild(subLi);
+    });
+
+    // Click on + expands/collapses
+    expandBtn.addEventListener("click", () => {
+        const hidden = subList.classList.toggle("hidden");
+        if (urlList.length > 1) {
+            expandBtn.querySelector(".iptv-toggle-text").textContent = hidden ? "+" : "−";
+        } else {
+            expandBtn.textContent = hidden ? "+" : "−";
+        }
+    });
+
+    header.appendChild(expandBtn);
+    header.appendChild(nameSpan);
+    header.appendChild(menuBtn);
+    li.appendChild(header);
+    li.appendChild(subList);
+    iptvList.appendChild(li);
+}
+
+// Menu for custom channels (with delete option)
+function showCustomChannelMenu(channel, url, button, customIndex) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+
+    const corsBypassUrl = localStorage.getItem("corsBypassUrl") || "";
+    const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
+
+    const items = [
+        { action: "play", label: t('playThis', 'Play'), cors: corsEnabled, close: true },
+        { action: "play-keep-open", label: t('playKeepPanel', 'Play (keep panel open)'), cors: corsEnabled, close: false }
+    ];
+
+    if (corsBypassUrl) {
+        const corsOverride = !corsEnabled;
+        items.push(
+            { action: "play-cors", label: corsEnabled ? t('playWithoutCors', 'Play without CORS') : t('playWithCors', 'Play with CORS'), cors: corsOverride, close: true }
+        );
+    }
+
+    items.push(
+        { action: "copy-url", label: t('copyUrl', 'Copy URL') },
+        { action: "delete", label: t('deleteChannel', 'Delete Channel'), close: true },
+        { action: "close", label: t('close', 'Close') }
+    );
+
+    menu.innerHTML = items.map(item => `<div class="menu-item" data-action="${item.action}">${item.label}</div>`).join("");
+
+    if (!positionMenu(menu, button)) return;
+
+    const closeMenu = () => menu.remove();
+
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const action = item.dataset.action;
+            const menuItem = items.find(i => i.action === action);
+
+            if (menuItem && action.startsWith("play")) {
+                play_source_title(url, channel.name, null, menuItem.cors);
+                if (menuItem.close) closeActiveView();
+                closeMenu();
+                return;
+            }
+
+            if (action === "copy-url") {
+                try {
+                    await navigator.clipboard.writeText(url);
+                    const toast = document.getElementById("toast");
+                    if (toast) {
+                        toast.textContent = t('urlCopied', 'URL copied to clipboard');
+                        toast.classList.add("show");
+                        setTimeout(() => toast.classList.remove("show"), 2000);
+                    }
+                } catch (err) {
+                    console.warn("Failed to copy URL:", err);
+                }
+            }
+
+            if (action === "delete") {
+                closeMenu();
+                if (confirm(t('confirmDeleteChannel', 'Delete this channel?'))) {
+                    let customChannels = await loadCustomIptvChannels();
+                    customChannels.splice(customIndex, 1);
+                    await saveCustomIptvChannels(customChannels);
+                    renderIPTVList();
+                }
+            }
+
+            closeMenu();
+        });
     });
 }
+
+// Sync wrapper for renderIPTVList (for compatibility)
+function renderIPTVListSync(searchFilter = "") {
+    iptvList.innerHTML = "";
+    renderIPTVList(searchFilter);
+}
+
