@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "203";
+const PWAPLAYER_VERSION = "204";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "/",
@@ -39,6 +39,21 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+  const url = new URL(event.request.url);
+
+  // Detect loopback/local network requests
+  const isLocal =
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname.startsWith("192.168.") ||
+      url.hostname.startsWith("10.") ||
+      url.hostname.endsWith(".local");
+
+  if (isLocal) {
+      // Let the browser handle it directly
+      return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
