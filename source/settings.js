@@ -273,7 +273,7 @@ if (networkRetryInput) {
     networkRetryInput.value = localStorage.getItem("networkRetryCount") || DEFAULT_NETWORK_RETRY_COUNT.toString();
     networkRetryInput.addEventListener("change", () => {
         const count = parseInt(networkRetryInput.value, 10);
-        if (count >= 0 && count <= 100) {
+        if (count >= 0) {
             localStorage.setItem("networkRetryCount", count.toString());
         } else {
             localStorage.setItem("networkRetryCount", DEFAULT_NETWORK_RETRY_COUNT.toString());
@@ -285,5 +285,5 @@ if (networkRetryInput) {
 // Helper function to get network retry count
 function getNetworkRetryCount() {
     const count = parseInt(localStorage.getItem("networkRetryCount"), 10) || DEFAULT_NETWORK_RETRY_COUNT;
-    return Math.max(0, Math.min(100, count));
+    return Math.max(0, count);
 }
