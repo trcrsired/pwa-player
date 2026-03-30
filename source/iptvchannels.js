@@ -63,6 +63,16 @@ export const iptvChannels = [
     url: "https://0472.org/hls/cgtnf.m3u8"
   },
   {
+    name: "CGTN Spanish (CGTN西班牙语)",
+    nameLocalized: { zhcn: "CGTN西班牙语" },
+    url: "https://0472.org/hls/cgtnx.m3u8"
+  },
+  {
+    name: "CGTN Arabic (CGTN阿拉伯语)",
+    nameLocalized: { zhcn: "CGTN阿拉伯语" },
+    url: "https://0472.org/hls/cgtna.m3u8"
+  },
+  {
     name: "CGTN Documentary (CGTN纪录)",
     nameLocalized: { zhcn: "CGTN纪录" },
     urls: [
