@@ -100,6 +100,10 @@ const JA_TRANSLATIONS = {
     playWithoutCorsKeepOpen: "CORSなしで再生(開いたまま)",
     playWithCors: "CORSで再生",
     playWithCorsKeepOpen: "CORSで再生(開いたまま)",
+    addToPlaylistNoCors: "プレイリストに追加(CORSなし)",
+    addToPlaylistWithCors: "プレイリストに追加(CORSあり)",
+    copyUrl: "URLをコピー",
+    urlCopied: "URLをクリップボードにコピーしました",
 
     // Settings
     language: "言語",

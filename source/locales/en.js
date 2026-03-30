@@ -100,6 +100,10 @@ const EN_TRANSLATIONS = {
     playWithoutCorsKeepOpen: "Play without CORS (keep open)",
     playWithCors: "Play with CORS",
     playWithCorsKeepOpen: "Play with CORS (keep open)",
+    addToPlaylistNoCors: "Add to Playlist (no CORS)",
+    addToPlaylistWithCors: "Add to Playlist (with CORS)",
+    copyUrl: "Copy URL",
+    urlCopied: "URL copied to clipboard",
 
     // Settings
     language: "Language",

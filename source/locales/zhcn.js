@@ -100,6 +100,10 @@ const ZHCN_TRANSLATIONS = {
     playWithoutCorsKeepOpen: "不使用CORS播放(保持打开)",
     playWithCors: "使用CORS播放",
     playWithCorsKeepOpen: "使用CORS播放(保持打开)",
+    addToPlaylistNoCors: "添加到播放列表(不使用CORS)",
+    addToPlaylistWithCors: "添加到播放列表(使用CORS)",
+    copyUrl: "复制URL",
+    urlCopied: "URL已复制到剪贴板",
 
     // Settings
     language: "语言",

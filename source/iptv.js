@@ -31,17 +31,17 @@ function showIPTVChannelMenu(channel, url, button) {
     menu.className = "context-menu";
 
     const corsBypassUrl = localStorage.getItem("corsBypassUrl") || "";
-    const corsEnabled = localStorage.getItem("corsBypassEnabled") !== "false";
+    const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
 
-    // Build menu items
+    // Build menu items - default play uses the toggle setting
     const items = [
-        { action: "play", label: t('playThis', 'Play'), cors: null, close: true },
-        { action: "play-keep-open", label: t('playKeepPanel', 'Play (keep panel open)'), cors: null, close: false }
+        { action: "play", label: t('playThis', 'Play'), cors: corsEnabled, close: true },
+        { action: "play-keep-open", label: t('playKeepPanel', 'Play (keep panel open)'), cors: corsEnabled, close: false }
     ];
 
-    // Add CORS options only if bypass server is configured
+    // Add CORS override options only if bypass server is configured
     if (corsBypassUrl) {
-        const corsOverride = corsEnabled ? false : true;
+        const corsOverride = !corsEnabled;
         const corsLabel = corsEnabled ? t('playWithoutCors', 'Play without CORS') : t('playWithCors', 'Play with CORS');
         const corsKeepOpenLabel = corsEnabled ? t('playWithoutCorsKeepOpen', 'Play without CORS (keep open)') : t('playWithCorsKeepOpen', 'Play with CORS (keep open)');
 
@@ -52,7 +52,9 @@ function showIPTVChannelMenu(channel, url, button) {
     }
 
     items.push(
-        { action: "add", label: t('addToPlaylist', 'Add to Playlist') },
+        { action: "add", label: t('addToPlaylist', 'Add to Playlist'), cors: corsEnabled },
+        { action: "add-no-cors", label: corsEnabled ? t('addToPlaylistNoCors', 'Add to Playlist (no CORS)') : t('addToPlaylistWithCors', 'Add to Playlist (with CORS)'), cors: !corsEnabled },
+        { action: "copy-url", label: t('copyUrl', 'Copy URL') },
         { action: "close", label: t('close', 'Close') }
     );
 
@@ -74,7 +76,7 @@ function showIPTVChannelMenu(channel, url, button) {
                 return;
             }
 
-            if (action === "add") {
+            if (action.startsWith("add")) {
                 const playlists = await playlists_load();
                 const names = Object.keys(playlists);
 
@@ -96,9 +98,27 @@ function showIPTVChannelMenu(channel, url, button) {
                     return;
                 }
 
-                playlists[names[index]].push({ name: channel.name, path: url });
+                playlists[names[index]].push({
+                    name: channel.name,
+                    path: url,
+                    corsBypass: menuItem.cors
+                });
                 await playlists_save(playlists);
                 alert(`${t('addedToPlaylistSuccess', 'Added')} "${channel.name}" ${t('toPlaylist', 'to playlist')} "${names[index]}".`);
+            }
+
+            if (action === "copy-url") {
+                try {
+                    await navigator.clipboard.writeText(url);
+                    const toast = document.getElementById("toast");
+                    if (toast) {
+                        toast.textContent = t('urlCopied', 'URL copied to clipboard');
+                        toast.classList.add("show");
+                        setTimeout(() => toast.classList.remove("show"), 2000);
+                    }
+                } catch (err) {
+                    console.warn("Failed to copy URL:", err);
+                }
             }
 
             closeMenu();
@@ -215,7 +235,8 @@ function renderIPTVList(searchFilter = "") {
         // Click on name plays the channel
         nameSpan.addEventListener("click", () => {
             if (!primaryUrl) return;
-            play_source_title(primaryUrl, channel.name, null);
+            const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
+            play_source_title(primaryUrl, channel.name, null, corsEnabled);
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
             }
@@ -247,7 +268,8 @@ function renderIPTVList(searchFilter = "") {
 
             // Click on URL plays it
             urlSpan.addEventListener("click", () => {
-                play_source_title(url, channel.name, null);
+                const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
+                play_source_title(url, channel.name, null, corsEnabled);
                 if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                     closeActiveView();
                 }

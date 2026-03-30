@@ -31,7 +31,7 @@ async function nowPlaying_playIndex(index) {
         playlistName: entry.playlistName,
         entryPath: entry.path,
         index,
-    });
+    }, entry.corsBypass);
 
     nowPlayingIndex = index;
     renderNowPlayingQueue();
@@ -314,10 +314,11 @@ function renderNowPlayingQueue() {
             li.classList.add("active");
         }
 
-        // Track title
+        // Track title with optional CORS badge
         const titleSpan = document.createElement("span");
         titleSpan.className = "np-item-title";
-        titleSpan.textContent = entry.name || entry.path;
+        const hasCors = entry.corsBypass === true;
+        titleSpan.innerHTML = `${escapeHTML(entry.name || entry.path)}${hasCors ? '<span class="iptv-badge iptv-http-badge" style="margin-left:6px;">CORS</span>' : ''}`;
 
         // Click on title → play
         titleSpan.addEventListener("click", () => {

@@ -929,8 +929,7 @@ webBtn.onclick = () => {
 
     if (url)
     {
-      // Web URLs entered directly should not use CORS bypass
-      play_source(url, null, false).catch(nop);
+      play_source(url).catch(nop);
     }
   }
   catch (err) {

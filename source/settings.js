@@ -248,21 +248,10 @@ function isCorsBypassEnabled() {
 }
 
 // Helper function to apply CORS bypass to a URL
-// corsBypass param: null = use setting, true = force enable, false = force disable
-function applyCorsBypass(url, corsBypass = null) {
+// corsBypass param: true = enable CORS bypass, false/null/undefined = disable
+function applyCorsBypass(url, corsBypass) {
     if (!url || typeof url !== 'string') return url;
-
-    // Determine if CORS bypass should be applied
-    let useBypass;
-    if (corsBypass === true) {
-        useBypass = true;
-    } else if (corsBypass === false) {
-        useBypass = false;
-    } else {
-        useBypass = isCorsBypassEnabled();
-    }
-
-    if (!useBypass) return url;
+    if (!corsBypass) return url;
 
     const bypassUrl = getCorsBypassUrl();
     if (!bypassUrl) return url;

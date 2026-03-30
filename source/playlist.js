@@ -218,9 +218,12 @@ async function playlist_renderTree() {
             const itemLi = document.createElement("li");
             itemLi.className = "storage-sub-item";
 
+            const itemName = item.name || item.path;
+            const hasCors = item.corsBypass === true;
+
             itemLi.innerHTML = `
                 <div class="storage-sub-header">
-                    <span class="sub-name">${escapeHTML(item.name || item.path)}</span>
+                    <span class="sub-name">${escapeHTML(itemName)}${hasCors ? '<span class="iptv-badge iptv-http-badge" style="margin-left:6px;">CORS</span>' : ''}</span>
                     <div class="sub-actions">
                         <button class="sub-menu" title="Menu">⋮</button>
                     </div>
