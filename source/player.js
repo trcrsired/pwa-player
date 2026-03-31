@@ -1246,12 +1246,23 @@ function fullscreencallback()
 
 fullscreenBtn.onclick = fullscreencallback;
 
-progressBar.oninput = () => {
-  video.currentTime = progressBar.value;
-};
-npProgressBar.oninput = () => {
-  video.currentTime = npProgressBar.value;
-};
+// Progress bar input handler - updates time display during drag
+function handleProgressBarInput(bar, timeDisplayEl) {
+  const time = parseFloat(bar.value);
+  if (isFinite(video.duration) && video.duration > 0) {
+    const current = formatTime(time);
+    const total = formatTime(video.duration);
+    if (timeDisplayEl) {
+      timeDisplayEl.textContent = `${current} / ${total}`;
+    }
+  }
+}
+
+progressBar.oninput = () => handleProgressBarInput(progressBar, timeDisplay);
+progressBar.onchange = () => { video.currentTime = progressBar.value; };
+
+npProgressBar.oninput = () => handleProgressBarInput(npProgressBar, npTimeDisplay);
+npProgressBar.onchange = () => { video.currentTime = npProgressBar.value; };
 
 // =====================================================
 // Video Preview on Progress Bar
@@ -1267,6 +1278,8 @@ function formatPreviewTime(seconds) {
 function showVideoPreview(time, xPos) {
   if (!videoPreview || !previewVideo || !hasActiveSource) return;
   if (!isFinite(video.duration) || video.duration === Infinity) return;
+  // Check if video preview is enabled
+  if (typeof isVideoPreviewEnabled === 'function' && !isVideoPreviewEnabled()) return;
   // Only show preview for videos (has width/height), not audio
   if (!video.videoWidth || !video.videoHeight || video.videoWidth === 0 || video.videoHeight === 0) return;
 

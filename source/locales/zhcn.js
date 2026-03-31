@@ -150,6 +150,7 @@ const ZHCN_TRANSLATIONS = {
     shortcutSpeedEnabled: "A/D/S - 速度控制",
     shortcutLoopEnabled: "J/K/L - A-B循环",
     abLoop: "A-B循环",
+    videoPreviewEnabled: "时间轴视频预览",
     preservePitch: "保持音高",
     aboutThisApp: "关于此应用",
 

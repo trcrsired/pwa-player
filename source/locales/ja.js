@@ -147,6 +147,7 @@ const JA_TRANSLATIONS = {
     shortcutSpeedEnabled: "A/D/S - 速度制御",
     shortcutLoopEnabled: "J/K/L - A-Bループ",
     abLoop: "A-Bループ",
+    videoPreviewEnabled: "タイムライン動画プレビュー",
     preservePitch: "ピッチを維持",
     aboutThisApp: "このアプリについて",
 

@@ -229,6 +229,7 @@ const speedDownLabel = document.getElementById("speedDownLabel");
 const speedUpLabel = document.getElementById("speedUpLabel");
 const shortcutSpeedEnabled = document.getElementById("shortcutSpeedEnabled");
 const shortcutLoopEnabled = document.getElementById("shortcutLoopEnabled");
+const videoPreviewEnabledCheckbox = document.getElementById("videoPreviewEnabled");
 
 // Default speed is 1.0
 const DEFAULT_PLAYBACK_SPEED = 1.0;
@@ -254,6 +255,10 @@ function isShortcutSpeedEnabled() {
 
 function isShortcutLoopEnabled() {
     return localStorage.getItem("shortcutLoopEnabled") !== "false";
+}
+
+function isVideoPreviewEnabled() {
+    return localStorage.getItem("videoPreviewEnabled") !== "false";
 }
 
 // Get current playback speed
@@ -306,6 +311,7 @@ function initPlaybackSpeed() {
     updateStepLabels();
     shortcutSpeedEnabled.checked = isShortcutSpeedEnabled();
     shortcutLoopEnabled.checked = isShortcutLoopEnabled();
+    if (videoPreviewEnabledCheckbox) videoPreviewEnabledCheckbox.checked = isVideoPreviewEnabled();
 }
 
 // Save and apply speed
@@ -374,6 +380,12 @@ shortcutLoopEnabled.addEventListener("change", () => {
     localStorage.setItem("shortcutLoopEnabled", shortcutLoopEnabled.checked ? "true" : "false");
 });
 
+if (videoPreviewEnabledCheckbox) {
+    videoPreviewEnabledCheckbox.addEventListener("change", () => {
+        localStorage.setItem("videoPreviewEnabled", videoPreviewEnabledCheckbox.checked ? "true" : "false");
+    });
+}
+
 // =====================================================
 // Keyboard shortcuts for speed and A-B loop
 // =====================================================
@@ -430,7 +442,26 @@ function updateABLoopButton() {
     }
 }
 
-// Handle AB button click
+// Reset AB loop to A state (keep start point, deactivate loop)
+function resetABLoopToA() {
+    stopABLoopCheck();
+    abLoopEnd = null;
+    abLoopActive = false;
+    abLoopState = abLoopStart !== null ? 1 : 0;
+    updateABLoopButton();
+}
+
+// Clear AB loop completely
+function clearABLoop() {
+    stopABLoopCheck();
+    abLoopStart = null;
+    abLoopEnd = null;
+    abLoopActive = false;
+    abLoopState = 0;
+    updateABLoopButton();
+}
+
+// Handle AB button click (cycles: A -> B -> AB -> A)
 function handleABLoopClick() {
     const video = document.getElementById("player");
     if (!video || !isNonLiveVideo()) return;
@@ -459,13 +490,9 @@ function handleABLoopClick() {
             break;
 
         case 2:
-            // Reset
-            abLoopStart = null;
-            abLoopEnd = null;
-            abLoopActive = false;
-            abLoopState = 0;
-            stopABLoopCheck();
-            showABLoopStatus("Loop off");
+            // Reset to A (keep start point)
+            resetABLoopToA();
+            showABLoopStatus("Loop off (A kept)");
             break;
     }
 
@@ -495,6 +522,21 @@ if (videoForABLoop) {
             // Seek back to A and play
             video.currentTime = abLoopStart;
             video.play().catch(() => {});
+        }
+    });
+
+    // Reset AB loop to A when video source changes
+    videoForABLoop.addEventListener("loadstart", () => {
+        if (abLoopState === 2) {
+            resetABLoopToA();
+        }
+    });
+
+    // Reset AB loop to A when video is paused/stopped for a while
+    videoForABLoop.addEventListener("pause", () => {
+        // Don't reset immediately on pause, only reset the loop check
+        if (abLoopActive) {
+            // Loop will resume when playing again
         }
     });
 }
@@ -573,23 +615,38 @@ document.addEventListener("keydown", (e) => {
             break;
 
         case "j":
-            // J: Set A-B loop start point (via keyboard)
+            // J: Set A point
             if (isShortcutLoopEnabled() && isNonLiveVideo()) {
-                handleABLoopClick(); // Use same logic as button
+                abLoopStart = video.currentTime;
+                abLoopEnd = null;
+                abLoopActive = false;
+                abLoopState = 1;
+                updateABLoopButton();
+                showABLoopStatus(`A: ${formatTime(abLoopStart)}`);
             }
             break;
 
         case "l":
-            // L: Set A-B loop end point (via keyboard)
+            // L: Set B point and activate
             if (isShortcutLoopEnabled() && isNonLiveVideo() && abLoopState === 1) {
-                handleABLoopClick(); // Use same logic as button
+                abLoopEnd = video.currentTime;
+                if (abLoopEnd > abLoopStart) {
+                    abLoopActive = true;
+                    abLoopState = 2;
+                    startABLoopCheck();
+                    updateABLoopButton();
+                    showABLoopStatus(`A-B: ${formatTime(abLoopStart)} - ${formatTime(abLoopEnd)}`);
+                } else {
+                    showABLoopStatus("B must be after A");
+                }
             }
             break;
 
         case "k":
-            // K: Clear A-B loop (via keyboard)
+            // K: Clear AB loop
             if (isShortcutLoopEnabled() && abLoopState !== 0) {
-                handleABLoopClick(); // Use same logic as button
+                clearABLoop();
+                showABLoopStatus("Loop cleared");
             }
             break;
     }

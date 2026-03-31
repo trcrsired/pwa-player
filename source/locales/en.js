@@ -150,6 +150,7 @@ const EN_TRANSLATIONS = {
     shortcutSpeedEnabled: "A/D/S - Speed control",
     shortcutLoopEnabled: "J/K/L - A-B Loop",
     abLoop: "A-B Loop",
+    videoPreviewEnabled: "Video preview on timeline",
     preservePitch: "Preserve pitch",
     aboutThisApp: "About This App",
 
