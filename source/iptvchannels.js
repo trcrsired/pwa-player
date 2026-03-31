@@ -817,6 +817,206 @@ export const iptvChannels = [
     url: "http://38.64.72.148/hls/modn/list/4005/playlist.m3u8"
   },
   {
+    "name": "Animax (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs15"
+  },
+  {
+    "name": "BS Asahi (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs03"
+  },
+  {
+    "name": "BS Fuji TV (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs06"
+  },
+  {
+    "name": "BS Nippon TV (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs02"
+  },
+  {
+    "name": "BS Shochiku Tokyu (1080p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs31"
+  },
+  {
+    "name": "BS TBS (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs04"
+  },
+  {
+    "name": "BS TV Tokyo (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs05"
+  },
+  {
+    "name": "Channel Ginga (1080p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs29"
+  },
+  {
+    "name": "Disney Channel Japan (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs24"
+  },
+  {
+    "name": "Eisei Gekijo (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs22"
+  },
+  {
+    "name": "Family Gekijo (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs20"
+  },
+  {
+    "name": "Fishing Vision (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs25"
+  },
+  {
+    "name": "Fuji TV (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gd05"
+  },
+  {
+    "name": "Fuji TV NEXT (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs26"
+  },
+  {
+    "name": "Gaora Sports (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs17"
+  },
+  {
+    "name": "Golf Network (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs03"
+  },
+  {
+    "name": "Green Channel (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs14"
+  },
+  {
+    "name": "History Channel Japan (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs09"
+  },
+  {
+    "name": "Home Drama Channel (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs05"
+  },
+  {
+    "name": "Jidaigeki Senmon (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs04"
+  },
+  {
+    "name": "J Sports 1 (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs18"
+  },
+  {
+    "name": "J Sports 2 (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs19"
+  },
+  {
+    "name": "J Sports 3 (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs21"
+  },
+  {
+    "name": "J Sports 4 (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs22"
+  },
+  {
+    "name": "Kansai TV (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gx03"
+  },
+  {
+    "name": "Kayo Pops (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs13"
+  },
+  {
+    "name": "Kids Station (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs07"
+  },
+  {
+    "name": "MBS (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gx01"
+  },
+  {
+    "name": "MTV Japan (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs18"
+  },
+  {
+    "name": "Music Japan TV (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs06"
+  },
+  {
+    "name": "National Geographic Japan (1080p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs10"
+  },
+  {
+    "name": "NHK BSP4K (1080p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs01"
+  },
+  {
+    "name": "NHK G (Osaka) (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gx06"
+  },
+  {
+    "name": "Nihon Eiga Senmon (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs23"
+  },
+  {
+    "name": "Nittele G Plus (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs02"
+  },
+  {
+    "name": "Sky A (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs01"
+  },
+  {
+    "name": "Space Shower TV (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs26"
+  },
+  {
+    "name": "Star 1 (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs08"
+  },
+  {
+    "name": "Star 2 (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs27"
+  },
+  {
+    "name": "Star 3 (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs28"
+  },
+  {
+    "name": "Sun TV (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gx07"
+  },
+  {
+    "name": "TAKARAZUKA SKY STAGE (1080p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs28"
+  },
+  {
+    "name": "TBS News (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs11"
+  },
+  {
+    "name": "Toei Channel (1080p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=cs27"
+  },
+  {
+    "name": "Tokyo MX1 (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gd08"
+  },
+  {
+    "name": "TV Osaka (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gx05"
+  },
+  {
+    "name": "TV Tokyo (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gd07"
+  },
+  {
+    "name": "WOWOW Cinema (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs07"
+  },
+  {
+    "name": "WOWOW Prime (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=bs12"
+  },
+  {
+    "name": "YTV (544p)",
+    "url": "http://cdns.jp-primehome.com:8000/zhongying/live/playlist.m3u8?cid=gx04"
+  },
+  {
     name: "Babes TV",
     nsfw: true,
     url: "https://cdn4.skygo.mn/live/disk1/Babes/HLSv3-FTA/Babes.m3u8"
