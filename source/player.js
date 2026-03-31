@@ -912,6 +912,9 @@ async function toggleStopBtn()
   clearSubtitles();
   navigator.mediaSession.metadata = new MediaMetadata({});
   document.title = `PWA Player`;
+  // Clear last played/playlist so default playlist can take over on next play
+  kv_delete("lastplaylist").catch(() => {});
+  kv_delete("lastplayed").catch(() => {});
   // Show controls when nothing is playing
   ensureControlsVisibility();
 }
@@ -1227,10 +1230,13 @@ video.addEventListener("timeupdate", () => {
   } else {
       updateTimeDisplay(current);
   }
-  progressBar.max = duration;
-  progressBar.value = currentTime;
-  npProgressBar.max = duration;
-  npProgressBar.value = currentTime;
+  // Don't update progress bar value while user is dragging it
+  if (!isDraggingProgressBar) {
+    progressBar.max = duration;
+    progressBar.value = currentTime;
+    npProgressBar.max = duration;
+    npProgressBar.value = currentTime;
+  }
 });
 
 function fullscreencallback()
@@ -1261,10 +1267,16 @@ function handleProgressBarInput(bar, timeDisplayEl) {
 }
 
 progressBar.oninput = () => handleProgressBarInput(progressBar, timeDisplay);
-progressBar.onchange = () => { video.currentTime = progressBar.value; };
+progressBar.onchange = () => {
+  video.currentTime = progressBar.value;
+  isDraggingProgressBar = false;
+};
 
 npProgressBar.oninput = () => handleProgressBarInput(npProgressBar, npTimeDisplay);
-npProgressBar.onchange = () => { video.currentTime = npProgressBar.value; };
+npProgressBar.onchange = () => {
+  video.currentTime = npProgressBar.value;
+  isDraggingProgressBar = false;
+};
 
 // =====================================================
 // Video Preview on Progress Bar
@@ -1322,16 +1334,15 @@ function clearVideoPreview() {
   hideVideoPreview();
 }
 
-// Track when user is interacting with progress bar
-let isSeekingTimeline = false;
+// Track when user is actively dragging the progress bar (pointer down)
+let isDraggingProgressBar = false;
 
 // Progress bar preview events (using pointer events for cross-device support)
 if (progressContainer && progressBar) {
   progressContainer.addEventListener("pointermove", (e) => {
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
-    isSeekingTimeline = true;
-    showControls(false); // Show controls without auto-hide while seeking
+    showControls(false); // Show controls without auto-hide while hovering
 
     const rect = progressBar.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -1342,7 +1353,6 @@ if (progressContainer && progressBar) {
   });
 
   progressContainer.addEventListener("pointerleave", () => {
-    isSeekingTimeline = false;
     hideVideoPreview();
     // Restart auto-hide timer if playing
     if (hasActiveSource && !video.paused) {
@@ -1353,8 +1363,8 @@ if (progressContainer && progressBar) {
   progressBar.addEventListener("pointerdown", (e) => {
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
-    isSeekingTimeline = true;
-    showControls(false); // Show controls without auto-hide while seeking
+    isDraggingProgressBar = true;
+    showControls(false); // Show controls without auto-hide while dragging
 
     const rect = progressBar.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -1365,11 +1375,15 @@ if (progressContainer && progressBar) {
   });
 
   progressBar.addEventListener("pointerup", () => {
-    isSeekingTimeline = false;
+    isDraggingProgressBar = false;
     // Restart auto-hide timer if playing
     if (hasActiveSource && !video.paused) {
         showControls(true);
     }
+  });
+
+  progressBar.addEventListener("pointercancel", () => {
+    isDraggingProgressBar = false;
   });
 }
 
