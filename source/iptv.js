@@ -514,20 +514,29 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
     const corsBypassUrl = localStorage.getItem("corsBypassUrl") || "";
     const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
 
+    // Build menu items - same as predefined channels but with rename/delete
     const items = [
         { action: "play", label: t('playThis', 'Play'), cors: corsEnabled, close: true },
         { action: "play-keep-open", label: t('playKeepPanel', 'Play (keep panel open)'), cors: corsEnabled, close: false }
     ];
 
+    // Add CORS override options only if bypass server is configured
     if (corsBypassUrl) {
         const corsOverride = !corsEnabled;
+        const corsLabel = corsEnabled ? t('playWithoutCors', 'Play without CORS') : t('playWithCors', 'Play with CORS');
+        const corsKeepOpenLabel = corsEnabled ? t('playWithoutCorsKeepOpen', 'Play without CORS (keep open)') : t('playWithCorsKeepOpen', 'Play with CORS (keep open)');
+
         items.push(
-            { action: "play-cors", label: corsEnabled ? t('playWithoutCors', 'Play without CORS') : t('playWithCors', 'Play with CORS'), cors: corsOverride, close: true }
+            { action: "play-cors", label: corsLabel, cors: corsOverride, close: true },
+            { action: "play-cors-keep-open", label: corsKeepOpenLabel, cors: corsOverride, close: false }
         );
     }
 
     items.push(
+        { action: "add", label: t('addToPlaylist', 'Add to Playlist'), cors: corsEnabled },
+        { action: "add-no-cors", label: corsEnabled ? t('addToPlaylistNoCors', 'Add to Playlist (no CORS)') : t('addToPlaylistWithCors', 'Add to Playlist (with CORS)'), cors: !corsEnabled },
         { action: "copy-url", label: t('copyUrl', 'Copy URL') },
+        { action: "rename", label: t('rename', 'Rename') },
         { action: "delete", label: t('deleteChannel', 'Delete Channel'), close: true },
         { action: "close", label: t('close', 'Close') }
     );
@@ -550,6 +559,38 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                 return;
             }
 
+            if (action.startsWith("add")) {
+                const playlists = await playlists_load();
+                const names = Object.keys(playlists);
+
+                const choice = prompt(
+                    t('whichPlaylist', 'Add to which playlist?') + "\n" +
+                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+                    "1"
+                );
+
+                if (!choice) {
+                    closeMenu();
+                    return;
+                }
+
+                const index = parseInt(choice, 10) - 1;
+                if (index < 0 || index >= names.length) {
+                    alert(t('invalidSelection', 'Invalid selection'));
+                    closeMenu();
+                    return;
+                }
+
+                playlists[names[index]].push({
+                    name: channel.name,
+                    path: url,
+                    corsBypass: menuItem.cors
+                });
+                await playlists_save(playlists);
+                playlist_renderTree();
+                alert(`${t('addedToPlaylistSuccess', 'Added')} "${channel.name}" ${t('toPlaylist', 'to playlist')} "${names[index]}".`);
+            }
+
             if (action === "copy-url") {
                 try {
                     await navigator.clipboard.writeText(url);
@@ -564,8 +605,17 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                 }
             }
 
+            if (action === "rename") {
+                const newName = prompt(t('newChannelName', 'New channel name:'), channel.name);
+                if (newName && newName.trim()) {
+                    let customChannels = await loadCustomIptvChannels();
+                    customChannels[customIndex].name = newName.trim();
+                    await saveCustomIptvChannels(customChannels);
+                    renderIPTVList();
+                }
+            }
+
             if (action === "delete") {
-                closeMenu();
                 if (confirm(t('confirmDeleteChannel', 'Delete this channel?'))) {
                     let customChannels = await loadCustomIptvChannels();
                     customChannels.splice(customIndex, 1);

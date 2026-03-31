@@ -181,6 +181,7 @@ function showPlaylistItemMenu(playlistName, index, button) {
     menu.innerHTML = `
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
+        <div class="menu-item" data-action="add-to-playlist">${t('addToPlaylist', 'Add to Playlist')}</div>
         <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
         <div class="menu-item" data-action="move-up">${t('moveUp', 'Move Up')}</div>
         <div class="menu-item" data-action="move-down">${t('moveDown', 'Move Down')}</div>
@@ -207,6 +208,34 @@ function showPlaylistItemMenu(playlistName, index, button) {
 
             if (action === "play-keep-open") {
                 await startNowPlayingFromPlaylist(playlistName, index);
+                closeMenu();
+                return;
+            }
+
+            if (action === "add-to-playlist") {
+                const allPlaylists = await playlists_load();
+                const names = Object.keys(allPlaylists).filter(n => n !== playlistName);
+                if (names.length === 0) {
+                    alert(t('noPlaylistsAvailable', 'No playlists available. Please create a playlist first.'));
+                    closeMenu();
+                    return;
+                }
+                const choice = prompt(
+                    t('addToWhichPlaylist', 'Add to which playlist?') + "\n" +
+                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+                    "1"
+                );
+                if (choice) {
+                    const targetIndex = parseInt(choice, 10) - 1;
+                    if (targetIndex >= 0 && targetIndex < names.length) {
+                        const targetName = names[targetIndex];
+                        const item = list[index];
+                        allPlaylists[targetName].push({ name: item.name, path: item.path, corsBypass: item.corsBypass });
+                        await playlists_save(allPlaylists);
+                        playlist_renderTree();
+                        alert(`${t('addedToPlaylistSuccess', 'Added')} "${item.name}" ${t('toPlaylist', 'to playlist')} "${targetName}".`);
+                    }
+                }
                 closeMenu();
                 return;
             }
@@ -346,6 +375,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
         <div class="menu-item" data-action="duplicate">${t('duplicate', 'Duplicate')}</div>
         <div class="menu-item" data-action="export">${t('export', 'Export')}</div>
+        <div class="menu-item" data-action="add-all-to-playlist">${t('addAllToPlaylist', 'Add All to Playlist')}</div>
         <div class="menu-item" data-action="import-from-now-playing">${t('importFromNowPlaying', 'Import from Now Playing')}</div>
         <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
         <div class="menu-item danger" data-action="clear">${t('clearPlaylist', 'Clear Playlist')}</div>
@@ -411,6 +441,33 @@ function showPlaylistHeaderMenu(playlistName, button) {
                 const json = JSON.stringify(playlists[playlistName], null, 2);
                 console.log("EXPORT PLAYLIST:", json);
                 alert(t('exportedToConsole', 'Playlist exported to console.'));
+            }
+
+            if (action === "add-all-to-playlist") {
+                const names = Object.keys(playlists).filter(n => n !== playlistName);
+                if (names.length === 0) {
+                    alert(t('noPlaylistsAvailable', 'No playlists available. Please create a playlist first.'));
+                    closeMenu();
+                    return;
+                }
+                const choice = prompt(
+                    t('addToWhichPlaylist', 'Add to which playlist?') + "\n" +
+                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
+                    "1"
+                );
+                if (choice) {
+                    const targetIndex = parseInt(choice, 10) - 1;
+                    if (targetIndex >= 0 && targetIndex < names.length) {
+                        const targetName = names[targetIndex];
+                        const items = playlists[playlistName];
+                        playlists[targetName].push(...items.map(item => ({ name: item.name, path: item.path, corsBypass: item.corsBypass })));
+                        await playlists_save(playlists);
+                        playlist_renderTree();
+                        alert(`${t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', items.length)} "${targetName}".`);
+                    }
+                }
+                closeMenu();
+                return;
             }
 
             if (action === "delete") {
