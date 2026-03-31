@@ -517,9 +517,9 @@ function handleABLoopClick() {
             break;
 
         case 2:
-            // Reset to A (keep start point)
-            resetABLoopToA();
-            showABLoopStatus("Loop off (A kept)");
+            // Clear loop and start fresh (back to A state)
+            clearABLoop();
+            showABLoopStatus("Loop cleared");
             break;
     }
 
