@@ -255,14 +255,19 @@ async function playlist_renderTree() {
     const tree = document.getElementById("playlistTree");
     tree.innerHTML = "";
 
+    const defaultPlaylist = localStorage.getItem("defaultPlaylist") || "";
+
     Object.entries(playlists).forEach(([playlistName, items]) => {
+        const isDefault = playlistName === defaultPlaylist;
+        const defaultBadge = isDefault ? ' ⭐' : '';
+
         const li = document.createElement("li");
         li.className = "storage-node";
 
         li.innerHTML = `
             <div class="storage-header">
                 <button class="toggle">+</button>
-                <span class="storage-name">${escapeHTML(playlistName)} (${items.length})</span>
+                <span class="storage-name">${escapeHTML(playlistName)}${defaultBadge} (${items.length})</span>
                 <button class="storage-menu" title="Menu">⋮</button>
             </div>
             <ul class="storage-sub hidden"></ul>
@@ -330,10 +335,14 @@ async function playlist_renderTree() {
 function showPlaylistHeaderMenu(playlistName, button) {
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
 
+    const defaultPlaylist = localStorage.getItem("defaultPlaylist") || "";
+    const isDefault = playlistName === defaultPlaylist;
+
     const menu = document.createElement("div");
     menu.className = "context-menu";
 
     menu.innerHTML = `
+        <div class="menu-item" data-action="set-default">${isDefault ? '⭐ ' + t('defaultPlaylist', 'Default') : t('setDefaultPlaylist', 'Set as Default')}</div>
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
         <div class="menu-item" data-action="duplicate">${t('duplicate', 'Duplicate')}</div>
         <div class="menu-item" data-action="export">${t('export', 'Export')}</div>
@@ -352,6 +361,19 @@ function showPlaylistHeaderMenu(playlistName, button) {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
             const playlists = await playlists_load();
+
+            if (action === "set-default") {
+                if (isDefault) {
+                    // Unset as default
+                    localStorage.removeItem("defaultPlaylist");
+                } else {
+                    // Set as default
+                    localStorage.setItem("defaultPlaylist", playlistName);
+                }
+                playlist_renderTree();
+                closeMenu();
+                return;
+            }
 
             if (action === "import-from-now-playing") {
                 // Get current track from now playing

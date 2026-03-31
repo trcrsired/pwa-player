@@ -154,6 +154,7 @@ function getCurrentTrack() {
 // Priority:
 // 1. Last playlist (playlistName + index)
 // 2. Last single file
+// 3. Default playlist
 // Returns true if something was restored and playback started.
 async function restoreLastPlayback() {
 
@@ -172,6 +173,17 @@ async function restoreLastPlayback() {
     if (lastplayed) {
         play_source(lastplayed).catch(() => {});
         return true;
+    }
+
+    // Case 3: play from default playlist
+    const defaultPlaylist = localStorage.getItem("defaultPlaylist");
+    if (defaultPlaylist) {
+        const playlists = await playlists_load();
+        const list = playlists[defaultPlaylist];
+        if (list && list.length > 0) {
+            await startNowPlayingFromPlaylist(defaultPlaylist, 0);
+            return true;
+        }
     }
 
     // Nothing to restore
@@ -411,7 +423,6 @@ document.getElementById("player").addEventListener("ended", () => {
 
         case "repeat":
         case "shuffle":
-            // Placeholder: will call playNext() later
             playNext();
             break;
     }

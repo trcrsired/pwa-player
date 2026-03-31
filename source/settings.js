@@ -224,10 +224,37 @@ const speedDown = document.getElementById("speedDown");
 const speedUp = document.getElementById("speedUp");
 const speedReset = document.getElementById("speedReset");
 const preservePitchCheckbox = document.getElementById("preservePitch");
+const speedStepInput = document.getElementById("speedStepInput");
+const speedDownLabel = document.getElementById("speedDownLabel");
+const speedUpLabel = document.getElementById("speedUpLabel");
+const shortcutSpeedEnabled = document.getElementById("shortcutSpeedEnabled");
+const shortcutLoopEnabled = document.getElementById("shortcutLoopEnabled");
 
 // Default speed is 1.0
 const DEFAULT_PLAYBACK_SPEED = 1.0;
-const SPEED_STEP = 0.05;
+const DEFAULT_SPEED_STEP = 0.05;
+
+// Get speed step
+function getSpeedStep() {
+    const step = parseFloat(localStorage.getItem("speedStep")) || DEFAULT_SPEED_STEP;
+    return Math.max(0.01, Math.min(1, step));
+}
+
+// Update step labels
+function updateStepLabels() {
+    const step = getSpeedStep();
+    if (speedDownLabel) speedDownLabel.textContent = step.toFixed(2);
+    if (speedUpLabel) speedUpLabel.textContent = step.toFixed(2);
+}
+
+// Get shortcut settings
+function isShortcutSpeedEnabled() {
+    return localStorage.getItem("shortcutSpeedEnabled") !== "false";
+}
+
+function isShortcutLoopEnabled() {
+    return localStorage.getItem("shortcutLoopEnabled") !== "false";
+}
 
 // Get current playback speed
 function getPlaybackSpeed() {
@@ -275,6 +302,10 @@ function initPlaybackSpeed() {
     const speed = getPlaybackSpeed();
     updateSpeedDisplay(speed);
     preservePitchCheckbox.checked = getPreservePitch();
+    speedStepInput.value = getSpeedStep();
+    updateStepLabels();
+    shortcutSpeedEnabled.checked = isShortcutSpeedEnabled();
+    shortcutLoopEnabled.checked = isShortcutLoopEnabled();
 }
 
 // Save and apply speed
@@ -294,6 +325,18 @@ speedValue.addEventListener("change", () => {
     }
     setPlaybackSpeed(speed);
 });
+
+speedStepInput.addEventListener("change", () => {
+    let step = parseFloat(speedStepInput.value);
+    if (isNaN(step) || step <= 0) {
+        step = DEFAULT_SPEED_STEP;
+    }
+    step = Math.max(0.01, Math.min(1, step));
+    localStorage.setItem("speedStep", step.toString());
+    speedStepInput.value = step;
+    updateStepLabels();
+});
+
 speedSlider.addEventListener("input", () => {
     const speed = parseFloat(speedSlider.value);
     updateSpeedDisplay(speed);
@@ -306,12 +349,12 @@ speedSlider.addEventListener("change", () => {
 
 speedDown.addEventListener("click", () => {
     const currentSpeed = getPlaybackSpeed();
-    setPlaybackSpeed(currentSpeed - SPEED_STEP);
+    setPlaybackSpeed(currentSpeed - getSpeedStep());
 });
 
 speedUp.addEventListener("click", () => {
     const currentSpeed = getPlaybackSpeed();
-    setPlaybackSpeed(currentSpeed + SPEED_STEP);
+    setPlaybackSpeed(currentSpeed + getSpeedStep());
 });
 
 speedReset.addEventListener("click", () => {
@@ -321,6 +364,235 @@ speedReset.addEventListener("click", () => {
 preservePitchCheckbox.addEventListener("change", () => {
     localStorage.setItem("preservePitch", preservePitchCheckbox.checked ? "true" : "false");
     applyPlaybackSpeed();
+});
+
+shortcutSpeedEnabled.addEventListener("change", () => {
+    localStorage.setItem("shortcutSpeedEnabled", shortcutSpeedEnabled.checked ? "true" : "false");
+});
+
+shortcutLoopEnabled.addEventListener("change", () => {
+    localStorage.setItem("shortcutLoopEnabled", shortcutLoopEnabled.checked ? "true" : "false");
+});
+
+// =====================================================
+// Keyboard shortcuts for speed and A-B loop
+// =====================================================
+
+// A-B Loop state
+let abLoopStart = null;
+let abLoopEnd = null;
+let abLoopActive = false;
+let abLoopCheckInterval = null;
+let abLoopState = 0; // 0: off, 1: A set, 2: AB active
+
+// Show status overlay (reused from player.js)
+function showStatusOverlay(message, duration = 1500) {
+    const overlay = document.getElementById("videoStatusOverlay");
+    const icon = document.getElementById("videoStatusIcon");
+    const text = document.getElementById("videoStatusText");
+    if (!overlay || !text) return;
+
+    icon.className = "video-status-icon";
+    icon.textContent = "";
+    text.textContent = message;
+    overlay.classList.remove("hidden");
+
+    setTimeout(() => {
+        overlay.classList.add("hidden");
+    }, duration);
+}
+
+// Show speed status
+function showSpeedStatus(speed) {
+    showStatusOverlay(`Speed: ${speed.toFixed(2)}x`, 1200);
+}
+
+// Show A-B loop status
+function showABLoopStatus(message) {
+    showStatusOverlay(message, 1500);
+}
+
+// Update AB button text
+function updateABLoopButton() {
+    const btn = document.getElementById("abLoopBtn");
+    if (!btn) return;
+
+    switch (abLoopState) {
+        case 0:
+            btn.textContent = "A";
+            break;
+        case 1:
+            btn.textContent = "B";
+            break;
+        case 2:
+            btn.textContent = "AB";
+            break;
+    }
+}
+
+// Handle AB button click
+function handleABLoopClick() {
+    const video = document.getElementById("player");
+    if (!video || !isNonLiveVideo()) return;
+
+    switch (abLoopState) {
+        case 0:
+            // Set A point
+            abLoopStart = video.currentTime;
+            abLoopEnd = null;
+            abLoopActive = false;
+            abLoopState = 1;
+            showABLoopStatus(`A: ${formatTime(abLoopStart)}`);
+            break;
+
+        case 1:
+            // Set B point and activate
+            abLoopEnd = video.currentTime;
+            if (abLoopEnd > abLoopStart) {
+                abLoopActive = true;
+                abLoopState = 2;
+                startABLoopCheck();
+                showABLoopStatus(`A-B: ${formatTime(abLoopStart)} - ${formatTime(abLoopEnd)}`);
+            } else {
+                showABLoopStatus("B must be after A");
+            }
+            break;
+
+        case 2:
+            // Reset
+            abLoopStart = null;
+            abLoopEnd = null;
+            abLoopActive = false;
+            abLoopState = 0;
+            stopABLoopCheck();
+            showABLoopStatus("Loop off");
+            break;
+    }
+
+    updateABLoopButton();
+}
+
+// Initialize AB loop button
+const abLoopBtn = document.getElementById("abLoopBtn");
+if (abLoopBtn) {
+    abLoopBtn.addEventListener("click", handleABLoopClick);
+    updateABLoopButton();
+}
+
+// Auto-set B point when video ends (if A is set)
+const videoForABLoop = document.getElementById("player");
+if (videoForABLoop) {
+    videoForABLoop.addEventListener("ended", () => {
+        // If A point is set but not B, auto-set B to end and start loop
+        if (abLoopState === 1 && abLoopStart !== null) {
+            const video = document.getElementById("player");
+            abLoopEnd = video.duration;
+            abLoopActive = true;
+            abLoopState = 2;
+            startABLoopCheck();
+            updateABLoopButton();
+            showABLoopStatus(`A-B: ${formatTime(abLoopStart)} - ${formatTime(abLoopEnd)}`);
+            // Seek back to A and play
+            video.currentTime = abLoopStart;
+            video.play().catch(() => {});
+        }
+    });
+}
+
+// Check if video is non-live
+function isNonLiveVideo() {
+    const video = document.getElementById("player");
+    if (!video || !video.src) return false;
+    return isFinite(video.duration) && video.duration !== Infinity;
+}
+
+// Format time helper
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+// Start A-B loop checking
+function startABLoopCheck() {
+    if (abLoopCheckInterval) return;
+
+    abLoopCheckInterval = setInterval(() => {
+        const video = document.getElementById("player");
+        if (!video || video.paused || !abLoopActive) return;
+
+        if (abLoopEnd !== null && video.currentTime >= abLoopEnd) {
+            video.currentTime = abLoopStart;
+        }
+    }, 100);
+}
+
+// Stop A-B loop checking
+function stopABLoopCheck() {
+    if (abLoopCheckInterval) {
+        clearInterval(abLoopCheckInterval);
+        abLoopCheckInterval = null;
+    }
+}
+
+// Keyboard event handler
+document.addEventListener("keydown", (e) => {
+    // Ignore if typing in input/textarea
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+    const video = document.getElementById("player");
+    if (!video) return;
+
+    const step = getSpeedStep();
+
+    switch (e.key.toLowerCase()) {
+        case "a":
+            // A: Decrease speed
+            if (isShortcutSpeedEnabled() && isNonLiveVideo()) {
+                const newSpeed = getPlaybackSpeed() - step;
+                setPlaybackSpeed(newSpeed);
+                showSpeedStatus(getPlaybackSpeed());
+            }
+            break;
+
+        case "d":
+            // D: Increase speed
+            if (isShortcutSpeedEnabled() && isNonLiveVideo()) {
+                const newSpeed = getPlaybackSpeed() + step;
+                setPlaybackSpeed(newSpeed);
+                showSpeedStatus(getPlaybackSpeed());
+            }
+            break;
+
+        case "s":
+            // S: Reset speed to 1.00x
+            if (isShortcutSpeedEnabled() && isNonLiveVideo()) {
+                setPlaybackSpeed(DEFAULT_PLAYBACK_SPEED);
+                showSpeedStatus(1.0);
+            }
+            break;
+
+        case "j":
+            // J: Set A-B loop start point (via keyboard)
+            if (isShortcutLoopEnabled() && isNonLiveVideo()) {
+                handleABLoopClick(); // Use same logic as button
+            }
+            break;
+
+        case "l":
+            // L: Set A-B loop end point (via keyboard)
+            if (isShortcutLoopEnabled() && isNonLiveVideo() && abLoopState === 1) {
+                handleABLoopClick(); // Use same logic as button
+            }
+            break;
+
+        case "k":
+            // K: Clear A-B loop (via keyboard)
+            if (isShortcutLoopEnabled() && abLoopState !== 0) {
+                handleABLoopClick(); // Use same logic as button
+            }
+            break;
+    }
 });
 
 // Initialize on load
