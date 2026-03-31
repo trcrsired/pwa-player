@@ -255,7 +255,7 @@ async function renderIPTVList(searchFilter = "") {
     // Add import/export buttons at top
     const btnLi = document.createElement("li");
     btnLi.className = "iptv-node";
-    btnLi.style.cssText = "padding:10px;border-bottom:1px solid #333;display:flex;gap:10px;flex-wrap:wrap;";
+    btnLi.style.cssText = "padding:10px;border-bottom:1px solid #333;display:flex;gap:10px;flex-wrap:wrap;align-items:center;";
 
     const importBtn = document.createElement("button");
     importBtn.textContent = "📥 " + t('import', 'Import');
@@ -272,21 +272,37 @@ async function renderIPTVList(searchFilter = "") {
     clearBtn.style.cssText = "padding:8px 16px;border:1px solid #f44336;border-radius:6px;background:transparent;color:#f44336;cursor:pointer;font-size:13px;";
     clearBtn.addEventListener("click", clearCustomChannels);
 
+    // Channel count display
+    const countSpan = document.createElement("span");
+    countSpan.id = "iptvChannelCount";
+    countSpan.style.cssText = "margin-left:auto;font-size:13px;color:#888;";
+
     btnLi.appendChild(importBtn);
     btnLi.appendChild(exportBtn);
     btnLi.appendChild(clearBtn);
+    btnLi.appendChild(countSpan);
     iptvList.appendChild(btnLi);
+
+    // Count rendered channels
+    let renderedCount = 0;
 
     // Load and render custom channels
     const customChannels = await loadCustomIptvChannels();
     customChannels.forEach((channel, index) => {
-        renderChannel(channel, searchFilter, true, index);
+        if (renderChannel(channel, searchFilter, true, index)) {
+            renderedCount++;
+        }
     });
 
     // Render predefined channels
     iptvChannels.forEach(channel => {
-        renderChannel(channel, searchFilter, false, -1);
+        if (renderChannel(channel, searchFilter, false, -1)) {
+            renderedCount++;
+        }
     });
+
+    // Update count display
+    countSpan.textContent = renderedCount;
 }
 
 // Render a single channel
@@ -296,12 +312,12 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
     // Skip NSFW channels unless unlocked
     const isUnlocked = localStorage.getItem("hiddenfeatures") === "true";
     if (channel.nsfw && !isUnlocked) {
-        return;
+        return false;
     }
 
     // Filter by search
     if (searchFilter && !channel.name.toLowerCase().includes(searchFilter)) {
-        return;
+        return false;
     }
 
     const li = document.createElement("li");
@@ -484,6 +500,7 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
     li.appendChild(header);
     li.appendChild(subList);
     iptvList.appendChild(li);
+    return true;
 }
 
 // Menu for custom channels (with delete option)
