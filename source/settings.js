@@ -871,6 +871,36 @@ function exportCurrentProfileData() {
     return profileData;
 }
 
+// Create default profile data (for new profiles)
+function createDefaultProfileData() {
+    return {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        settings: {
+            language: "en",
+            startupView: "player",
+            subtitleInMediaSession: "true",
+            autoLoadSubtitle: "true",
+            autoHidePanel: "false",
+            autoResizeWindow: "false",
+            disableRotateBtn: "false",
+            playbackSpeed: "1",
+            preservePitch: "false",
+            speedStep: "0.05",
+            speedAudioOnly: "false",
+            shortcutSpeedEnabled: "true",
+            shortcutLoopEnabled: "true",
+            videoPreviewEnabled: "true",
+            corsBypassUrl: "",
+            corsBypassEnabled: "false",
+            networkRetryCount: DEFAULT_NETWORK_RETRY_COUNT.toString(),
+            iptvSourceRetryCount: DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString()
+        },
+        playlists: { "Default": [] },
+        customIptvChannels: []
+    };
+}
+
 // Import profile data (async to get playlists and IPTV channels)
 async function importProfileData(profileData) {
     // Load playlists from IndexedDB
@@ -987,6 +1017,7 @@ function initProfiles() {
     const select = document.getElementById("profileSelect");
     const newBtn = document.getElementById("newProfileBtn");
     const renameBtn = document.getElementById("renameProfileBtn");
+    const resetBtn = document.getElementById("resetProfileBtn");
     const deleteBtn = document.getElementById("deleteProfileBtn");
     const exportBtn = document.getElementById("exportProfileBtn");
     const importBtn = document.getElementById("importProfileBtn");
@@ -1032,10 +1063,11 @@ function initProfiles() {
             // Save current profile first
             await saveCurrentProfile();
 
-            // Create new profile with current settings
-            profiles[name] = await importProfileData(exportCurrentProfileData());
+            // Create new profile with default settings
+            profiles[name] = createDefaultProfileData();
             saveProfiles(profiles);
             setCurrentProfileName(name);
+            await applyProfileData(profiles[name]);
             updateProfileSelect();
             showToast(t('profileCreated', 'Profile created'));
         });
@@ -1065,6 +1097,21 @@ function initProfiles() {
             setCurrentProfileName(newName);
             updateProfileSelect();
             showToast(t('profileRenamed', 'Profile renamed'));
+        });
+    }
+
+    // Reset profile
+    if (resetBtn) {
+        resetBtn.addEventListener("click", async () => {
+            if (!confirm(t('confirmResetProfile', 'Reset this profile to default settings?'))) return;
+
+            const name = getCurrentProfileName();
+            const profiles = getProfiles();
+            profiles[name] = createDefaultProfileData();
+            saveProfiles(profiles);
+            await applyProfileData(profiles[name]);
+            updateProfileSelect();
+            showToast(t('profileReset', 'Profile reset'));
         });
     }
 
