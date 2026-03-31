@@ -152,6 +152,7 @@ const EN_TRANSLATIONS = {
     abLoop: "A-B Loop",
     videoPreviewEnabled: "Video preview on timeline",
     preservePitch: "Preserve pitch",
+    speedAudioOnly: "Speed control for audio only",
     aboutThisApp: "About This App",
 
     // Network

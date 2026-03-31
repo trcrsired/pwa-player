@@ -152,6 +152,7 @@ const ZHCN_TRANSLATIONS = {
     abLoop: "A-B循环",
     videoPreviewEnabled: "时间轴视频预览",
     preservePitch: "保持音高",
+    speedAudioOnly: "速度控制仅用于音频",
     aboutThisApp: "关于此应用",
 
     // Network

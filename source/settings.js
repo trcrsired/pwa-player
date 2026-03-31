@@ -224,6 +224,7 @@ const speedDown = document.getElementById("speedDown");
 const speedUp = document.getElementById("speedUp");
 const speedReset = document.getElementById("speedReset");
 const preservePitchCheckbox = document.getElementById("preservePitch");
+const speedAudioOnlyCheckbox = document.getElementById("speedAudioOnly");
 const speedStepInput = document.getElementById("speedStepInput");
 const speedDownLabel = document.getElementById("speedDownLabel");
 const speedUpLabel = document.getElementById("speedUpLabel");
@@ -272,6 +273,11 @@ function getPreservePitch() {
     return localStorage.getItem("preservePitch") === "true";
 }
 
+// Get speed audio only setting (default: false - speed applies to all media)
+function isSpeedAudioOnly() {
+    return localStorage.getItem("speedAudioOnly") === "true";
+}
+
 // Update speed display
 function updateSpeedDisplay(speed) {
     speedValue.value = speed.toFixed(2);
@@ -291,6 +297,19 @@ function applyPlaybackSpeed() {
         return;
     }
 
+    // Check if speed should only apply to audio
+    if (isSpeedAudioOnly()) {
+        // Check if current media is a video (has dimensions)
+        if (video.videoWidth && video.videoHeight && video.videoWidth > 0 && video.videoHeight > 0) {
+            // It's a video - reset to default speed
+            video.playbackRate = 1.0;
+            if ('preservesPitch' in video) {
+                video.preservesPitch = true;
+            }
+            return;
+        }
+    }
+
     const speed = getPlaybackSpeed();
     const preservePitch = getPreservePitch();
 
@@ -307,6 +326,7 @@ function initPlaybackSpeed() {
     const speed = getPlaybackSpeed();
     updateSpeedDisplay(speed);
     preservePitchCheckbox.checked = getPreservePitch();
+    if (speedAudioOnlyCheckbox) speedAudioOnlyCheckbox.checked = isSpeedAudioOnly();
     speedStepInput.value = getSpeedStep();
     updateStepLabels();
     shortcutSpeedEnabled.checked = isShortcutSpeedEnabled();
@@ -371,6 +391,13 @@ preservePitchCheckbox.addEventListener("change", () => {
     localStorage.setItem("preservePitch", preservePitchCheckbox.checked ? "true" : "false");
     applyPlaybackSpeed();
 });
+
+if (speedAudioOnlyCheckbox) {
+    speedAudioOnlyCheckbox.addEventListener("change", () => {
+        localStorage.setItem("speedAudioOnly", speedAudioOnlyCheckbox.checked ? "true" : "false");
+        applyPlaybackSpeed();
+    });
+}
 
 shortcutSpeedEnabled.addEventListener("change", () => {
     localStorage.setItem("shortcutSpeedEnabled", shortcutSpeedEnabled.checked ? "true" : "false");

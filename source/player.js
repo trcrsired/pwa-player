@@ -1225,13 +1225,15 @@ video.addEventListener("timeupdate", () => {
       total = formatTime(video.duration);
   }
 
-  if (total) {
-      updateTimeDisplay(`${current} / ${total}`);
-  } else {
-      updateTimeDisplay(current);
-  }
   // Don't update progress bar value while user is dragging it
   if (!isDraggingProgressBar) {
+    let todisplay;
+    if (total) {
+      todisplay = `${current} / ${total}`;
+    } else {
+      todisplay = current;
+    }
+    updateTimeDisplay(todisplay);
     progressBar.max = duration;
     progressBar.value = currentTime;
     npProgressBar.max = duration;

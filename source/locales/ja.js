@@ -149,6 +149,7 @@ const JA_TRANSLATIONS = {
     abLoop: "A-Bループ",
     videoPreviewEnabled: "タイムライン動画プレビュー",
     preservePitch: "ピッチを維持",
+    speedAudioOnly: "速度制御は音声のみ",
     aboutThisApp: "このアプリについて",
 
     // Network
