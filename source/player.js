@@ -273,6 +273,10 @@ const timeDisplay = document.getElementById("timeDisplay");
 const npTimeDisplay = document.getElementById("npTimeDisplay");
 const progressBar = document.getElementById("progressBar");
 const npProgressBar = document.getElementById("npProgressBar");
+const progressContainer = document.getElementById("progressContainer");
+const videoPreview = document.getElementById("videoPreview");
+const previewVideo = document.getElementById("previewVideo");
+const previewTime = document.getElementById("previewTime");
 const rotationBtn = document.getElementById("rotationBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const controls = document.getElementById("controls");
@@ -1248,6 +1252,79 @@ progressBar.oninput = () => {
 npProgressBar.oninput = () => {
   video.currentTime = npProgressBar.value;
 };
+
+// =====================================================
+// Video Preview on Progress Bar
+// =====================================================
+let previewLoadedSrc = null;
+
+function formatPreviewTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function showVideoPreview(time, xPos) {
+  if (!videoPreview || !previewVideo || !hasActiveSource) return;
+  if (!isFinite(video.duration) || video.duration === Infinity) return;
+  // Only show preview for videos (has width/height), not audio
+  if (!video.videoWidth || !video.videoHeight || video.videoWidth === 0 || video.videoHeight === 0) return;
+
+  // Set source if not already set
+  if (previewLoadedSrc !== video.src) {
+    previewVideo.src = video.src;
+    previewLoadedSrc = video.src;
+  }
+
+  // Show preview
+  videoPreview.style.display = "block";
+  previewTime.textContent = formatPreviewTime(time);
+
+  // Position preview
+  const containerRect = progressContainer.getBoundingClientRect();
+  const previewWidth = 160;
+  let left = xPos - previewWidth / 2;
+  left = Math.max(0, Math.min(left, containerRect.width - previewWidth));
+  videoPreview.style.left = left + "px";
+
+  // Seek preview video (already muted in HTML)
+  previewVideo.currentTime = time;
+}
+
+function hideVideoPreview() {
+  if (videoPreview) {
+    videoPreview.style.display = "none";
+  }
+}
+
+// Progress bar preview events (using pointer events for cross-device support)
+if (progressContainer && progressBar) {
+  progressContainer.addEventListener("pointermove", (e) => {
+    if (!hasActiveSource || !isFinite(video.duration)) return;
+
+    const rect = progressBar.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, x / rect.width));
+    const time = percent * video.duration;
+
+    showVideoPreview(time, x);
+  });
+
+  progressContainer.addEventListener("pointerleave", () => {
+    hideVideoPreview();
+  });
+
+  progressBar.addEventListener("pointerdown", (e) => {
+    if (!hasActiveSource || !isFinite(video.duration)) return;
+
+    const rect = progressBar.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, x / rect.width));
+    const time = percent * video.duration;
+
+    showVideoPreview(time, x);
+  });
+}
 
 document.addEventListener("keydown", (e) => {
   // First check for open context menu - close it on Escape

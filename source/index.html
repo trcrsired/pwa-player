@@ -83,7 +83,13 @@
                 <!-- Progress Bar with Time and Fullscreen -->
                 <div class="progress-row">
                     <span id="timeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
-                    <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" />
+                    <div id="progressContainer" style="position:relative;flex:1;">
+                        <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" style="width:100%;" />
+                        <div id="videoPreview" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:10px;background:#000;border-radius:4px;overflow:hidden;pointer-events:none;">
+                            <video id="previewVideo" muted style="width:160px;height:90px;object-fit:contain;"></video>
+                            <div id="previewTime" style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;font-family:monospace;"></div>
+                        </div>
+                    </div>
                     <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
                 </div>
             </div>
