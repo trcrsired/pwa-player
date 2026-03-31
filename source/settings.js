@@ -232,7 +232,7 @@ const SPEED_STEP = 0.05;
 // Get current playback speed
 function getPlaybackSpeed() {
     const speed = parseFloat(localStorage.getItem("playbackSpeed")) || DEFAULT_PLAYBACK_SPEED;
-    return Math.max(0.25, Math.min(4, speed));
+    return Math.max(0.1, Math.min(16, speed));
 }
 
 // Get preserve pitch setting (default: false - pitch changes with speed)
@@ -242,8 +242,11 @@ function getPreservePitch() {
 
 // Update speed display
 function updateSpeedDisplay(speed) {
-    speedValue.textContent = speed.toFixed(2) + "x";
-    speedSlider.value = speed;
+    speedValue.value = speed.toFixed(2);
+    // Slider only covers 0.25-4 range
+    if (speed >= 0.25 && speed <= 4) {
+        speedSlider.value = speed;
+    }
 }
 
 // Apply speed to video element (only for non-live videos)
@@ -276,13 +279,21 @@ function initPlaybackSpeed() {
 
 // Save and apply speed
 function setPlaybackSpeed(speed) {
-    speed = Math.max(0.25, Math.min(4, speed));
+    // Allow any reasonable speed (0.1 to 16)
+    speed = Math.max(0.1, Math.min(16, speed));
     localStorage.setItem("playbackSpeed", speed.toString());
     updateSpeedDisplay(speed);
     applyPlaybackSpeed();
 }
 
 // Event listeners
+speedValue.addEventListener("change", () => {
+    let speed = parseFloat(speedValue.value);
+    if (isNaN(speed) || speed <= 0) {
+        speed = DEFAULT_PLAYBACK_SPEED;
+    }
+    setPlaybackSpeed(speed);
+});
 speedSlider.addEventListener("input", () => {
     const speed = parseFloat(speedSlider.value);
     updateSpeedDisplay(speed);
@@ -315,11 +326,13 @@ preservePitchCheckbox.addEventListener("change", () => {
 // Initialize on load
 initPlaybackSpeed();
 
-// Apply speed when video loads
+// Apply speed when video loads/plays
 const videoForSpeed = document.getElementById("player");
 if (videoForSpeed) {
     videoForSpeed.addEventListener("loadedmetadata", applyPlaybackSpeed);
     videoForSpeed.addEventListener("durationchange", applyPlaybackSpeed);
+    videoForSpeed.addEventListener("canplay", applyPlaybackSpeed);
+    videoForSpeed.addEventListener("play", applyPlaybackSpeed);
 }
 
 // CORS Bypass Server setting
