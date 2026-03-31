@@ -106,9 +106,8 @@ async function clearCustomChannels() {
 }
 
 // Open IPTV menu
-iptvBtn.addEventListener("click", async () => {
+iptvBtn.addEventListener("click", () => {
     switchView("iptvView");
-    await renderIPTVList();
 });
 
 // Back button
@@ -281,9 +280,6 @@ async function renderIPTVList(searchFilter = "") {
     iptvChannels.forEach(channel => {
         renderChannel(channel, searchFilter, false, -1);
     });
-
-    // Restore scroll position after render (matches search state)
-    restoreViewScrollPosition("iptvView");
 }
 
 // Render a single channel
@@ -555,4 +551,7 @@ function renderIPTVListSync(searchFilter = "") {
     iptvList.innerHTML = "";
     renderIPTVList(searchFilter);
 }
+
+// Initial render when script loads
+renderIPTVList();
 

@@ -325,9 +325,6 @@ async function playlist_renderTree() {
 
         tree.appendChild(li);
     });
-
-    // Restore scroll position after render
-    restoreViewScrollPosition("playlistView");
 }
 
 function showPlaylistHeaderMenu(playlistName, button) {
@@ -420,9 +417,8 @@ function showPlaylistHeaderMenu(playlistName, button) {
 }
 
 // Open Playlist view
-document.getElementById("playlistBtn").addEventListener("click", async () => {
+document.getElementById("playlistBtn").addEventListener("click", () => {
     switchView("playlistView");
-    await playlist_renderTree();
 });
 
 // Back from Playlist to player
@@ -465,3 +461,6 @@ document.getElementById("importPlaylistBtn").addEventListener("click", () => {
 document.getElementById("exportPlaylistBtn").addEventListener("click", () => {
     exportAllPlaylists();
 });
+
+// Initial render when script loads
+playlist_renderTree();
