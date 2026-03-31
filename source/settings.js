@@ -788,3 +788,365 @@ function getIptvSourceRetryCount() {
     const count = parseInt(localStorage.getItem("iptvSourceRetryCount"), 10) || DEFAULT_IPTV_SOURCE_RETRY_COUNT;
     return Math.max(0, count);
 }
+
+// =====================================================
+// Profile Management
+// =====================================================
+const PROFILES_KEY = "profiles";
+const CURRENT_PROFILE_KEY = "currentProfile";
+const DEFAULT_PROFILE_NAME = "Default";
+
+// Get all profiles
+function getProfiles() {
+    const profiles = localStorage.getItem(PROFILES_KEY);
+    if (profiles) {
+        try {
+            return JSON.parse(profiles);
+        } catch (e) {
+            return { [DEFAULT_PROFILE_NAME]: {} };
+        }
+    }
+    return { [DEFAULT_PROFILE_NAME]: {} };
+}
+
+// Save all profiles
+function saveProfiles(profiles) {
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+}
+
+// Get current profile name
+function getCurrentProfileName() {
+    return localStorage.getItem(CURRENT_PROFILE_KEY) || DEFAULT_PROFILE_NAME;
+}
+
+// Set current profile name
+function setCurrentProfileName(name) {
+    localStorage.setItem(CURRENT_PROFILE_KEY, name);
+}
+
+// Get settings keys that should be saved in profile
+function getProfileSettingsKeys() {
+    return [
+        "language",
+        "startupView",
+        "subtitleInMediaSession",
+        "autoLoadSubtitle",
+        "autoHidePanel",
+        "autoResizeWindow",
+        "disableRotateBtn",
+        "playbackSpeed",
+        "preservePitch",
+        "speedStep",
+        "speedAudioOnly",
+        "shortcutSpeedEnabled",
+        "shortcutLoopEnabled",
+        "videoPreviewEnabled",
+        "corsBypassUrl",
+        "corsBypassEnabled",
+        "networkRetryCount",
+        "iptvSourceRetryCount",
+        "defaultPlaylist"
+    ];
+}
+
+// Export current profile data
+function exportCurrentProfileData() {
+    const profileData = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        settings: {},
+        playlists: null,
+        customIptvChannels: null
+    };
+
+    // Save settings
+    const keys = getProfileSettingsKeys();
+    for (const key of keys) {
+        const value = localStorage.getItem(key);
+        if (value !== null) {
+            profileData.settings[key] = value;
+        }
+    }
+
+    return profileData;
+}
+
+// Import profile data (async to get playlists and IPTV channels)
+async function importProfileData(profileData) {
+    // Load playlists from IndexedDB
+    try {
+        const playlists = await playlists_load();
+        profileData.playlists = playlists;
+    } catch (e) {
+        profileData.playlists = {};
+    }
+
+    // Load custom IPTV channels from IndexedDB
+    try {
+        const channels = await kv_get("customIptvChannels");
+        profileData.customIptvChannels = channels || [];
+    } catch (e) {
+        profileData.customIptvChannels = [];
+    }
+
+    return profileData;
+}
+
+// Apply profile data to current session
+async function applyProfileData(profileData) {
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    // Apply settings
+    if (profileData.settings) {
+        for (const [key, value] of Object.entries(profileData.settings)) {
+            localStorage.setItem(key, value);
+        }
+    }
+
+    // Apply playlists
+    if (profileData.playlists) {
+        await playlists_save(profileData.playlists);
+    }
+
+    // Apply custom IPTV channels
+    if (profileData.customIptvChannels !== undefined) {
+        await kv_set("customIptvChannels", profileData.customIptvChannels);
+    }
+
+    // Refresh UI
+    if (typeof initPlaybackSpeed === 'function') initPlaybackSpeed();
+    if (typeof applyPlaybackSpeed === 'function') applyPlaybackSpeed();
+    if (typeof applyStartupView === 'function') applyStartupView();
+    if (typeof loadPlayMode === 'function') loadPlayMode();
+
+    // Reload settings UI elements
+    const languageSelect = document.getElementById("languageSelect");
+    if (languageSelect) languageSelect.value = localStorage.getItem("language") || "en";
+
+    const startupViewSelect = document.getElementById("startupViewSelect");
+    if (startupViewSelect) startupViewSelect.value = localStorage.getItem("startupView") || "player";
+
+    const autoLoadSubtitle = document.getElementById("autoLoadSubtitle");
+    if (autoLoadSubtitle) autoLoadSubtitle.checked = localStorage.getItem("autoLoadSubtitle") !== "false";
+
+    const subtitleInMediaSession = document.getElementById("subtitleInMediaSession");
+    if (subtitleInMediaSession) subtitleInMediaSession.checked = localStorage.getItem("subtitleInMediaSession") !== "false";
+
+    const autoHidePanel = document.getElementById("autoHidePanel");
+    if (autoHidePanel) autoHidePanel.checked = localStorage.getItem("autoHidePanel") === "true";
+
+    const autoResizeWindow = document.getElementById("autoResizeWindow");
+    if (autoResizeWindow) autoResizeWindow.checked = localStorage.getItem("autoResizeWindow") === "true";
+
+    const disableRotateBtn = document.getElementById("disableRotateBtn");
+    if (disableRotateBtn) disableRotateBtn.checked = localStorage.getItem("disableRotateBtn") === "true";
+
+    const corsBypassUrl = document.getElementById("corsBypassUrl");
+    if (corsBypassUrl) corsBypassUrl.value = localStorage.getItem("corsBypassUrl") || "";
+
+    const corsBypassToggle = document.getElementById("corsBypassToggle");
+    if (corsBypassToggle) corsBypassToggle.checked = localStorage.getItem("corsBypassEnabled") === "true";
+
+    const networkRetryInput = document.getElementById("networkRetryCount");
+    if (networkRetryInput) networkRetryInput.value = localStorage.getItem("networkRetryCount") || DEFAULT_NETWORK_RETRY_COUNT.toString();
+
+    const iptvSourceRetryInput = document.getElementById("iptvSourceRetryCount");
+    if (iptvSourceRetryInput) iptvSourceRetryInput.value = localStorage.getItem("iptvSourceRetryCount") || DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString();
+
+    showToast(t('profileLoaded', 'Profile loaded'));
+}
+
+// Save current state to profile
+async function saveCurrentProfile() {
+    const profileName = getCurrentProfileName();
+    const profiles = getProfiles();
+    profiles[profileName] = await importProfileData(exportCurrentProfileData());
+    saveProfiles(profiles);
+}
+
+// Update profile select dropdown
+function updateProfileSelect() {
+    const select = document.getElementById("profileSelect");
+    if (!select) return;
+
+    const profiles = getProfiles();
+    const currentName = getCurrentProfileName();
+
+    select.innerHTML = "";
+    for (const name of Object.keys(profiles).sort()) {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        if (name === currentName) option.selected = true;
+        select.appendChild(option);
+    }
+}
+
+// Initialize profile management
+function initProfiles() {
+    const select = document.getElementById("profileSelect");
+    const newBtn = document.getElementById("newProfileBtn");
+    const renameBtn = document.getElementById("renameProfileBtn");
+    const deleteBtn = document.getElementById("deleteProfileBtn");
+    const exportBtn = document.getElementById("exportProfileBtn");
+    const importBtn = document.getElementById("importProfileBtn");
+    const fileInput = document.getElementById("profileFileInput");
+
+    if (!select) return;
+
+    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+
+    // Populate select
+    updateProfileSelect();
+
+    // Switch profile
+    select.addEventListener("change", async () => {
+        const newName = select.value;
+        const profiles = getProfiles();
+
+        // Save current profile first
+        await saveCurrentProfile();
+
+        // Load new profile
+        setCurrentProfileName(newName);
+        const profileData = profiles[newName];
+        if (profileData && Object.keys(profileData).length > 0) {
+            await applyProfileData(profileData);
+        }
+
+        updateProfileSelect();
+    });
+
+    // New profile
+    if (newBtn) {
+        newBtn.addEventListener("click", async () => {
+            const name = prompt(t('newProfileName', 'New profile name:'));
+            if (!name || !name.trim()) return;
+
+            const profiles = getProfiles();
+            if (profiles[name]) {
+                alert(t('profileExists', 'Profile already exists'));
+                return;
+            }
+
+            // Save current profile first
+            await saveCurrentProfile();
+
+            // Create new profile with current settings
+            profiles[name] = await importProfileData(exportCurrentProfileData());
+            saveProfiles(profiles);
+            setCurrentProfileName(name);
+            updateProfileSelect();
+            showToast(t('profileCreated', 'Profile created'));
+        });
+    }
+
+    // Rename profile
+    if (renameBtn) {
+        renameBtn.addEventListener("click", () => {
+            const oldName = getCurrentProfileName();
+            if (oldName === DEFAULT_PROFILE_NAME) {
+                alert(t('cannotRenameDefault', 'Cannot rename default profile'));
+                return;
+            }
+
+            const newName = prompt(t('newProfileName', 'New profile name:'), oldName);
+            if (!newName || !newName.trim() || newName === oldName) return;
+
+            const profiles = getProfiles();
+            if (profiles[newName]) {
+                alert(t('profileExists', 'Profile already exists'));
+                return;
+            }
+
+            profiles[newName] = profiles[oldName];
+            delete profiles[oldName];
+            saveProfiles(profiles);
+            setCurrentProfileName(newName);
+            updateProfileSelect();
+            showToast(t('profileRenamed', 'Profile renamed'));
+        });
+    }
+
+    // Delete profile
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", () => {
+            const name = getCurrentProfileName();
+            if (name === DEFAULT_PROFILE_NAME) {
+                alert(t('cannotDeleteDefault', 'Cannot delete default profile'));
+                return;
+            }
+
+            if (!confirm(t('confirmDeleteProfile', 'Delete this profile?'))) return;
+
+            const profiles = getProfiles();
+            delete profiles[name];
+            saveProfiles(profiles);
+            setCurrentProfileName(DEFAULT_PROFILE_NAME);
+            updateProfileSelect();
+            showToast(t('profileDeleted', 'Profile deleted'));
+        });
+    }
+
+    // Export profile
+    if (exportBtn) {
+        exportBtn.addEventListener("click", async () => {
+            const profileData = await importProfileData(exportCurrentProfileData());
+            profileData.profileName = getCurrentProfileName();
+
+            const json = JSON.stringify(profileData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pwa-player-profile-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // Import profile
+    if (importBtn && fileInput) {
+        importBtn.addEventListener("click", () => fileInput.click());
+
+        fileInput.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const profileData = JSON.parse(text);
+
+                if (!profileData.version || !profileData.settings) {
+                    alert(t('invalidProfile', 'Invalid profile file'));
+                    return;
+                }
+
+                // Ask for profile name
+                const defaultName = profileData.profileName || t('importedProfile', 'Imported');
+                const name = prompt(t('newProfileName', 'New profile name:'), defaultName);
+                if (!name || !name.trim()) return;
+
+                const profiles = getProfiles();
+                profiles[name] = profileData;
+                saveProfiles(profiles);
+
+                // Ask if user wants to switch to imported profile
+                if (confirm(t('switchToImportedProfile', 'Switch to imported profile?'))) {
+                    setCurrentProfileName(name);
+                    await applyProfileData(profileData);
+                }
+
+                updateProfileSelect();
+            } catch (err) {
+                alert(t('importFailed', 'Failed to import: ') + err.message);
+            }
+
+            fileInput.value = '';
+        });
+    }
+}
+
+// Initialize on load
+initProfiles();
