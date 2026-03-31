@@ -528,20 +528,32 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Store filename for error messages
     const filename = mediametadata.title;
     let retryCount = 0;
-    const maxRetries = isNetworkUrl ? getNetworkRetryCount() : 0;
-    const retryDelay = 2000; // 2 seconds between retries
+    let srcResetCount = 0; // Separate counter for src reset tracking
+    const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 256) : 0;
+    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 2000;
+    const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
 
     // Handle video errors with retry for network URLs
     video.onerror = (e) => {
       if (isNetworkUrl && retryCount < maxRetries) {
         ++retryCount;
+        ++srcResetCount;
         const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
         const retryMsg = t('retryingLoad', 'Retrying ({count}/{max})...').replace('{count}', retryCount).replace('{max}', maxRetries);
         showVideoError(retryMsg);
         videoStatusOverlay.classList.remove("hidden");
         videoStatusIcon.className = "video-status-icon loading";
         setTimeout(() => {
-          video.load();
+          // Only reset src after configured number of retries
+          if (retryBeforeSrcReset > 0 && srcResetCount >= retryBeforeSrcReset) {
+            srcResetCount = 0; // Reset the counter
+            const oldSrc = video.src;
+            video.src = "";
+            video.load();
+            video.src = oldSrc;
+          } else {
+            video.load();
+          }
         }, retryDelay);
         return;
       }
@@ -717,7 +729,11 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
     hideControls();
 
     let retryCount = 0;
+    let srcResetCount = 0; // Separate counter for src reset tracking
     let resolved = false;
+
+    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 2000;
+    const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
 
     const cleanup = () => {
       video.onerror = null;
@@ -745,13 +761,23 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
     video.onerror = () => {
       if (retryCount < maxRetries) {
         ++retryCount;
+        ++srcResetCount;
         const retryMsg = totalSources > 1
           ? t('retryingSource', `Source ${sourceNum}/${totalSources} - Retry ${retryCount}/${maxRetries}`)
           : t('retryingLoad', `Retrying (${retryCount}/${maxRetries})...`);
         showVideoError(retryMsg);
         setTimeout(() => {
-          video.load();
-        }, 2000);
+          // Only reset src after configured number of retries
+          if (retryBeforeSrcReset > 0 && srcResetCount >= retryBeforeSrcReset) {
+            srcResetCount = 0; // Reset the counter
+            const oldSrc = video.src;
+            video.src = "";
+            video.load();
+            video.src = oldSrc;
+          } else {
+            video.load();
+          }
+        }, retryDelay);
       } else {
         fail();
       }
@@ -1595,14 +1621,15 @@ document.getElementById("nowPlayingBackBtn").addEventListener("click", () => {
 // Store reconnect timer so we can cancel it if needed
 let reconnectTimer = null;
 
-// Triggered when the video element encounters a playback error
+// Triggered when the video element encounters a playback error during streaming
 video.addEventListener("error", () => {
-    console.warn("Stream error detected. Attempting to reconnect in 2 seconds...");
+    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 2000;
+    console.warn(`Stream error detected. Attempting to reconnect in ${retryDelay}ms...`);
 
     // Clear any previous reconnect attempts
     clearTimeout(reconnectTimer);
 
-    // Try reconnecting after a short delay
+    // Try reconnecting after configured delay
     reconnectTimer = setTimeout(() => {
         if (hasActiveSource && video.src && !video.srcObject) {
             const oldSrc = video.src;
@@ -1615,7 +1642,7 @@ video.addEventListener("error", () => {
             // Try playing again
             video.play().catch(() => {});
         }
-    }, 2000);
+    }, retryDelay);
 });
 
 if ('launchQueue' in window) {

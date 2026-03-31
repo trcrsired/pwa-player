@@ -165,6 +165,10 @@ const ZHCN_TRANSLATIONS = {
     networkRetryHint: "网络流的重试次数。设为0则禁用重试。",
     iptvSourceRetryCount: "IPTV源重试次数",
     iptvSourceRetryHint: "当IPTV频道有多个源时每个URL的重试次数。设为0则禁用。",
+    retryDelay: "重试延迟 (毫秒)",
+    retryDelayHint: "重试之间的延迟毫秒数。默认为2000（2秒）。",
+    retryBeforeSrcReset: "重置源前的重试次数",
+    retryBeforeSrcResetHint: "重试多少次后重置视频源（可以修复某些问题但可能中断播放）。默认为8。设为0则永不重置。",
 
     // Profiles
     profiles: "配置文件",

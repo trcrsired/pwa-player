@@ -165,6 +165,10 @@ const EN_TRANSLATIONS = {
     networkRetryHint: "Number of retry attempts for network streams. Set to 0 to disable retries.",
     iptvSourceRetryCount: "IPTV Source Retry",
     iptvSourceRetryHint: "Retry attempts per URL when IPTV channel has multiple sources. Set to 0 to disable.",
+    retryDelay: "Retry Delay (ms)",
+    retryDelayHint: "Delay in milliseconds between retry attempts. Default is 2000 (2 seconds).",
+    retryBeforeSrcReset: "Retry Before Src Reset",
+    retryBeforeSrcResetHint: "Number of retries before resetting video src (which can fix some issues but may interrupt playback). Default is 8. Set to 0 to never reset.",
 
     // Profiles
     profiles: "Profiles",

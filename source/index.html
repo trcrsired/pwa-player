@@ -311,6 +311,16 @@
                     <input type="number" id="iptvSourceRetryCount" class="setting-input-small" min="0">
                 </label>
                 <p class="setting-hint" data-i18n="iptvSourceRetryHint">Retry attempts per URL when IPTV channel has multiple sources. Set to 0 to disable.</p>
+                <label class="setting-label">
+                    <span data-i18n="retryDelay">Retry Delay (ms)</span>
+                    <input type="number" id="retryDelay" class="setting-input-small" min="100" step="100">
+                </label>
+                <p class="setting-hint" data-i18n="retryDelayHint">Delay in milliseconds between retry attempts. Default is 2000 (2 seconds).</p>
+                <label class="setting-label">
+                    <span data-i18n="retryBeforeSrcReset">Retry Before Src Reset</span>
+                    <input type="number" id="retryBeforeSrcReset" class="setting-input-small" min="0">
+                </label>
+                <p class="setting-hint" data-i18n="retryBeforeSrcResetHint">Number of retries before resetting video src (which can fix some issues but may interrupt playback). Default is 8. Set to 0 to never reset.</p>
 
                 <h3 data-i18n="profiles">Profiles</h3>
                 <p class="setting-hint" data-i18n="profilesHint">Save and restore all settings, playlists, and custom IPTV channels.</p>

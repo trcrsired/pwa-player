@@ -3,6 +3,8 @@ settingsYearEl.textContent = `2025–${new Date().getFullYear()}`;
 
 // Default network retry count (used across the project)
 const DEFAULT_NETWORK_RETRY_COUNT = 256;
+const DEFAULT_RETRY_DELAY = 2000; // 2 seconds between retries
+const DEFAULT_RETRY_BEFORE_SRC_RESET = 8; // Reset src after this many retries
 
 let settingsClickCount = 0;
 
@@ -789,6 +791,50 @@ function getIptvSourceRetryCount() {
     return Math.max(0, count);
 }
 
+// Retry delay setting (ms between retries)
+const retryDelayInput = document.getElementById("retryDelay");
+
+if (retryDelayInput) {
+    retryDelayInput.value = localStorage.getItem("retryDelay") || DEFAULT_RETRY_DELAY.toString();
+    retryDelayInput.addEventListener("change", () => {
+        const delay = parseInt(retryDelayInput.value, 10);
+        if (delay >= 100) { // Minimum 100ms
+            localStorage.setItem("retryDelay", delay.toString());
+        } else {
+            localStorage.setItem("retryDelay", DEFAULT_RETRY_DELAY.toString());
+            retryDelayInput.value = DEFAULT_RETRY_DELAY.toString();
+        }
+    });
+}
+
+// Helper function to get retry delay
+function getRetryDelay() {
+    const delay = parseInt(localStorage.getItem("retryDelay"), 10) || DEFAULT_RETRY_DELAY;
+    return Math.max(100, delay); // Minimum 100ms
+}
+
+// Retry before src reset setting
+const retryBeforeSrcResetInput = document.getElementById("retryBeforeSrcReset");
+
+if (retryBeforeSrcResetInput) {
+    retryBeforeSrcResetInput.value = localStorage.getItem("retryBeforeSrcReset") || DEFAULT_RETRY_BEFORE_SRC_RESET.toString();
+    retryBeforeSrcResetInput.addEventListener("change", () => {
+        const count = parseInt(retryBeforeSrcResetInput.value, 10);
+        if (count >= 0) {
+            localStorage.setItem("retryBeforeSrcReset", count.toString());
+        } else {
+            localStorage.setItem("retryBeforeSrcReset", DEFAULT_RETRY_BEFORE_SRC_RESET.toString());
+            retryBeforeSrcResetInput.value = DEFAULT_RETRY_BEFORE_SRC_RESET.toString();
+        }
+    });
+}
+
+// Helper function to get retry before src reset count
+function getRetryBeforeSrcReset() {
+    const count = parseInt(localStorage.getItem("retryBeforeSrcReset"), 10) || DEFAULT_RETRY_BEFORE_SRC_RESET;
+    return Math.max(0, count);
+}
+
 // =====================================================
 // Profile Management
 // =====================================================
@@ -845,6 +891,8 @@ function getProfileSettingsKeys() {
         "corsBypassEnabled",
         "networkRetryCount",
         "iptvSourceRetryCount",
+        "retryDelay",
+        "retryBeforeSrcReset",
         "defaultPlaylist"
     ];
 }
@@ -894,7 +942,9 @@ function createDefaultProfileData() {
             corsBypassUrl: "",
             corsBypassEnabled: "false",
             networkRetryCount: DEFAULT_NETWORK_RETRY_COUNT.toString(),
-            iptvSourceRetryCount: DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString()
+            iptvSourceRetryCount: DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString(),
+            retryDelay: DEFAULT_RETRY_DELAY.toString(),
+            retryBeforeSrcReset: DEFAULT_RETRY_BEFORE_SRC_RESET.toString()
         },
         playlists: { "Default": [] },
         customIptvChannels: []
@@ -982,6 +1032,12 @@ async function applyProfileData(profileData) {
 
     const iptvSourceRetryInput = document.getElementById("iptvSourceRetryCount");
     if (iptvSourceRetryInput) iptvSourceRetryInput.value = localStorage.getItem("iptvSourceRetryCount") || DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString();
+
+    const retryDelayInput = document.getElementById("retryDelay");
+    if (retryDelayInput) retryDelayInput.value = localStorage.getItem("retryDelay") || DEFAULT_RETRY_DELAY.toString();
+
+    const retryBeforeSrcResetInput = document.getElementById("retryBeforeSrcReset");
+    if (retryBeforeSrcResetInput) retryBeforeSrcResetInput.value = localStorage.getItem("retryBeforeSrcReset") || DEFAULT_RETRY_BEFORE_SRC_RESET.toString();
 
     showToast(t('profileLoaded', 'Profile loaded'));
 }

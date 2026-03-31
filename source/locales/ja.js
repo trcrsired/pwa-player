@@ -162,6 +162,10 @@ const JA_TRANSLATIONS = {
     networkRetryHint: "ネットワークストリームの再試行回数。0に設定すると再試行を無効化。",
     iptvSourceRetryCount: "IPTVソース再試行回数",
     iptvSourceRetryHint: "IPTVチャンネルに複数のソースがある場合の各URLの再試行回数。0で無効化。",
+    retryDelay: "再試行間隔 (ミリ秒)",
+    retryDelayHint: "再試行間のミリ秒単位の遅延。デフォルトは2000（2秒）。",
+    retryBeforeSrcReset: "ソースリセット前の再試行回数",
+    retryBeforeSrcResetHint: "動画ソースをリセットするまでの再試行回数（一部の問題を修正できますが、再生が中断される可能性があります）。デフォルトは8。0でリセット無効化。",
 
     // Profiles
     profiles: "プロファイル",
