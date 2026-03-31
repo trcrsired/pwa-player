@@ -231,6 +231,7 @@ async function addIndexedDBFolderToPlaylist(folderName) {
 
         playlists[selectedName].push(...items);
         await playlists_save(playlists);
+        playlist_renderTree();
         alert(`${t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', items.length)} "${selectedName}".`);
     } catch (err) {
         console.error("Failed to add IndexedDB folder to playlist:", err);
@@ -567,6 +568,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
 
         playlists[playlistName].push(...pointers);
         await playlists_save(playlists);
+        playlist_renderTree();
 
         alert(t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', pointers.length) + ` "${playlistName}".`);
     } catch (err) {
@@ -1152,6 +1154,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                         const path = `${entry.schema}://${entry.rootName}/${fullPath}`;
                         playlists[selectedName].push({ name, path });
                         await playlists_save(playlists);
+                        playlist_renderTree();
                         alert(`${t('addedToPlaylistSuccess', 'Added')} "${name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
                     }
                 }
@@ -1513,6 +1516,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                         const selectedName = names[index];
                         playlists[selectedName].push({ name, path: entryPath });
                         await playlists_save(playlists);
+                        playlist_renderTree();
                         alert(`${t('addedToPlaylistSuccess', 'Added')} "${name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
                     }
                 }

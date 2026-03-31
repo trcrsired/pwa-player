@@ -390,6 +390,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
                     path: currentEntry.path
                 });
                 await playlists_save(playlists);
+                playlist_renderTree();
                 alert(`${t('addedToPlaylist', 'Added')} "${currentEntry.name}" ${t('toPlaylist', 'to playlist')} "${playlistName}".`);
             }
 

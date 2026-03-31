@@ -986,11 +986,13 @@ async function applyProfileData(profileData) {
     // Apply playlists
     if (profileData.playlists) {
         await playlists_save(profileData.playlists);
+        if (typeof playlist_renderTree === 'function') playlist_renderTree();
     }
 
     // Apply custom IPTV channels
     if (profileData.customIptvChannels !== undefined) {
         await kv_set("customIptvChannels", profileData.customIptvChannels);
+        if (typeof renderIPTVList === 'function') renderIPTVList();
     }
 
     // Refresh UI

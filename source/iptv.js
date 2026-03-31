@@ -208,6 +208,7 @@ function showIPTVChannelMenu(channel, url, button) {
                     corsBypass: menuItem.cors
                 });
                 await playlists_save(playlists);
+                playlist_renderTree();
                 alert(`${t('addedToPlaylistSuccess', 'Added')} "${channel.name}" ${t('toPlaylist', 'to playlist')} "${names[index]}".`);
             }
 
