@@ -1499,8 +1499,8 @@ function showControls(autoHide = true) {
 
     clearTimeout(hideTimeout);
 
-    // Auto-hide after 5 seconds only when playing and not seeking timeline
-    if (autoHide && hasActiveSource && !isSeekingTimeline) {
+    // Auto-hide after 5 seconds only when playing and not dragging progress bar
+    if (autoHide && hasActiveSource && !isDraggingProgressBar) {
         hideTimeout = setTimeout(() => {
             controls.classList.add("hidden");
             playerWrapper.classList.add("hide-cursor");
