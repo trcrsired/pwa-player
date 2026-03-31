@@ -1001,9 +1001,15 @@ async function applyProfileData(profileData) {
     if (typeof applyStartupView === 'function') applyStartupView();
     if (typeof loadPlayMode === 'function') loadPlayMode();
 
+    // Apply language setting and update UI
+    const savedLang = localStorage.getItem("language") || "en";
+    if (window.i18n && typeof window.i18n.setLanguage === 'function') {
+        window.i18n.setLanguage(savedLang);
+    }
+
     // Reload settings UI elements
     const languageSelect = document.getElementById("languageSelect");
-    if (languageSelect) languageSelect.value = localStorage.getItem("language") || "en";
+    if (languageSelect) languageSelect.value = savedLang;
 
     const startupViewSelect = document.getElementById("startupViewSelect");
     if (startupViewSelect) startupViewSelect.value = localStorage.getItem("startupView") || "player";
