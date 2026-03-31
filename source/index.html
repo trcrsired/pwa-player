@@ -199,6 +199,12 @@
 
             <main class="content">
                 <p class="iptv-hint" data-i18n="iptvCorsHint">IP addresses need CORS bypass server. HTTP URLs may also need CORS.</p>
+                <div class="iptv-buttons" style="padding:10px;border-bottom:1px solid #333;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                    <button id="iptvImportBtn" class="btn" style="padding:8px 16px;border:1px solid #4caf50;border-radius:6px;background:transparent;color:#4caf50;cursor:pointer;font-size:13px;">📥 <span data-i18n="import">Import</span></button>
+                    <button id="iptvExportBtn" class="btn" style="padding:8px 16px;border:1px solid #2196f3;border-radius:6px;background:transparent;color:#2196f3;cursor:pointer;font-size:13px;">📤 <span data-i18n="export">Export</span></button>
+                    <button id="iptvClearBtn" class="btn" style="padding:8px 16px;border:1px solid #f44336;border-radius:6px;background:transparent;color:#f44336;cursor:pointer;font-size:13px;">🗑️ <span data-i18n="clear">Clear</span></button>
+                    <span id="iptvChannelCount" style="margin-left:auto;font-size:13px;color:#888;"></span>
+                </div>
                 <input type="search" id="iptvSearch" class="search-input" placeholder="Search channels..." data-i18n-placeholder="searchChannels" />
                 <ul id="iptvList" class="list"></ul>
             </main>

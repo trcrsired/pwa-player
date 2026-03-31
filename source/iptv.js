@@ -127,6 +127,11 @@ iptvSearch.addEventListener("input", () => {
     renderIPTVList(iptvSearch.value.trim().toLowerCase());
 });
 
+// Import/Export/Clear buttons
+document.getElementById("iptvImportBtn")?.addEventListener("click", importCustomChannels);
+document.getElementById("iptvExportBtn")?.addEventListener("click", exportCustomChannels);
+document.getElementById("iptvClearBtn")?.addEventListener("click", clearCustomChannels);
+
 // Context menu for IPTV channels (on + button)
 function showIPTVChannelMenu(channel, url, button) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
@@ -251,38 +256,6 @@ function isHttpUrl(url) {
 // Render IPTV channels
 async function renderIPTVList(searchFilter = "") {
     iptvList.innerHTML = "";
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
-    // Add import/export buttons at top
-    const btnLi = document.createElement("li");
-    btnLi.className = "iptv-node";
-    btnLi.style.cssText = "padding:10px;border-bottom:1px solid #333;display:flex;gap:10px;flex-wrap:wrap;align-items:center;";
-
-    const importBtn = document.createElement("button");
-    importBtn.textContent = "📥 " + t('import', 'Import');
-    importBtn.style.cssText = "padding:8px 16px;border:1px solid #4caf50;border-radius:6px;background:transparent;color:#4caf50;cursor:pointer;font-size:13px;";
-    importBtn.addEventListener("click", importCustomChannels);
-
-    const exportBtn = document.createElement("button");
-    exportBtn.textContent = "📤 " + t('export', 'Export');
-    exportBtn.style.cssText = "padding:8px 16px;border:1px solid #2196f3;border-radius:6px;background:transparent;color:#2196f3;cursor:pointer;font-size:13px;";
-    exportBtn.addEventListener("click", exportCustomChannels);
-
-    const clearBtn = document.createElement("button");
-    clearBtn.textContent = "🗑️ " + t('clear', 'Clear');
-    clearBtn.style.cssText = "padding:8px 16px;border:1px solid #f44336;border-radius:6px;background:transparent;color:#f44336;cursor:pointer;font-size:13px;";
-    clearBtn.addEventListener("click", clearCustomChannels);
-
-    // Channel count display
-    const countSpan = document.createElement("span");
-    countSpan.id = "iptvChannelCount";
-    countSpan.style.cssText = "margin-left:auto;font-size:13px;color:#888;";
-
-    btnLi.appendChild(importBtn);
-    btnLi.appendChild(exportBtn);
-    btnLi.appendChild(clearBtn);
-    btnLi.appendChild(countSpan);
-    iptvList.appendChild(btnLi);
 
     // Count rendered channels
     let renderedCount = 0;
@@ -303,7 +276,8 @@ async function renderIPTVList(searchFilter = "") {
     });
 
     // Update count display
-    countSpan.textContent = renderedCount;
+    const countSpan = document.getElementById("iptvChannelCount");
+    if (countSpan) countSpan.textContent = renderedCount;
 }
 
 // Render a single channel
