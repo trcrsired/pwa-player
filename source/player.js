@@ -548,6 +548,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       hideVideoStatus();
       showVideoError(getUnsupportedVideoMessage(filename));
       hasActiveSource = false;
+      clearVideoPreview();
     };
 
     // Hide loading when video starts playing
@@ -902,6 +903,7 @@ async function toggleStopBtn()
   video.removeAttribute("src");
   video.load();
   hasActiveSource = false;
+  clearVideoPreview();
   revokeBlobURL();
   currentMediaMetadata = null;
   playBtn.textContent = "▶️";
@@ -1310,10 +1312,26 @@ function hideVideoPreview() {
   }
 }
 
+// Clear preview video resources
+function clearVideoPreview() {
+  if (previewVideo) {
+    previewVideo.removeAttribute("src");
+    previewVideo.load();
+  }
+  previewLoadedSrc = null;
+  hideVideoPreview();
+}
+
+// Track when user is interacting with progress bar
+let isSeekingTimeline = false;
+
 // Progress bar preview events (using pointer events for cross-device support)
 if (progressContainer && progressBar) {
   progressContainer.addEventListener("pointermove", (e) => {
     if (!hasActiveSource || !isFinite(video.duration)) return;
+
+    isSeekingTimeline = true;
+    showControls(false); // Show controls without auto-hide while seeking
 
     const rect = progressBar.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -1324,11 +1342,19 @@ if (progressContainer && progressBar) {
   });
 
   progressContainer.addEventListener("pointerleave", () => {
+    isSeekingTimeline = false;
     hideVideoPreview();
+    // Restart auto-hide timer if playing
+    if (hasActiveSource && !video.paused) {
+        showControls(true);
+    }
   });
 
   progressBar.addEventListener("pointerdown", (e) => {
     if (!hasActiveSource || !isFinite(video.duration)) return;
+
+    isSeekingTimeline = true;
+    showControls(false); // Show controls without auto-hide while seeking
 
     const rect = progressBar.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -1336,6 +1362,14 @@ if (progressContainer && progressBar) {
     const time = percent * video.duration;
 
     showVideoPreview(time, x);
+  });
+
+  progressBar.addEventListener("pointerup", () => {
+    isSeekingTimeline = false;
+    // Restart auto-hide timer if playing
+    if (hasActiveSource && !video.paused) {
+        showControls(true);
+    }
   });
 }
 
@@ -1449,8 +1483,8 @@ function showControls(autoHide = true) {
 
     clearTimeout(hideTimeout);
 
-    // Auto-hide after 5 seconds only when playing
-    if (autoHide && hasActiveSource) {
+    // Auto-hide after 5 seconds only when playing and not seeking timeline
+    if (autoHide && hasActiveSource && !isSeekingTimeline) {
         hideTimeout = setTimeout(() => {
             controls.classList.add("hidden");
             playerWrapper.classList.add("hide-cursor");
