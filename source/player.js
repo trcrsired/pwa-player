@@ -1624,7 +1624,6 @@ let reconnectTimer = null;
 // Triggered when the video element encounters a playback error during streaming
 video.addEventListener("error", () => {
     const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 2000;
-    console.warn(`Stream error detected. Attempting to reconnect in ${retryDelay}ms...`);
 
     // Clear any previous reconnect attempts
     clearTimeout(reconnectTimer);
