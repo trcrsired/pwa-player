@@ -8,7 +8,7 @@ if ("serviceWorker" in navigator) {
             newWorker.state === "installed" &&
             navigator.serviceWorker.controller
           ) {
-            const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+            const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
             const msg = t('newVersionAvailable', 'A new version of PWA Player is available.');
             const reload = t('reloadNow', 'Reload now?');
             if (confirm(`${msg}\n${reload}`)) {

@@ -974,7 +974,7 @@ async function importProfileData(profileData) {
 
 // Apply profile data to current session
 async function applyProfileData(profileData) {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     // Apply settings
     if (profileData.settings) {
@@ -1084,7 +1084,7 @@ function initProfiles() {
 
     if (!select) return;
 
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     // Populate select
     updateProfileSelect();

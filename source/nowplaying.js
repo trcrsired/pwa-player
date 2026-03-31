@@ -257,7 +257,7 @@ function confirmRemoveFromNowPlaying(index) {
 }
 
 function showNowPlayingItemMenu(index, button) {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     const menu = document.createElement("div");
     menu.className = "context-menu";

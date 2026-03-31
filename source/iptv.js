@@ -31,7 +31,7 @@ async function saveCustomIptvChannels(channels) {
 
 // Export custom channels to JSON file
 async function exportCustomChannels() {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     const customChannels = await loadCustomIptvChannels();
     if (customChannels.length === 0) {
@@ -53,7 +53,7 @@ async function exportCustomChannels() {
 
 // Import custom channels from JSON file
 function importCustomChannels() {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     const input = document.createElement('input');
     input.type = 'file';
@@ -104,7 +104,7 @@ function importCustomChannels() {
 
 // Clear all custom channels
 async function clearCustomChannels() {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     if (!confirm(t('confirmClearChannels', 'Delete all custom channels?'))) return;
 
@@ -129,7 +129,7 @@ iptvSearch.addEventListener("input", () => {
 
 // Context menu for IPTV channels (on + button)
 function showIPTVChannelMenu(channel, url, button) {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
@@ -251,7 +251,7 @@ function isHttpUrl(url) {
 // Render IPTV channels
 async function renderIPTVList(searchFilter = "") {
     iptvList.innerHTML = "";
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     // Add import/export buttons at top
     const btnLi = document.createElement("li");
@@ -308,7 +308,7 @@ async function renderIPTVList(searchFilter = "") {
 
 // Render a single channel
 function renderChannel(channel, searchFilter, isCustom, customIndex) {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     // Skip NSFW channels unless unlocked
     const isUnlocked = localStorage.getItem("hiddenfeatures") === "true";
@@ -506,7 +506,7 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
 
 // Menu for custom channels (with delete option)
 function showCustomChannelMenu(channel, url, button, customIndex) {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     const menu = document.createElement("div");
     menu.className = "context-menu";

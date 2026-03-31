@@ -173,7 +173,7 @@ async function storage_resolvePath(pointer) {
 
 
 function showPlaylistItemMenu(playlistName, index, button) {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
@@ -362,7 +362,7 @@ async function playlist_renderTree() {
 }
 
 function showPlaylistHeaderMenu(playlistName, button) {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     const defaultPlaylist = localStorage.getItem("defaultPlaylist") || "";
     const isDefault = playlistName === defaultPlaylist;
@@ -508,7 +508,7 @@ document.getElementById("playlistBackBtn").addEventListener("click", () => {
 
 // New playlist button
 document.getElementById("newPlaylistBtn").addEventListener("click", async () => {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const name = prompt(t('newPlaylistName', "Enter new playlist name:"));
 
     if (!name) return;

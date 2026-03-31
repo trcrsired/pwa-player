@@ -215,7 +215,7 @@ const videoStatusText = document.getElementById("videoStatusText");
 
 function showVideoLoading() {
   if (!videoStatusOverlay) return;
-  const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
   videoStatusIcon.className = "video-status-icon loading";
   videoStatusIcon.textContent = "";
   videoStatusText.textContent = t("videoLoading", "Loading...");
@@ -248,7 +248,7 @@ function isLikelyUnsupportedVideo(filename) {
 }
 
 function getUnsupportedVideoMessage(filename) {
-  const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
   if (isLikelyUnsupportedVideo(filename)) {
     return t("videoFormatNotSupported", `This video format may not be supported. .webm is the web standard format that works best across all platforms with no licensing fees. For example, Microsoft Edge on Android only supports .webm videos. Convert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome.`);
@@ -538,7 +538,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       if (isNetworkUrl && retryCount < maxRetries) {
         ++retryCount;
         ++srcResetCount;
-        const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+        const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
         const retryMsg = t('retryingLoad', 'Retrying ({count}/{max})...').replace('{count}', retryCount).replace('{max}', maxRetries);
         showVideoError(retryMsg);
         videoStatusOverlay.classList.remove("hidden");
@@ -676,7 +676,7 @@ async function play_iptv_with_fallback(urls, title, corsBypass = null) {
   if (!urls || urls.length === 0) return;
 
   const retryPerSource = typeof getIptvSourceRetryCount === 'function' ? getIptvSourceRetryCount() : 3;
-  const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
   for (let i = 0; i != urls.length; ++i) {
     const url = urls[i];
@@ -710,7 +710,7 @@ async function play_iptv_with_fallback(urls, title, corsBypass = null) {
 // Returns true if successful, false if failed
 function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources) {
   return new Promise((resolve) => {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     revokeBlobURL();
     currentBlobURL = url;
@@ -830,7 +830,7 @@ window.addEventListener("dragleave", () => {
 });
 
 window.addEventListener("drop", async e => {
-    const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     container.style.outline = "none";
 
     // Check for directory drag (using DataTransferItem)
@@ -1166,7 +1166,7 @@ subtitleBtn.onclick = async () => {
 };
 
 webBtn.onclick = () => {
-  const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
+  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
   try {
     const url = prompt(t('enterWebURL', "Enter web URL:"));
 
