@@ -6,14 +6,76 @@ function getActiveView() {
   return getAllViews().find(v => !v.classList.contains("hidden")) || null;
 }
 
+// Scroll position storage for each view (includes search state)
+const viewScrollPositions = {};
+
+// Get the scrollable content element for a view
+function getScrollableElement(view) {
+  if (!view) return null;
+  // Priority: .list element, then .content element
+  const listEl = view.querySelector(".list");
+  if (listEl) return listEl;
+  const contentEl = view.querySelector(".content");
+  if (contentEl) return contentEl;
+  return null;
+}
+
+// Get search input for a view (if applicable)
+function getSearchInput(viewId) {
+  if (viewId === "iptvView") return document.getElementById("iptvSearch");
+  return null;
+}
+
+// Save scroll position for a view (includes search state)
+function saveViewScrollPosition(view) {
+  if (!view) return;
+  const scrollEl = getScrollableElement(view);
+  if (scrollEl) {
+    const searchInput = getSearchInput(view.id);
+    viewScrollPositions[view.id] = {
+      scrollTop: scrollEl.scrollTop,
+      searchValue: searchInput ? searchInput.value.trim() : ""
+    };
+  }
+}
+
+// Restore scroll position for a view (only if search state matches)
+function restoreViewScrollPosition(viewId) {
+  const view = document.getElementById(viewId);
+  if (!view) return;
+  const scrollEl = getScrollableElement(view);
+  const saved = viewScrollPositions[viewId];
+  if (scrollEl && saved !== undefined) {
+    const searchInput = getSearchInput(viewId);
+    const currentSearch = searchInput ? searchInput.value.trim() : "";
+    // Only restore if search state matches what was saved
+    if (saved.searchValue === currentSearch) {
+      scrollEl.scrollTop = saved.scrollTop;
+    }
+  }
+}
+
+// Clear scroll position for a view (when content fundamentally changes)
+function clearViewScrollPosition(viewId) {
+  delete viewScrollPositions[viewId];
+}
+
 function switchView(viewId) {
   // Close any open context menu
   const openMenu = document.querySelector(".context-menu");
   if (openMenu) openMenu.remove();
 
-  document.getElementById(viewId).classList.remove("hidden");
+  // Save scroll position of current view before switching
+  const currentView = getActiveView();
+  saveViewScrollPosition(currentView);
+
+  const targetView = document.getElementById(viewId);
+  targetView.classList.remove("hidden");
   document.getElementById("playerContainer").classList.add("hidden");
   history.pushState({ view: viewId }, "", location.href);
+
+  // Note: Scroll restoration should be called by the view's render function after content is ready
+
   // Update subtitle position when view opens
   if (typeof controls !== 'undefined') {
     updateSubtitlePosition(false);
@@ -27,6 +89,9 @@ function closeActiveView() {
 
   const view = getActiveView();
   if (view) {
+    // Save scroll position before closing
+    saveViewScrollPosition(view);
+
     view.classList.add("hidden");
     document.getElementById("playerContainer").classList.remove("hidden");
     // Only update history if we're not already navigating back
@@ -52,9 +117,17 @@ window.addEventListener("popstate", (e) => {
     // Forward navigation or restore view - open the view
     const viewId = e.state.view;
     const viewEl = document.getElementById(viewId);
+
+    // Save scroll position of current view before switching
+    saveViewScrollPosition(activeView);
+
     if (viewEl) {
       viewEl.classList.remove("hidden");
       document.getElementById("playerContainer").classList.add("hidden");
+
+      // Restore scroll position for the target view
+      restoreViewScrollPosition(viewId);
+
       // Update subtitle position when view opens
       if (typeof controls !== 'undefined') {
         updateSubtitlePosition(false);
@@ -67,6 +140,9 @@ window.addEventListener("popstate", (e) => {
     }
   } else if (activeView) {
     // Back navigation from view - close it
+    // Save scroll position before closing
+    saveViewScrollPosition(activeView);
+
     activeView.classList.add("hidden");
     document.getElementById("playerContainer").classList.remove("hidden");
     // Update subtitle position when view closes

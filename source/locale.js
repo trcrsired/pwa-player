@@ -78,12 +78,20 @@ function getAvailableLanguages() {
     }));
 }
 
-// Get translation for a key
-function t(key) {
+// Get translation for a key with optional parameter replacement
+// Usage: t('key', { count: 5 }) replaces {count} in translation string
+function t(key, params) {
+    let text = key;
     if (currentTranslations && currentTranslations[key]) {
-        return currentTranslations[key];
+        text = currentTranslations[key];
     }
-    return key;
+    // Replace placeholders like {count}, {current}, {total}, etc.
+    if (params && typeof params === 'object') {
+        for (const [k, v] of Object.entries(params)) {
+            text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+        }
+    }
+    return text;
 }
 
 // Apply translations to DOM elements with data-i18n attribute

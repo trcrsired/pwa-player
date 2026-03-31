@@ -106,6 +106,7 @@ const EN_TRANSLATIONS = {
     invalidFormat: "Invalid format: expected an array of channels",
     invalidChannel: "Invalid channel: each channel needs name and url/urls",
     importSuccess: "Imported {count} channel(s)",
+    importSuccessPlaylists: "Imported {count} playlist(s)",
     importFailed: "Failed to import: ",
     confirmClearChannels: "Delete all custom channels?",
     deleteChannel: "Delete Channel",

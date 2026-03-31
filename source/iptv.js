@@ -85,7 +85,7 @@ function importCustomChannels() {
             const merged = [...existing, ...channels];
             await saveCustomIptvChannels(merged);
 
-            alert(t('importSuccess', `Imported ${channels.length} channel(s)`));
+            alert(t('importSuccess', { count: channels.length }));
             renderIPTVList();
         } catch (err) {
             alert(t('importFailed', 'Failed to import: ') + err.message);
@@ -106,10 +106,9 @@ async function clearCustomChannels() {
 }
 
 // Open IPTV menu
-iptvBtn.addEventListener("click", () => {
-    iptvSearch.value = "";
-    renderIPTVList();
+iptvBtn.addEventListener("click", async () => {
     switchView("iptvView");
+    await renderIPTVList();
 });
 
 // Back button
@@ -282,6 +281,9 @@ async function renderIPTVList(searchFilter = "") {
     iptvChannels.forEach(channel => {
         renderChannel(channel, searchFilter, false, -1);
     });
+
+    // Restore scroll position after render (matches search state)
+    restoreViewScrollPosition("iptvView");
 }
 
 // Render a single channel

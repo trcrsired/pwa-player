@@ -13,6 +13,78 @@ async function playlists_save(all) {
     await kv_set("playlists", all);
 }
 
+// Export all playlists to JSON file
+async function exportAllPlaylists() {
+    const playlists = await playlists_load();
+
+    const json = JSON.stringify(playlists, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `playlists-${Date.now()}.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+// Import playlists from JSON file
+function importPlaylists() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const t = (key, params) => {
+            let text = window.i18n ? window.i18n.t(key) : key;
+            if (params && typeof params === 'object') {
+                for (const [k, v] of Object.entries(params)) {
+                    text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+                }
+            }
+            return text;
+        };
+
+        try {
+            const text = await file.text();
+            const imported = JSON.parse(text);
+
+            if (typeof imported !== 'object' || imported === null) {
+                alert(t('invalidFormat', 'Invalid format: expected playlist object'));
+                return;
+            }
+
+            const existing = await playlists_load();
+            const merged = { ...existing };
+
+            // Merge imported playlists
+            for (const [name, items] of Object.entries(imported)) {
+                if (!Array.isArray(items)) continue;
+                if (merged[name]) {
+                    // Append to existing playlist
+                    merged[name] = [...merged[name], ...items];
+                } else {
+                    merged[name] = items;
+                }
+            }
+
+            await playlists_save(merged);
+
+            const playlistCount = Object.keys(imported).length;
+            alert(t('importSuccessPlaylists', { count: playlistCount }));
+            playlist_renderTree();
+        } catch (err) {
+            alert(t('importFailed', 'Failed to import: ') + err.message);
+        }
+    };
+
+    input.click();
+}
+
 
 // Resolve a path inside a given root directory.
 // Example: resolveUnderRoot(rootHandle, "imports/Anime/1.webm")
@@ -253,6 +325,9 @@ async function playlist_renderTree() {
 
         tree.appendChild(li);
     });
+
+    // Restore scroll position after render
+    restoreViewScrollPosition("playlistView");
 }
 
 function showPlaylistHeaderMenu(playlistName, button) {
@@ -345,9 +420,9 @@ function showPlaylistHeaderMenu(playlistName, button) {
 }
 
 // Open Playlist view
-document.getElementById("playlistBtn").addEventListener("click", () => {
+document.getElementById("playlistBtn").addEventListener("click", async () => {
     switchView("playlistView");
-    playlist_renderTree();
+    await playlist_renderTree();
 });
 
 // Back from Playlist to player
@@ -355,6 +430,7 @@ document.getElementById("playlistBackBtn").addEventListener("click", () => {
     closeActiveView();
 });
 
+// New playlist button
 document.getElementById("newPlaylistBtn").addEventListener("click", async () => {
     const t = (key, fallback) => window.i18n ? window.i18n.t(key) : fallback;
     const name = prompt(t('newPlaylistName', "Enter new playlist name:"));
@@ -378,4 +454,14 @@ document.getElementById("newPlaylistBtn").addEventListener("click", async () => 
     await playlists_save(playlists);
 
     playlist_renderTree();
+});
+
+// Import playlists button
+document.getElementById("importPlaylistBtn").addEventListener("click", () => {
+    importPlaylists();
+});
+
+// Export playlists button
+document.getElementById("exportPlaylistBtn").addEventListener("click", () => {
+    exportAllPlaylists();
 });

@@ -106,6 +106,7 @@ const ZHCN_TRANSLATIONS = {
     invalidFormat: "格式无效：需要频道数组",
     invalidChannel: "频道无效：每个频道需要name和url/urls",
     importSuccess: "已导入 {count} 个频道",
+    importSuccessPlaylists: "已导入 {count} 个播放列表",
     importFailed: "导入失败：",
     confirmClearChannels: "删除所有自定义频道？",
     deleteChannel: "删除频道",

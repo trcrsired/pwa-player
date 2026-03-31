@@ -176,7 +176,11 @@
             </header>
 
             <main class="content">
-                <button id="newPlaylistBtn" class="btn primary" data-i18n="newPlaylist">New Playlist</button>
+                <section class="actions" style="padding:10px;display:flex;gap:10px;flex-wrap:wrap;">
+                    <button id="newPlaylistBtn" class="btn primary" data-i18n="newPlaylist">New Playlist</button>
+                    <button id="importPlaylistBtn" class="btn" style="border:1px solid #4caf50;background:transparent;color:#4caf50;" data-i18n="import">Import</button>
+                    <button id="exportPlaylistBtn" class="btn" style="border:1px solid #2196f3;background:transparent;color:#2196f3;" data-i18n="export">Export</button>
+                </section>
                 <ul id="playlistTree" class="list"></ul>
             </main>
         </div>
