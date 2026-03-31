@@ -1072,6 +1072,7 @@ function updateProfileSelect() {
 function initProfiles() {
     const select = document.getElementById("profileSelect");
     const newBtn = document.getElementById("newProfileBtn");
+    const duplicateBtn = document.getElementById("duplicateProfileBtn");
     const renameBtn = document.getElementById("renameProfileBtn");
     const resetBtn = document.getElementById("resetProfileBtn");
     const deleteBtn = document.getElementById("deleteProfileBtn");
@@ -1121,6 +1122,31 @@ function initProfiles() {
 
             // Create new profile with default settings
             profiles[name] = createDefaultProfileData();
+            saveProfiles(profiles);
+            setCurrentProfileName(name);
+            await applyProfileData(profiles[name]);
+            updateProfileSelect();
+            showToast(t('profileCreated', 'Profile created'));
+        });
+    }
+
+    // Duplicate profile (copy current settings)
+    if (duplicateBtn) {
+        duplicateBtn.addEventListener("click", async () => {
+            const name = prompt(t('newProfileName', 'New profile name:'));
+            if (!name || !name.trim()) return;
+
+            const profiles = getProfiles();
+            if (profiles[name]) {
+                alert(t('profileExists', 'Profile already exists'));
+                return;
+            }
+
+            // Save current profile first
+            await saveCurrentProfile();
+
+            // Create new profile with current settings (duplicate)
+            profiles[name] = await importProfileData(exportCurrentProfileData());
             saveProfiles(profiles);
             setCurrentProfileName(name);
             await applyProfileData(profiles[name]);
