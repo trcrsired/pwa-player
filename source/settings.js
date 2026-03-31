@@ -3,7 +3,7 @@ settingsYearEl.textContent = `2025–${new Date().getFullYear()}`;
 
 // Default network retry count (used across the project)
 const DEFAULT_NETWORK_RETRY_COUNT = 256;
-const DEFAULT_RETRY_DELAY = 2000; // 2 seconds between retries
+const DEFAULT_RETRY_DELAY = 0; // 0ms - retry immediately
 const DEFAULT_RETRY_BEFORE_SRC_RESET = 8; // Reset src after this many retries
 
 let settingsClickCount = 0;

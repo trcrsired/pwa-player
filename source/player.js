@@ -530,7 +530,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     let retryCount = 0;
     let srcResetCount = 0; // Separate counter for src reset tracking
     const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 256) : 0;
-    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 2000;
+    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
     const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
 
     // Handle video errors with retry for network URLs
@@ -732,7 +732,7 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
     let srcResetCount = 0; // Separate counter for src reset tracking
     let resolved = false;
 
-    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 2000;
+    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
     const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
 
     const cleanup = () => {
@@ -1623,7 +1623,7 @@ let reconnectTimer = null;
 
 // Triggered when the video element encounters a playback error during streaming
 video.addEventListener("error", () => {
-    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 2000;
+    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
 
     // Clear any previous reconnect attempts
     clearTimeout(reconnectTimer);
