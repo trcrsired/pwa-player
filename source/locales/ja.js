@@ -137,6 +137,10 @@ const JA_TRANSLATIONS = {
     autoResizeWindowHint: "動画読み込み時にウィンドウサイズを自動調整（PWAモードのみ）",
     disableRotateBtn: "画面回転ボタンを無効化",
     disableRotateBtnHint: "VRモード対応用に回転を無効化",
+    playback: "再生",
+    playbackSpeed: "速度",
+    playbackSpeedHint: "ライブ配信以外の動画の再生速度。",
+    preservePitch: "ピッチを維持",
     aboutThisApp: "このアプリについて",
 
     // Network

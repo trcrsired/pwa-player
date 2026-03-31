@@ -140,6 +140,10 @@ const EN_TRANSLATIONS = {
     autoResizeWindowHint: "Automatically resize window when video loads (PWA mode only)",
     disableRotateBtn: "Disable rotate screen button",
     disableRotateBtnHint: "Disable rotation for VR mode compatibility",
+    playback: "Playback",
+    playbackSpeed: "Speed",
+    playbackSpeedHint: "Playback speed for non-live videos.",
+    preservePitch: "Preserve pitch",
     aboutThisApp: "About This App",
 
     // Network

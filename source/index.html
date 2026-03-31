@@ -244,6 +244,23 @@
                     <span data-i18n="disableRotateBtn">Disable rotate screen button</span>
                 </label>
 
+                <h3 data-i18n="playback">Playback</h3>
+                <label class="setting-label">
+                    <span data-i18n="playbackSpeed">Speed</span>
+                    <span id="speedValue" style="margin-left:10px;font-family:monospace;">1.00x</span>
+                </label>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+                    <button id="speedDown" class="btn" style="padding:5px 10px;font-size:12px;">-0.05</button>
+                    <input type="range" id="speedSlider" min="0.25" max="4" step="0.05" value="1" style="flex:1;">
+                    <button id="speedUp" class="btn" style="padding:5px 10px;font-size:12px;">+0.05</button>
+                    <button id="speedReset" class="btn" style="padding:5px 10px;font-size:12px;">1.00</button>
+                </div>
+                <p class="setting-hint" data-i18n="playbackSpeedHint">Playback speed for non-live videos.</p>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="preservePitch">
+                    <span data-i18n="preservePitch">Preserve pitch</span>
+                </label>
+
                 <h3 data-i18n="network">Network</h3>
                 <label class="setting-label">
                     <span data-i18n="corsBypassServer">CORS Bypass Server</span>

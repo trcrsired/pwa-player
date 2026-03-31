@@ -215,6 +215,113 @@ function isRotateBtnDisabled() {
     return localStorage.getItem("disableRotateBtn") === "true";
 }
 
+// =====================================================
+// Playback Speed Control
+// =====================================================
+const speedSlider = document.getElementById("speedSlider");
+const speedValue = document.getElementById("speedValue");
+const speedDown = document.getElementById("speedDown");
+const speedUp = document.getElementById("speedUp");
+const speedReset = document.getElementById("speedReset");
+const preservePitchCheckbox = document.getElementById("preservePitch");
+
+// Default speed is 1.0
+const DEFAULT_PLAYBACK_SPEED = 1.0;
+const SPEED_STEP = 0.05;
+
+// Get current playback speed
+function getPlaybackSpeed() {
+    const speed = parseFloat(localStorage.getItem("playbackSpeed")) || DEFAULT_PLAYBACK_SPEED;
+    return Math.max(0.25, Math.min(4, speed));
+}
+
+// Get preserve pitch setting (default: false - pitch changes with speed)
+function getPreservePitch() {
+    return localStorage.getItem("preservePitch") === "true";
+}
+
+// Update speed display
+function updateSpeedDisplay(speed) {
+    speedValue.textContent = speed.toFixed(2) + "x";
+    speedSlider.value = speed;
+}
+
+// Apply speed to video element (only for non-live videos)
+function applyPlaybackSpeed() {
+    const video = document.getElementById("player");
+    if (!video) return;
+
+    // Skip for live streams (infinite duration)
+    if (!isFinite(video.duration) || video.duration === Infinity) {
+        return;
+    }
+
+    const speed = getPlaybackSpeed();
+    const preservePitch = getPreservePitch();
+
+    video.playbackRate = speed;
+
+    // Set preservesPitch if supported
+    if ('preservesPitch' in video) {
+        video.preservesPitch = preservePitch;
+    }
+}
+
+// Initialize speed controls
+function initPlaybackSpeed() {
+    const speed = getPlaybackSpeed();
+    updateSpeedDisplay(speed);
+    preservePitchCheckbox.checked = getPreservePitch();
+}
+
+// Save and apply speed
+function setPlaybackSpeed(speed) {
+    speed = Math.max(0.25, Math.min(4, speed));
+    localStorage.setItem("playbackSpeed", speed.toString());
+    updateSpeedDisplay(speed);
+    applyPlaybackSpeed();
+}
+
+// Event listeners
+speedSlider.addEventListener("input", () => {
+    const speed = parseFloat(speedSlider.value);
+    updateSpeedDisplay(speed);
+});
+
+speedSlider.addEventListener("change", () => {
+    const speed = parseFloat(speedSlider.value);
+    setPlaybackSpeed(speed);
+});
+
+speedDown.addEventListener("click", () => {
+    const currentSpeed = getPlaybackSpeed();
+    setPlaybackSpeed(currentSpeed - SPEED_STEP);
+});
+
+speedUp.addEventListener("click", () => {
+    const currentSpeed = getPlaybackSpeed();
+    setPlaybackSpeed(currentSpeed + SPEED_STEP);
+});
+
+speedReset.addEventListener("click", () => {
+    setPlaybackSpeed(DEFAULT_PLAYBACK_SPEED);
+});
+
+preservePitchCheckbox.addEventListener("change", () => {
+    localStorage.setItem("preservePitch", preservePitchCheckbox.checked ? "true" : "false");
+    applyPlaybackSpeed();
+});
+
+// Initialize on load
+initPlaybackSpeed();
+
+// Apply speed when video loads
+const videoForSpeed = document.getElementById("player");
+if (videoForSpeed) {
+    videoForSpeed.addEventListener("loadedmetadata", applyPlaybackSpeed);
+    videoForSpeed.addEventListener("durationchange", applyPlaybackSpeed);
+}
+
 // CORS Bypass Server setting
 const corsBypassUrlInput = document.getElementById("corsBypassUrl");
 

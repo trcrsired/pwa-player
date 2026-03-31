@@ -140,6 +140,10 @@ const ZHCN_TRANSLATIONS = {
     autoResizeWindowHint: "加载视频时自动调整窗口大小（仅PWA模式）",
     disableRotateBtn: "禁用旋转屏幕按钮",
     disableRotateBtnHint: "禁用旋转以兼容VR模式",
+    playback: "播放",
+    playbackSpeed: "速度",
+    playbackSpeedHint: "非直播视频的播放速度。",
+    preservePitch: "保持音高",
     aboutThisApp: "关于此应用",
 
     // Network
