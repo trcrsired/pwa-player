@@ -36,40 +36,39 @@ const PORT = positionalArgs[0] || 8432;
 // Rewrite URLs in m3u8/m3u content to go through the bypass server
 function rewriteManifestUrls(content, baseUrl, bypassBase) {
     const lines = content.split('\n');
-    const rewritten = lines.map(line => {
+    const rewritten = lines.map((line, lineNum) => {
         const trimmed = line.trim();
 
-        // Skip comments (except #EXT-X-KEY which may have URI)
         if (trimmed.startsWith('#')) {
-            // Rewrite URI= in #EXT-X-KEY or other tags
             return line.replace(/URI="([^"]+)"/gi, (match, uri) => {
                 if (uri.startsWith('http://') || uri.startsWith('https://')) {
                     return `URI="${bypassBase}${uri}"`;
                 }
-                // Relative URL - resolve against base
                 if (!uri.startsWith('http') && baseUrl) {
-                    const resolved = new URL(uri, baseUrl).href;
-                    return `URI="${bypassBase}${resolved}"`;
+                    try {
+                        const resolved = new URL(uri, baseUrl).href;
+                        return `URI="${bypassBase}${resolved}"`;
+                    } catch (e) {
+                        return match;
+                    }
                 }
                 return match;
             });
         }
 
-        // Empty line
         if (!trimmed) return line;
 
-        // Absolute URL
         if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
             return bypassBase + trimmed;
         }
 
-        // Relative URL - resolve against base
         if (baseUrl) {
             try {
                 const resolved = new URL(trimmed, baseUrl).href;
                 return bypassBase + resolved;
             } catch (e) {
-                return line;
+                const baseDir = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
+                return bypassBase + baseDir + trimmed;
             }
         }
 
@@ -197,30 +196,27 @@ function handleRequest(clientReq, clientRes) {
                 }
 
                 let redirectUrl = proxyRes.headers.location;
-                // Handle relative redirect URLs
                 if (!redirectUrl.startsWith('http')) {
                     redirectUrl = new URL(redirectUrl, targetUrl).href;
                 }
 
-                console.log(`[REDIRECT] ${proxyRes.statusCode} -> ${redirectUrl}`);
                 followRedirect(redirectUrl, redirectCount + 1);
                 return;
             }
 
             const contentType = proxyRes.headers['content-type'] || '';
+            const urlPath = targetUrl.split('?')[0]; // Remove query string for extension check
             const isManifest = contentType.includes('application/vnd.apple.mpegurl') ||
                               contentType.includes('application/x-mpegurl') ||
                               contentType.includes('audio/mpegurl') ||
-                              targetUrl.endsWith('.m3u8') ||
-                              targetUrl.endsWith('.m3u');
+                              urlPath.endsWith('.m3u8') ||
+                              urlPath.endsWith('.m3u');
 
             if (isManifest) {
-                // Buffer manifest content and rewrite URLs
                 const chunks = [];
                 proxyRes.on('data', chunk => chunks.push(chunk));
                 proxyRes.on('end', () => {
                     const content = Buffer.concat(chunks).toString('utf-8');
-                    // Only rewrite if we have a valid bypass base (Host header was present)
                     const rewritten = bypassBase ? rewriteManifestUrls(content, targetUrl, bypassBase) : content;
 
                     const respHeaders = { ...proxyRes.headers };
@@ -253,6 +249,7 @@ function handleRequest(clientReq, clientRes) {
 
         proxyReq.on('error', (err) => {
             console.error('[ERROR]', err.message);
+            addCorsHeaders(clientRes, clientReq.headers.origin);
             clientRes.writeHead(502, { 'Content-Type': 'text/plain' });
             clientRes.end('Error: ' + err.message);
         });

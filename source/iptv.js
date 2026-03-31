@@ -80,6 +80,13 @@ function importCustomChannels() {
                 }
             }
 
+            // Normalize cors flag to boolean
+            for (const ch of channels) {
+                if (ch.cors !== undefined) {
+                    ch.cors = !!ch.cors;
+                }
+            }
+
             // Merge with existing channels
             const existing = await loadCustomIptvChannels();
             const merged = [...existing, ...channels];
@@ -352,8 +359,16 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
             nameSpan.appendChild(badge);
         }
 
+        // CORS badge (channel marked as always needing CORS)
+        if (channel.cors) {
+            const badge = document.createElement("span");
+            badge.textContent = "CORS";
+            badge.className = "iptv-badge iptv-http-badge";
+            badge.title = "Always uses CORS bypass";
+            nameSpan.appendChild(badge);
+        }
         // IP address badge (needs CORS bypass)
-        if (isIpAddressUrl(primaryUrl)) {
+        else if (isIpAddressUrl(primaryUrl)) {
             const badge = document.createElement("span");
             badge.textContent = "IP";
             badge.className = "iptv-badge iptv-ip-badge";

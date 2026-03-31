@@ -22,7 +22,6 @@ export const iptvChannels = [
   { name: "NBC News Now", url: "https://xumo-drct-nbcnn-ir8ze.fast.nbcuni.com/live/master.m3u8" },
   { name: "NBC Sports", url: "https://xumo-xumoent-vc-122-sjv70.fast.nbcuni.com/live/master.m3u8" },
   { name: "NBC Comedy Vault", url: "https://xumo-xumoent-vc-105-z0vpm.fast.nbcuni.com/live/master.m3u8" },
-  { name: "CCTV-4 America", url: "https://global.cgtn.cicc.media.caton.cloud/master/cgtn-america.m3u8" },
   { name: "CCTV-4 Europe", url: "https://dash2.antik.sk/live/test_cctv_tizen/playlist.m3u8" },
   {
     name: "CCTV-13 News",
@@ -567,6 +566,7 @@ export const iptvChannels = [
       "http://69.30.246.194/live/cctv17.m3u8"
     ]
   },
+  { name: "CCTV-4 America", url: "https://global.cgtn.cicc.media.caton.cloud/master/cgtn-america.m3u8", cors: true },
   {
     name: "Hunan TV (湖南卫视)",
     nameLocalized: { zhcn: "湖南卫视" },

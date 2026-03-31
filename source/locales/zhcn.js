@@ -100,7 +100,7 @@ const ZHCN_TRANSLATIONS = {
     // IPTV
     iptvChannels: "📺 网络电视频道",
     searchChannels: "搜索频道...",
-    iptvCorsHint: "IP地址需要CORS绕过服务器。HTTP URL也可能需要CORS。",
+    iptvCorsHint: "IP地址始终需要CORS绕过。HTTP URL通常需要CORS。HTTPS通常不需要CORS。如果频道无法播放，请尝试启用CORS绕过。",
     import: "导入",
     export: "导出",
     clear: "清除",
@@ -141,7 +141,7 @@ const ZHCN_TRANSLATIONS = {
     autoResizeWindow: "窗口大小适应视频",
     autoResizeWindowHint: "加载视频时自动调整窗口大小（仅PWA模式）",
     disableRotateBtn: "禁用旋转屏幕按钮",
-    disableRotateBtnHint: "禁用旋转以兼容VR模式",
+    disableRotateBtnHint: "某些VR头显（如Oculus Quest）的屏幕旋转功能有bug，禁用可避免问题。",
     playback: "播放",
     playbackSpeed: "速度",
     playbackSpeedHint: "非直播视频的播放速度。",
@@ -163,6 +163,8 @@ const ZHCN_TRANSLATIONS = {
     corsBypassEnabled: "启用CORS绕过",
     networkRetryCount: "重试次数",
     networkRetryHint: "网络流的重试次数。设为0则禁用重试。",
+    iptvSourceRetryCount: "IPTV源重试次数",
+    iptvSourceRetryHint: "当IPTV频道有多个源时每个URL的重试次数。设为0则禁用。",
 
     version: "版本",
     sourceCode: "源代码",

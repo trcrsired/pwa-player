@@ -100,7 +100,7 @@ const EN_TRANSLATIONS = {
     // IPTV
     iptvChannels: "📺 IPTV Channels",
     searchChannels: "Search channels...",
-    iptvCorsHint: "IP addresses need CORS bypass server. HTTP URLs may also need CORS.",
+    iptvCorsHint: "IP addresses always need CORS bypass. HTTP URLs often need CORS. HTTPS usually works without CORS. If a channel doesn't play, try enabling CORS bypass.",
     import: "Import",
     export: "Export",
     clear: "Clear",
@@ -141,7 +141,7 @@ const EN_TRANSLATIONS = {
     autoResizeWindow: "Resize window to video size",
     autoResizeWindowHint: "Automatically resize window when video loads (PWA mode only)",
     disableRotateBtn: "Disable rotate screen button",
-    disableRotateBtnHint: "Disable rotation for VR mode compatibility",
+    disableRotateBtnHint: "Some VR headsets (e.g., Oculus Quest) have buggy screen rotation. Disable to prevent issues.",
     playback: "Playback",
     playbackSpeed: "Speed",
     playbackSpeedHint: "Playback speed for non-live videos.",
@@ -163,6 +163,8 @@ const EN_TRANSLATIONS = {
     corsBypassEnabled: "Enable CORS Bypass",
     networkRetryCount: "Retry Count",
     networkRetryHint: "Number of retry attempts for network streams. Set to 0 to disable retries.",
+    iptvSourceRetryCount: "IPTV Source Retry",
+    iptvSourceRetryHint: "Retry attempts per URL when IPTV channel has multiple sources. Set to 0 to disable.",
 
     version: "Version",
     sourceCode: "Source Code",

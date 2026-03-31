@@ -97,7 +97,7 @@ const JA_TRANSLATIONS = {
     // IPTV
     iptvChannels: "📺 IPTVチャンネル",
     searchChannels: "チャンネルを検索...",
-    iptvCorsHint: "IPアドレスはCORSバイパスサーバーが必要です。HTTP URLもCORSが必要な場合があります。",
+    iptvCorsHint: "IPアドレスは常にCORSバイパスが必要。HTTP URLは多くの場合CORSが必要。HTTPSは通常CORS不要。チャンネルが再生されない場合はCORSバイパスを有効にしてください。",
     import: "インポート",
     export: "エクスポート",
     clear: "クリア",
@@ -138,7 +138,7 @@ const JA_TRANSLATIONS = {
     autoResizeWindow: "ウィンドウサイズを動画に合わせる",
     autoResizeWindowHint: "動画読み込み時にウィンドウサイズを自動調整（PWAモードのみ）",
     disableRotateBtn: "画面回転ボタンを無効化",
-    disableRotateBtnHint: "VRモード対応用に回転を無効化",
+    disableRotateBtnHint: "一部のVRヘッドセット（Oculus Quest等）は画面回転にバグがあります。無効化で問題を回避。",
     playback: "再生",
     playbackSpeed: "速度",
     playbackSpeedHint: "ライブ配信以外の動画の再生速度。",
@@ -160,6 +160,8 @@ const JA_TRANSLATIONS = {
     corsBypassEnabled: "CORSバイパスを有効化",
     networkRetryCount: "再試行回数",
     networkRetryHint: "ネットワークストリームの再試行回数。0に設定すると再試行を無効化。",
+    iptvSourceRetryCount: "IPTVソース再試行回数",
+    iptvSourceRetryHint: "IPTVチャンネルに複数のソースがある場合の各URLの再試行回数。0で無効化。",
 
     version: "バージョン",
     sourceCode: "ソースコード",
