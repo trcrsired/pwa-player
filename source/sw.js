@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "260";
+const PWAPLAYER_VERSION = "262";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "/",
@@ -20,6 +20,7 @@ const urlsToCache = [
   "/locale.js",
   "/locales/en.js",
   "/locales/zhcn.js",
+  "/locales/ja.js"
 ];
 
 self.addEventListener("install", event => {
