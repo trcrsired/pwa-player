@@ -607,6 +607,8 @@ function stopABLoopCheck() {
 }
 
 // Keyboard event handler
+let previousSpeedBeforeReset = null; // Store speed before reset for toggle
+
 document.addEventListener("keydown", (e) => {
     // Ignore if typing in input/textarea
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
@@ -636,10 +638,20 @@ document.addEventListener("keydown", (e) => {
             break;
 
         case "s":
-            // S: Reset speed to 1.00x
+            // S: Toggle speed between 1.0x and previous value
             if (isShortcutSpeedEnabled() && isNonLiveVideo()) {
-                setPlaybackSpeed(DEFAULT_PLAYBACK_SPEED);
-                showSpeedStatus(1.0);
+                const currentSpeed = getPlaybackSpeed();
+                if (Math.abs(currentSpeed - 1.0) < 0.001 && previousSpeedBeforeReset !== null) {
+                    // Currently at 1.0, restore previous speed
+                    setPlaybackSpeed(previousSpeedBeforeReset);
+                    showSpeedStatus(previousSpeedBeforeReset);
+                    previousSpeedBeforeReset = null;
+                } else {
+                    // Store current speed and reset to 1.0
+                    previousSpeedBeforeReset = currentSpeed;
+                    setPlaybackSpeed(DEFAULT_PLAYBACK_SPEED);
+                    showSpeedStatus(1.0);
+                }
             }
             break;
 
