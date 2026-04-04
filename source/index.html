@@ -10,13 +10,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     	<meta name="msvalidate.01" content="0EBF88DA5B81674DD7E39378483EC964" />
-    	<title>PWA Player</title>
+        <meta name="description" content="PWA Player - A modern Progressive Web App for playing videos, audio files, and IPTV streams. Features include playlists, subtitle support, playback speed control, A-B loop, and more." />
+        <meta name="keywords" content="PWA, video player, audio player, IPTV, playlist, media player, progressive web app" />
+    	<title>PWA Player - Modern Video & Audio Player with IPTV Support</title>
         <link rel="icon" href="/icons/icon.webp" />
         <link rel="manifest" href="/manifest.json">
         <link rel="stylesheet" href="/style.css">
         <link rel="stylesheet" href="/settings.css">
     </head>
     <body>
+        <h1 style="position:absolute;left:-9999px;top:-9999px;">PWA Player - Video, Audio & IPTV Streaming Player</h1>
         <div id="playerContainer">
             <div id="playerWrapper">
                 <video id="player" crossorigin="anonymous" autoplay></video>
@@ -99,7 +102,7 @@
         <div id="storageView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="backBtn" class="back-btn">←</button>
-                <h1 class="title" data-i18n="storageManager">Storage Manager</h1>
+                <h2 class="title" data-i18n="storageManager">Storage Manager</h2>
             </header>
 
             <main class="content">
@@ -137,7 +140,7 @@
         <div id="nowPlayingView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="nowPlayingBackBtn" class="back-btn">←</button>
-                <h1 class="title" data-i18n="nowPlaying">Now Playing</h1>
+                <h2 class="title" data-i18n="nowPlaying">Now Playing</h2>
             </header>
 
             <main class="content">
@@ -179,7 +182,7 @@
         <div id="playlistView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="playlistBackBtn" class="back-btn">←</button>
-                <h1 class="title" data-i18n="playlist">Playlists</h1>
+                <h2 class="title" data-i18n="playlist">Playlists</h2>
             </header>
 
             <main class="content">
@@ -194,7 +197,7 @@
         <div id="iptvView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="iptvBackBtn" class="back-btn">←</button>
-                <h1 class="title" data-i18n="iptvChannels">IPTV Channels</h1>
+                <h2 class="title" data-i18n="iptvChannels">IPTV Channels</h2>
             </header>
 
             <main class="content">
@@ -212,7 +215,7 @@
         <div id="settingsView" class="overlay-view hidden">
             <header class="topbar">
                 <button id="settingsCloseBtn" class="back-btn">←</button>
-                <h1 class="title" data-i18n="settings">Settings</h1>
+                <h2 class="title" data-i18n="settings">Settings</h2>
             </header>
 
             <main class="content">
