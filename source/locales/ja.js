@@ -91,6 +91,8 @@ const JA_TRANSLATIONS = {
     confirmRemoveItem: "このアイテムをプレイリストから削除",
     setDefaultPlaylist: "デフォルトに設定",
     defaultPlaylist: "デフォルト",
+    addUrlToPlaylist: "URLをプレイリストに追加",
+    itemNameOptional: "アイテム名（オプション）：",
     addedToPlaylist: "追加済み",
     toPlaylist: "プレイリストへ",
     exportedToConsole: "プレイリストがコンソールにエクスポートされました。",
@@ -151,6 +153,8 @@ const JA_TRANSLATIONS = {
     shortcutLoopEnabled: "J/K/L - A-Bループ",
     abLoop: "A-Bループ",
     videoPreviewEnabled: "タイムライン動画プレビュー",
+    controlsAutoHideDelay: "制御自動非表示（ミリ秒）",
+    controlsAutoHideDelayHint: "制御自動非表示遅延、動画と埋め込みプレーヤー共通。デフォルト5000ミリ秒（5秒）。0で自動非表示を無効。",
     preservePitch: "ピッチを維持",
     speedAudioOnly: "速度制御は音声のみ",
     aboutThisApp: "このアプリについて",
@@ -305,5 +309,12 @@ const JA_TRANSLATIONS = {
     // Video status
     videoLoading: "読み込み中...",
     videoLoadFailed: "ビデオの読み込みに失敗しました。形式が対応していない可能性があります。",
-    videoFormatNotSupported: "このビデオ形式は対応していない可能性があります。.webmはウェブ標準形式で、すべてのプラットフォームで最適に動作し、ライセンス費用もかかりません。例えば、Microsoft Edge Android版は.webmビデオのみ対応しています。FFmpegなどのツールで.webm形式に変換するか、Google Chromeなどの別のブラウザをお試しください。"
+    videoFormatNotSupported: "このビデオ形式は対応していない可能性があります。.webmはウェブ標準形式で、すべてのプラットフォームで最適に動作し、ライセンス費用もかかりません。例えば、Microsoft Edge Android版は.webmビデオのみ対応しています。FFmpegなどのツールで.webm形式に変換するか、Google Chromeなどの別のブラウザをお試しください。",
+
+    // YouTube
+    youtubeError: "YouTube再生エラー",
+    youtubeInvalidId: "無効なYouTube動画ID",
+    youtubeHtml5Error: "YouTube HTML5プレーヤーエラー",
+    youtubeNotFound: "YouTube動画が見つかりませんまたは削除されました",
+    youtubeNotAllowed: "YouTube動画は埋め込み再生が許可されていません"
 };

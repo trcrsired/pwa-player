@@ -23,6 +23,12 @@
         <div id="playerContainer">
             <div id="playerWrapper">
                 <video id="player" crossorigin="anonymous" autoplay></video>
+                <!-- Embedded player container (YouTube, etc.) -->
+                <div id="embeddedPlayer" class="hidden"></div>
+                <!-- Invisible trigger zone on right side to reveal button -->
+                <div id="embeddedShowBtnTriggerZone" class="hidden"></div>
+                <!-- Floating button to show controls for embedded player -->
+                <button id="embeddedShowControlsBtn" class="hidden">⚙️</button>
                 <!-- Video status overlay (loading/error) -->
                 <div id="videoStatusOverlay" class="video-status-overlay hidden">
                     <div class="video-status-content">
@@ -288,6 +294,11 @@
                     <input type="checkbox" id="videoPreviewEnabled" checked>
                     <span data-i18n="videoPreviewEnabled">Video preview on timeline</span>
                 </label>
+                <label class="setting-label">
+                    <span data-i18n="controlsAutoHideDelay">Controls Auto-hide (ms)</span>
+                    <input type="number" id="controlsAutoHideDelayInput" class="setting-input-small" min="0" max="60000">
+                </label>
+                <p class="setting-hint" data-i18n="controlsAutoHideDelayHint">Controls auto-hide delay for both video and embedded player. Default 5000ms (5 seconds). Set to 0 to disable auto-hide.</p>
 
                 <h3 data-i18n="keyboardShortcuts">Keyboard Shortcuts</h3>
                 <label class="setting-toggle">
@@ -407,6 +418,7 @@
         <script src="nowplaying.js"></script>
         <script src="playlist.js"></script>
         <script src="storage.js"></script>
+        <script src="embeddedplayer.js"></script>
         <script src="player.js"></script>
         <script src="iptv.js" type="module"></script>
 

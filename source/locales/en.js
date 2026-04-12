@@ -94,6 +94,8 @@ const EN_TRANSLATIONS = {
     confirmRemoveItem: "Remove this item from playlist",
     setDefaultPlaylist: "Set as Default",
     defaultPlaylist: "Default",
+    addUrlToPlaylist: "Add URL to Playlist",
+    itemNameOptional: "Item name (optional):",
     addedToPlaylist: "Added",
     toPlaylist: "to playlist",
     exportedToConsole: "Playlist exported to console.",
@@ -154,6 +156,8 @@ const EN_TRANSLATIONS = {
     shortcutLoopEnabled: "J/K/L - A-B Loop",
     abLoop: "A-B Loop",
     videoPreviewEnabled: "Video preview on timeline",
+    controlsAutoHideDelay: "Controls Auto-hide (ms)",
+    controlsAutoHideDelayHint: "Controls auto-hide delay for both video and embedded player. Default 5000ms (5 seconds). Set to 0 to disable auto-hide.",
     preservePitch: "Preserve pitch",
     speedAudioOnly: "Speed control for audio only",
     aboutThisApp: "About This App",
@@ -308,5 +312,12 @@ const EN_TRANSLATIONS = {
     // Video status
     videoLoading: "Loading...",
     videoLoadFailed: "Failed to load video. The format may not be supported.",
-    videoFormatNotSupported: "This video format may not be supported. .webm is the web standard format that works best across all platforms with no licensing fees. For example, Microsoft Edge on Android only supports .webm videos. Convert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome."
+    videoFormatNotSupported: "This video format may not be supported. .webm is the web standard format that works best across all platforms with no licensing fees. For example, Microsoft Edge on Android only supports .webm videos. Convert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome.",
+
+    // YouTube
+    youtubeError: "YouTube playback error",
+    youtubeInvalidId: "Invalid YouTube video ID",
+    youtubeHtml5Error: "YouTube HTML5 player error",
+    youtubeNotFound: "YouTube video not found or removed",
+    youtubeNotAllowed: "YouTube video not allowed to be embedded"
 };

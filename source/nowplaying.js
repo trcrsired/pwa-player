@@ -140,6 +140,11 @@ function getActiveQueue() {
     return playMode === "shuffle" ? shuffledQueue : nowPlayingQueue;
 }
 
+// Get current play mode (for embedded player and other modules)
+function getPlayMode() {
+    return playMode;
+}
+
 // Get the currently playing track entry
 function getCurrentTrack() {
     const queue = getActiveQueue();

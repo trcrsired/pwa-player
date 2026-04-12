@@ -94,6 +94,8 @@ const ZHCN_TRANSLATIONS = {
     confirmRemoveItem: "从播放列表中移除此项目",
     setDefaultPlaylist: "设为默认",
     defaultPlaylist: "默认",
+    addUrlToPlaylist: "添加URL到播放列表",
+    itemNameOptional: "项目名称（可选）：",
     addedToPlaylist: "已添加",
     toPlaylist: "到播放列表",
     exportedToConsole: "播放列表已导出到控制台。",
@@ -154,6 +156,8 @@ const ZHCN_TRANSLATIONS = {
     shortcutLoopEnabled: "J/K/L - A-B循环",
     abLoop: "A-B循环",
     videoPreviewEnabled: "时间轴视频预览",
+    controlsAutoHideDelay: "控件自动隐藏（毫秒）",
+    controlsAutoHideDelayHint: "控件自动隐藏延迟，适用于视频和嵌入式播放器。默认5000毫秒（5秒）。设置为0禁用自动隐藏。",
     preservePitch: "保持音高",
     speedAudioOnly: "速度控制仅用于音频",
     aboutThisApp: "关于此应用",
@@ -308,5 +312,12 @@ const ZHCN_TRANSLATIONS = {
     // Video status
     videoLoading: "加载中...",
     videoLoadFailed: "视频加载失败。格式可能不受支持。",
-    videoFormatNotSupported: "此视频格式可能不受支持。.webm 是网络标准格式，在所有平台上兼容性最好，且无授权费用。例如，微软Edge安卓版仅支持 .webm 视频。请使用 FFmpeg 等工具转换为 .webm 格式，或尝试其他浏览器如 Google Chrome。"
+    videoFormatNotSupported: "此视频格式可能不受支持。.webm 是网络标准格式，在所有平台上兼容性最好，且无授权费用。例如，微软Edge安卓版仅支持 .webm 视频。请使用 FFmpeg 等工具转换为 .webm 格式，或尝试其他浏览器如 Google Chrome。",
+
+    // YouTube
+    youtubeError: "YouTube播放错误",
+    youtubeInvalidId: "无效的YouTube视频ID",
+    youtubeHtml5Error: "YouTube HTML5播放器错误",
+    youtubeNotFound: "YouTube视频不存在或已被删除",
+    youtubeNotAllowed: "YouTube视频不允许嵌入播放"
 };

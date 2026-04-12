@@ -415,6 +415,22 @@ if (videoPreviewEnabledCheckbox) {
     });
 }
 
+// Controls auto-hide delay (applies to both normal video and embedded player)
+const controlsAutoHideDelayInput = document.getElementById("controlsAutoHideDelayInput");
+
+if (controlsAutoHideDelayInput) {
+    controlsAutoHideDelayInput.value = localStorage.getItem("controlsAutoHideDelay") || "5000";
+    controlsAutoHideDelayInput.addEventListener("change", () => {
+        const delay = parseInt(controlsAutoHideDelayInput.value, 10);
+        if (delay >= 0) {
+            localStorage.setItem("controlsAutoHideDelay", delay.toString());
+        } else {
+            localStorage.setItem("controlsAutoHideDelay", "5000");
+            controlsAutoHideDelayInput.value = "5000";
+        }
+    });
+}
+
 // =====================================================
 // Keyboard shortcuts for speed and A-B loop
 // =====================================================
