@@ -157,6 +157,17 @@ class BasePlatform {
         throw new Error('Platform must implement isPlaying');
     }
 
+    // Get badge info for display (returns { label, color } or null)
+    static getBadge() {
+        return null; // Default: no badge
+    }
+
+    // Check if entry should show badge
+    static shouldShowBadge(entry) {
+        // Check by platform name or by URL pattern
+        return entry.platform === this.name || this.isUrl(entry.path);
+    }
+
     // Get play mode and handle video ended
     handleVideoEnded() {
         const playMode = typeof getPlayMode === 'function' ? getPlayMode() : 'once';
@@ -265,3 +276,24 @@ window.isEmbeddedUrl = isEmbeddedUrl;
 window.isPlaylistUrl = isPlaylistUrl;
 window.loadPlaylistFromUrl = loadPlaylistFromUrl;
 window.formatEmbedTime = formatEmbedTime;
+
+// Get badge HTML for an entry
+function getEntryBadgeHtml(entry) {
+    // Check CORS badge first
+    const hasCors = entry.corsBypass === true;
+    let badgesHtml = '';
+    if (hasCors) {
+        badgesHtml += '<span class="iptv-badge iptv-http-badge" style="margin-left:6px;">CORS</span>';
+    }
+
+    // Check platform badges
+    for (const [, platformClass] of platformRegistry) {
+        const badge = platformClass.getBadge();
+        if (badge && platformClass.shouldShowBadge(entry)) {
+            badgesHtml += `<span class="iptv-badge iptv-http-badge" style="margin-left:6px;background:${badge.color};">${badge.label}</span>`;
+        }
+    }
+
+    return badgesHtml;
+}
+window.getEntryBadgeHtml = getEntryBadgeHtml;

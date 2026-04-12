@@ -17,6 +17,11 @@ class YouTubePlatform extends BasePlatform {
         ];
     }
 
+    // Badge for display
+    static getBadge() {
+        return { label: 'YouTube', color: '#ff0000' };
+    }
+
     // Extract video ID from URL
     static extractVideoId(url) {
         if (!url) return null;
@@ -25,8 +30,14 @@ class YouTubePlatform extends BasePlatform {
             const urlObj = new URL(url);
             const hostname = urlObj.hostname;
 
+            // Match YouTube domains
+            const isYouTubeDomain = hostname === 'youtube.com' || hostname.endsWith('.youtube.com') ||
+                                     hostname === 'youtu.be' || hostname.endsWith('.youtu.be');
+
+            if (!isYouTubeDomain) return null;
+
             // youtu.be/VIDEO_ID
-            if (hostname === 'youtu.be') {
+            if (hostname === 'youtu.be' || hostname.endsWith('.youtu.be')) {
                 return urlObj.pathname.slice(1).split('?')[0];
             }
 
@@ -61,7 +72,8 @@ class YouTubePlatform extends BasePlatform {
             const urlObj = new URL(url);
             const hostname = urlObj.hostname;
 
-            if (hostname.endsWith('youtube.com') || hostname === 'youtu.be') {
+            // Match any YouTube domain (youtube.com, www.youtube.com, m.youtube.com, etc.)
+            if (hostname === 'youtube.com' || hostname.endsWith('.youtube.com') || hostname === 'youtu.be') {
                 // youtube.com/playlist?list=PLAYLIST_ID
                 if (urlObj.pathname === '/playlist') {
                     return urlObj.searchParams.get('list');
@@ -243,9 +255,15 @@ class YouTubePlatform extends BasePlatform {
         const videoUrl = this.getVideoUrl(videoId);
 
         if (videoData && videoData.title) {
-            document.title = videoData.title + ' - PWA Player';
+            // Use custom entry name if available, otherwise use YouTube title
+            const entryName = this.pendingOptions?.entryName;
+            const displayTitle = entryName && entryName !== videoUrl
+                ? entryName
+                : videoData.title;
+
+            document.title = displayTitle + ' - PWA Player';
             navigator.mediaSession.metadata = new MediaMetadata({
-                title: videoData.title,
+                title: displayTitle,
                 artist: videoData.author || 'YouTube',
                 album: 'YouTube'
             });
@@ -253,15 +271,19 @@ class YouTubePlatform extends BasePlatform {
             const titleEl = document.querySelector("#nowPlayingInfo .track-title");
             const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
             const urlEl = document.querySelector("#nowPlayingInfo .track-url");
-            if (titleEl) titleEl.textContent = videoData.title;
+            if (titleEl) titleEl.textContent = displayTitle;
             if (artistEl) artistEl.textContent = videoData.author || 'YouTube';
             if (urlEl) urlEl.textContent = videoUrl;
 
             // Update playlist entry with fetched title if we have playlist info
-            if (this.pendingOptions && this.pendingOptions.playlist) {
+            // Only update for single videos, not for YouTube playlist entries (which represent multiple videos)
+            // Also skip if the entry already has a name (don't update again)
+            if (this.pendingOptions && this.pendingOptions.playlist && this.currentContentInfo?.type !== 'playlist') {
                 const { playlistName, entryPath } = this.pendingOptions.playlist;
-                if (typeof updatePlaylistEntryName === 'function') {
-                    updatePlaylistEntryName(playlistName, entryPath, videoData.title);
+                if (playlistName && entryPath && typeof updatePlaylistEntryName === 'function') {
+                    updatePlaylistEntryName(playlistName, entryPath, videoData.title, true).catch(e => {
+                        console.warn('Failed to update playlist entry name:', e);
+                    });
                 }
             }
         }
@@ -450,9 +472,9 @@ function onYouTubeIframeAPIReady() {
     window._ytApiReady = true;
 
     // If there's a pending instance, continue creating its player
-    if (window._pendingYouTubeInstance && window._pendingYouTubeVideoId) {
+    if (window._pendingYouTubeInstance && window._pendingYouTubeContentInfo) {
         const instance = window._pendingYouTubeInstance;
-        const videoId = window._pendingYouTubeVideoId;
+        const contentInfo = window._pendingYouTubeContentInfo;
         const container = window._pendingYouTubeContainer || 'embeddedPlayer';
 
         // Check play mode for looping
@@ -470,25 +492,62 @@ function onYouTubeIframeAPIReady() {
             'iv_load_policy': 3
         };
 
-        if (shouldLoop) {
-            playerVars['loop'] = 1;
-            playerVars['playlist'] = videoId;
+        let playerConfig;
+
+        if (contentInfo.type === 'playlist') {
+            // Load playlist
+            playerVars.listType = 'playlist';
+            playerVars.list = contentInfo.playlistId;
+
+            playerConfig = {
+                height: '100%',
+                width: '100%',
+                playerVars: playerVars,
+                events: {
+                    'onReady': (event) => instance.onReady(event, instance.pendingOptions),
+                    'onStateChange': (event) => instance.onStateChange(event, instance.pendingOptions),
+                    'onError': (event) => instance.onError(event, instance.pendingOptions)
+                }
+            };
+        } else if (contentInfo.type === 'video-in-playlist') {
+            // Video within playlist
+            playerVars.listType = 'playlist';
+            playerVars.list = contentInfo.playlistId;
+
+            playerConfig = {
+                height: '100%',
+                width: '100%',
+                playerVars: playerVars,
+                events: {
+                    'onReady': (event) => instance.onReady(event, instance.pendingOptions),
+                    'onStateChange': (event) => instance.onStateChange(event, instance.pendingOptions),
+                    'onError': (event) => instance.onError(event, instance.pendingOptions)
+                }
+            };
+        } else {
+            // Single video
+            if (shouldLoop) {
+                playerVars['loop'] = 1;
+                playerVars['playlist'] = contentInfo.videoId;
+            }
+
+            playerConfig = {
+                height: '100%',
+                width: '100%',
+                videoId: contentInfo.videoId,
+                playerVars: playerVars,
+                events: {
+                    'onReady': (event) => instance.onReady(event, instance.pendingOptions),
+                    'onStateChange': (event) => instance.onStateChange(event, instance.pendingOptions),
+                    'onError': (event) => instance.onError(event, instance.pendingOptions)
+                }
+            };
         }
 
-        instance.player = new YT.Player(container, {
-            height: '100%',
-            width: '100%',
-            videoId: videoId,
-            playerVars: playerVars,
-            events: {
-                'onReady': (event) => instance.onReady(event, instance.pendingOptions),
-                'onStateChange': (event) => instance.onStateChange(event, instance.pendingOptions),
-                'onError': (event) => instance.onError(event, instance.pendingOptions)
-            }
-        });
+        instance.player = new YT.Player(container, playerConfig);
 
         window._pendingYouTubeInstance = null;
-        window._pendingYouTubeVideoId = null;
+        window._pendingYouTubeContentInfo = null;
         window._pendingYouTubeContainer = null;
     }
 }

@@ -16,6 +16,11 @@ class SpotifyPlatform extends BasePlatform {
         ];
     }
 
+    // Badge for display
+    static getBadge() {
+        return { label: 'Spotify', color: '#1db954' };
+    }
+
     static extractVideoId(url) {
         if (!url) return null;
 
@@ -146,8 +151,21 @@ class SpotifyPlatform extends BasePlatform {
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     }
 
-    createPlayer(videoId, container, options = {}) {
+    createPlayer(contentInfo, container, options = {}) {
+        // Handle contentInfo - can be { type, id } object or string
+        let videoId;
+        if (typeof contentInfo === 'object') {
+            // It's already { type, id } format
+            videoId = contentInfo;
+        } else if (typeof contentInfo === 'string') {
+            // Legacy: just an ID string, assume track type
+            videoId = { type: 'track', id: contentInfo };
+        } else if (!contentInfo) {
+            return null;
+        }
+
         this.currentVideoId = videoId;
+        this.pendingOptions = options;
 
         // Get container element
         const containerEl = typeof container === 'string'
@@ -307,8 +325,27 @@ class SpotifyPlatform extends BasePlatform {
                 this.updateProgress();
             });
 
-            // Update title
-            const displayName = this.getTitle();
+            // Update playlist entry name if we have playlist info
+            if (this.pendingOptions && this.pendingOptions.playlist) {
+                const { playlistName, entryPath } = this.pendingOptions.playlist;
+                if (playlistName && entryPath && typeof updatePlaylistEntryName === 'function') {
+                    // Try to fetch track name from Spotify embed
+                    this.fetchTrackName(videoId).then(trackName => {
+                        if (trackName) {
+                            // Skip update if entry already has a proper name
+                            updatePlaylistEntryName(playlistName, entryPath, trackName, true).catch(e => {
+                                console.warn('Failed to update playlist entry name:', e);
+                            });
+                        }
+                    }).catch(() => {});
+                }
+            }
+
+            // Update title - use entry name if available, otherwise generate title
+            const entryName = this.pendingOptions?.entryName;
+            const displayName = entryName && entryName !== this.getVideoUrl(videoId)
+                ? entryName
+                : this.getTitle();
             document.title = `${displayName} - PWA Player`;
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: displayName,
@@ -425,6 +462,41 @@ class SpotifyPlatform extends BasePlatform {
             return `Spotify: ${this.currentVideoId}`;
         }
         return 'Spotify';
+    }
+
+    // Fetch track name from Spotify embed page
+    async fetchTrackName(videoId) {
+        if (!videoId) return null;
+
+        let type, id;
+        if (typeof videoId === 'object') {
+            type = videoId.type;
+            id = videoId.id;
+        } else {
+            type = 'track';
+            id = videoId;
+        }
+
+        try {
+            const embedUrl = `https://open.spotify.com/embed/${type}/${id}`;
+            const response = await fetch(embedUrl);
+            if (!response.ok) return null;
+
+            const html = await response.text();
+            // Try to extract track name from the embed page
+            const titleMatch = html.match(/<title>([^<]+)\s*-\s*Spotify<\/title>/i);
+            if (titleMatch && titleMatch[1]) {
+                return titleMatch[1].trim();
+            }
+            // Alternative pattern
+            const nameMatch = html.match(/"name":"([^"]+)"/);
+            if (nameMatch && nameMatch[1] && !nameMatch[1].toLowerCase().includes('spotify')) {
+                return nameMatch[1];
+            }
+        } catch (e) {
+            console.warn('Failed to fetch Spotify track name:', e);
+        }
+        return null;
     }
 
     getVideoUrl(videoId) {
@@ -559,7 +631,11 @@ window.onSpotifyIframeApiReady = (IFrameAPI) => {
                 platformInstance.updateProgress();
             });
 
-            const displayName = platformInstance.getTitle();
+            // Use entry name if available, otherwise generate title
+            const entryName = options?.entryName;
+            const displayName = entryName && entryName !== platformInstance.getVideoUrl(videoId)
+                ? entryName
+                : platformInstance.getTitle();
             document.title = `${displayName} - PWA Player`;
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: displayName,

@@ -367,11 +367,13 @@ async function playlist_renderTree() {
             itemLi.className = "storage-sub-item";
 
             const itemName = item.name || item.path;
-            const hasCors = item.corsBypass === true;
+
+            // Get badges using polymorphic platform method
+            const badgesHtml = typeof getEntryBadgeHtml === 'function' ? getEntryBadgeHtml(item) : '';
 
             itemLi.innerHTML = `
                 <div class="storage-sub-header">
-                    <span class="sub-name">${escapeHTML(itemName)}${hasCors ? '<span class="iptv-badge iptv-http-badge" style="margin-left:6px;">CORS</span>' : ''}</span>
+                    <span class="sub-name">${escapeHTML(itemName)}${badgesHtml}</span>
                     <div class="sub-actions">
                         <button class="sub-menu" title="Menu">⋮</button>
                     </div>
@@ -501,14 +503,9 @@ function showPlaylistHeaderMenu(playlistName, button) {
                     return;
                 }
 
-                // Regular URL or single video/track
-                let name = trimmedUrl.split('/').pop()?.split('?')[0] || trimmedUrl;
-                try {
-                    name = decodeURIComponent(name);
-                } catch (e) {}
-
+                // Regular URL or single video/track - leave name empty so full URL is shown
                 playlists[playlistName].push({
-                    name: name,
+                    name: undefined, // No name - will show full URL in display
                     path: trimmedUrl,
                     isUrl: true,
                     platform: platformClass ? platformClass.name : null

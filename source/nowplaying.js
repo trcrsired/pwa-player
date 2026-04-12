@@ -30,6 +30,7 @@ async function nowPlaying_playIndex(index) {
     await play_source(resolved, {
         playlistName: entry.playlistName,
         entryPath: entry.path,
+        entryName: entry.name,
         index,
     }, entry.corsBypass);
 
@@ -294,6 +295,8 @@ function showNowPlayingItemMenu(index, button) {
 
     if (!positionMenu(menu, button)) return;
 
+    const closeMenu = () => menu.remove();
+
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", () => {
             const action = item.dataset.action;
@@ -301,13 +304,13 @@ function showNowPlayingItemMenu(index, button) {
             if (action === "play") {
                 nowPlaying_playIndex(index);
                 closeActiveView();
-                closeContextMenu();
+                closeMenu();
                 return;
             }
 
             if (action === "play-keep-open") {
                 nowPlaying_playIndex(index);
-                closeContextMenu();
+                closeMenu();
                 return;
             }
 
@@ -328,7 +331,7 @@ function showNowPlayingItemMenu(index, button) {
                 return;
             }
 
-            closeContextMenu();
+            closeMenu();
         });
     });
 }
@@ -348,11 +351,14 @@ function renderNowPlayingQueue() {
             li.classList.add("active");
         }
 
-        // Track title with optional CORS badge
+        // Track title with optional badges
         const titleSpan = document.createElement("span");
         titleSpan.className = "np-item-title";
-        const hasCors = entry.corsBypass === true;
-        titleSpan.innerHTML = `${escapeHTML(entry.name || entry.path)}${hasCors ? '<span class="iptv-badge iptv-http-badge" style="margin-left:6px;">CORS</span>' : ''}`;
+
+        // Get badges using polymorphic platform method
+        const badgesHtml = typeof getEntryBadgeHtml === 'function' ? getEntryBadgeHtml(entry) : '';
+
+        titleSpan.innerHTML = `${escapeHTML(entry.name || entry.path)}${badgesHtml}`;
 
         // Click on title → play
         titleSpan.addEventListener("click", () => {

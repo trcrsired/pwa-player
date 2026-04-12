@@ -541,8 +541,11 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
   // Check if this is an embedded URL (YouTube, Vimeo, etc.) - use embedded player instead
   if (typeof playEmbeddedUrl === 'function' && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
+    // Use entry name from playlist if provided, otherwise use metadata title
+    const entryName = playlist?.entryName || mediametadata.title;
     playEmbeddedUrl(blobURL, {
       playlist: playlist,
+      entryName: entryName,
       title: mediametadata.title,
       sourceobject: sourceobject
     });
@@ -652,15 +655,16 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Store original metadata for subtitle updates
     currentMediaMetadata = { ...mediametadata };
     // Set MediaSession with transparent artwork
+    const displayTitle = playlist?.entryName || mediametadata.title;
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: mediametadata.title,
+      title: displayTitle,
       artist: mediametadata.artist || '',
       album: mediametadata.album || ''
     });
-    document.title = `PWA Player ▶️ ${mediametadata.title}`;
+    document.title = `PWA Player ▶️ ${displayTitle}`;
 
     const entry = {
-      name: mediametadata.title,
+      name: playlist?.entryName || mediametadata.title,
       artist: mediametadata.artist || "",
       path: playlist?.entryPath || blobURL
     };

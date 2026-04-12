@@ -25,8 +25,29 @@ function playEmbeddedUrl(url, metadata = {}) {
         return false;
     }
 
-    const videoId = platformClass.extractVideoId(url);
-    if (!videoId) {
+    // For YouTube, use extractContentInfo which handles playlists
+    // For Spotify, extractVideoId returns { type, id } which should be used directly
+    let contentInfo;
+    if (platformClass.name === 'youtube' && typeof platformClass.extractContentInfo === 'function') {
+        contentInfo = platformClass.extractContentInfo(url);
+    } else if (platformClass.name === 'spotify') {
+        // Spotify extractVideoId returns { type, id }
+        const videoIdObj = platformClass.extractVideoId(url);
+        if (!videoIdObj) {
+            return false;
+        }
+        // Pass the object directly - Spotify's createPlayer handles { type, id }
+        contentInfo = videoIdObj;
+    } else {
+        // For other platforms, just extract video ID
+        const videoId = platformClass.extractVideoId(url);
+        if (!videoId) {
+            return false;
+        }
+        contentInfo = { type: 'video', videoId };
+    }
+
+    if (!contentInfo) {
         return false;
     }
 
@@ -81,7 +102,9 @@ function playEmbeddedUrl(url, metadata = {}) {
     }
 
     // Create the player
-    currentPlatformInstance.createPlayer(videoId, 'embeddedPlayer', {
+    currentPlatformInstance.createPlayer(contentInfo, 'embeddedPlayer', {
+        playlist: metadata.playlist,  // Pass playlist info for name updates
+        entryName: metadata.entryName, // Pass entry name for display
         onReady: () => {
             // Hide our controls panel - embedded player has its own controls
             const controls = document.getElementById("controls");
@@ -110,21 +133,50 @@ function handleEmbeddedVideoEnded() {
 }
 
 // Update playlist entry name with fetched title
-async function updatePlaylistEntryName(playlistName, entryPath, newName) {
+// skipIfHasExisting: if true, don't update if entry already has a proper name
+async function updatePlaylistEntryName(playlistName, entryPath, newName, skipIfHasExisting = false) {
     if (!playlistName || !entryPath || !newName) return;
 
     try {
         const playlists = await playlists_load();
-        if (!playlists[playlistName]) return;
+        if (!playlists[playlistName]) {
+            return;
+        }
 
         const entry = playlists[playlistName].find(item => item.path === entryPath);
-        if (entry && entry.name !== newName) {
+        if (!entry) return;
+
+        // If skipIfHasExisting is true and entry already has a proper name, don't update
+        if (skipIfHasExisting && entry.name && entry.name !== entryPath) {
+            return;
+        }
+
+        if (entry.name !== newName) {
             entry.name = newName;
             await playlists_save(playlists);
+
             // Re-render playlist tree if visible
             if (typeof playlist_renderTree === 'function') {
                 playlist_renderTree();
             }
+
+            // Update the now playing queue entries directly (they are copies)
+            if (typeof window.nowPlayingQueue !== 'undefined') {
+                for (const qEntry of window.nowPlayingQueue) {
+                    if (qEntry.path === entryPath && qEntry.playlistName === playlistName) {
+                        qEntry.name = newName;
+                    }
+                }
+                // Also update shuffled queue
+                if (typeof window.shuffledQueue !== 'undefined') {
+                    for (const qEntry of window.shuffledQueue) {
+                        if (qEntry.path === entryPath && qEntry.playlistName === playlistName) {
+                            qEntry.name = newName;
+                        }
+                    }
+                }
+            }
+
             // Also update now playing queue display
             if (typeof renderNowPlayingQueue === 'function') {
                 renderNowPlayingQueue();
