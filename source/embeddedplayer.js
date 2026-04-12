@@ -16,34 +16,82 @@ function extractYouTubeVideoId(url) {
     if (!url) return null;
 
     // Handle various YouTube URL formats
-    // youtube.com/watch?v=VIDEO_ID
-    // m.youtube.com/watch?v=VIDEO_ID
-    // youtube.com/embed/VIDEO_ID
-    // youtube.com/v/VIDEO_ID
+    // *.youtube.com/watch?v=VIDEO_ID
+    // *.youtube.com/embed/VIDEO_ID
+    // *.youtube.com/v/VIDEO_ID
+    // *.youtube-nocookie.com/embed/VIDEO_ID
     // youtu.be/VIDEO_ID
 
     try {
         const urlObj = new URL(url);
+        const hostname = urlObj.hostname;
 
-        // youtube.com/watch?v=... or m.youtube.com/watch?v=...
-        if (urlObj.hostname === 'www.youtube.com' ||
-            urlObj.hostname === 'youtube.com' ||
-            urlObj.hostname === 'm.youtube.com') {
+        // Check if it's a YouTube domain (any subdomain)
+        const isYoutubeDomain = hostname === 'youtube.com' ||
+                                hostname.endsWith('.youtube.com') ||
+                                hostname === 'youtube-nocookie.com' ||
+                                hostname.endsWith('.youtube-nocookie.com') ||
+                                hostname === 'youtu.be';
+
+        if (isYoutubeDomain && hostname !== 'youtu.be') {
             if (urlObj.pathname === '/watch') {
                 return urlObj.searchParams.get('v');
             }
-            // /embed/VIDEO_ID or /v/VIDEO_ID
-            if (urlObj.pathname.startsWith('/embed/') || urlObj.pathname.startsWith('/v/')) {
+            // /embed/VIDEO_ID or /v/VIDEO_ID or /short/VIDEO_ID
+            if (urlObj.pathname.startsWith('/embed/') ||
+                urlObj.pathname.startsWith('/v/') ||
+                urlObj.pathname.startsWith('/short/')) {
                 return urlObj.pathname.split('/')[2]?.split('?')[0];
             }
         }
 
         // youtu.be/VIDEO_ID
-        if (urlObj.hostname === 'youtu.be') {
+        if (hostname === 'youtu.be') {
             return urlObj.pathname.slice(1).split('?')[0];
         }
     } catch (e) {
         // Invalid URL
+        return null;
+    }
+
+    return null;
+}
+
+// Extract Vimeo video ID from URL
+function extractVimeoVideoId(url) {
+    if (!url) return null;
+
+    // Handle Vimeo URL formats:
+    // vimeo.com/VIDEO_ID
+    // player.vimeo.com/video/VIDEO_ID
+    // vimeo.com/channels/CHANNEL_ID/VIDEO_ID
+
+    try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname;
+
+        const isVimeoDomain = hostname === 'vimeo.com' ||
+                              hostname.endsWith('.vimeo.com');
+
+        if (isVimeoDomain) {
+            // player.vimeo.com/video/VIDEO_ID
+            if (hostname.endsWith('player.vimeo.com') && urlObj.pathname.startsWith('/video/')) {
+                return urlObj.pathname.split('/')[2]?.split('?')[0];
+            }
+            // vimeo.com/VIDEO_ID
+            if (hostname === 'vimeo.com') {
+                const pathParts = urlObj.pathname.slice(1).split('/');
+                // vimeo.com/channels/CHANNEL_ID/VIDEO_ID
+                if (pathParts[0] === 'channels' && pathParts.length >= 3) {
+                    return pathParts[2]?.split('?')[0];
+                }
+                // vimeo.com/VIDEO_ID
+                if (pathParts[0] && !isNaN(parseInt(pathParts[0], 10))) {
+                    return pathParts[0]?.split('?')[0];
+                }
+            }
+        }
+    } catch (e) {
         return null;
     }
 
@@ -55,13 +103,33 @@ function isYouTubeUrl(url) {
     if (!url) return false;
     try {
         const urlObj = new URL(url);
-        return urlObj.hostname === 'www.youtube.com' ||
-               urlObj.hostname === 'youtube.com' ||
-               urlObj.hostname === 'm.youtube.com' ||
-               urlObj.hostname === 'youtu.be';
+        const hostname = urlObj.hostname;
+        return hostname === 'youtube.com' ||
+               hostname.endsWith('.youtube.com') ||
+               hostname === 'youtube-nocookie.com' ||
+               hostname.endsWith('.youtube-nocookie.com') ||
+               hostname === 'youtu.be';
     } catch (e) {
         return false;
     }
+}
+
+// Check if URL is a Vimeo URL
+function isVimeoUrl(url) {
+    if (!url) return false;
+    try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname;
+        return hostname === 'vimeo.com' ||
+               hostname.endsWith('.vimeo.com');
+    } catch (e) {
+        return false;
+    }
+}
+
+// Check if URL is an embedded player URL (YouTube or Vimeo)
+function isEmbeddedUrl(url) {
+    return isYouTubeUrl(url) || isVimeoUrl(url);
 }
 
 // Load YouTube IFrame API
@@ -90,6 +158,233 @@ function onYouTubeIframeAPIReady() {
 
 // Make it globally accessible
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+// ===============================
+// Vimeo Player Support
+// ===============================
+
+let vimeoApiReady = false;
+let vimeoApiLoading = false;
+let vimeoPlayer = null;
+let vimeoProgressInterval = null;
+
+// Load Vimeo Player SDK
+function loadVimeoApi() {
+    if (vimeoApiReady || vimeoApiLoading) return;
+
+    vimeoApiLoading = true;
+
+    const tag = document.createElement('script');
+    tag.src = "https://player.vimeo.com/api/player.js";
+    tag.onload = () => {
+        vimeoApiReady = true;
+        vimeoApiLoading = false;
+
+        // If there's a pending video to play, play it
+        if (window._pendingVimeoVideoId) {
+            createVimeoPlayer(window._pendingVimeoVideoId);
+            window._pendingVimeoVideoId = null;
+        }
+    };
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+}
+
+// Create Vimeo player
+function createVimeoPlayer(videoId) {
+    window._currentVimeoVideoId = videoId;
+
+    if (!vimeoApiReady) {
+        loadVimeoApi();
+        window._pendingVimeoVideoId = videoId;
+        return;
+    }
+
+    // Destroy existing player if any
+    if (vimeoPlayer) {
+        vimeoPlayer.destroy();
+        vimeoPlayer = null;
+    }
+
+    // Stop progress interval
+    if (vimeoProgressInterval) {
+        clearInterval(vimeoProgressInterval);
+        vimeoProgressInterval = null;
+    }
+
+    // Also destroy YouTube player if active
+    if (ytPlayer) {
+        ytPlayer.destroy();
+        ytPlayer = null;
+    }
+    if (ytProgressInterval) {
+        clearInterval(ytProgressInterval);
+        ytProgressInterval = null;
+    }
+
+    // Pause the normal video player before switching to embedded
+    const videoEl = document.getElementById("player");
+    if (videoEl && !videoEl.paused) {
+        videoEl.pause();
+    }
+
+    // Clear the embedded player container
+    embeddedPlayer.innerHTML = '';
+
+    // Show embedded player, hide video player
+    videoPlayer.classList.add('hidden');
+    embeddedPlayer.classList.remove('hidden');
+
+    // Check play mode for looping
+    const playMode = typeof getPlayMode === 'function' ? getPlayMode() : 'once';
+    const shouldLoop = playMode === 'repeat-one';
+
+    // Create Vimeo iframe
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://player.vimeo.com/video/${videoId}?autoplay=1&controls=1&title=0&byline=0&portrait=0${shouldLoop ? '&loop=1' : ''}`;
+    iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
+    iframe.setAttribute('allowfullscreen', 'true');
+    iframe.setAttribute('playsinline', 'true');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.position = 'absolute';
+    iframe.style.top = '0';
+    iframe.style.left = '0';
+    iframe.id = 'vimeo-iframe';
+    embeddedPlayer.appendChild(iframe);
+
+    // Create Vimeo Player instance
+    vimeoPlayer = new Vimeo.Player(iframe);
+
+    // Set volume from stored preference
+    const storedVolume = localStorage.getItem('volume');
+    if (storedVolume) {
+        const vol = parseInt(storedVolume, 10) / 100; // Vimeo uses 0-1
+        vimeoPlayer.setVolume(vol);
+        const volumeSlider = document.getElementById("volumeSlider");
+        const npVolumeSlider = document.getElementById("npVolumeSlider");
+        if (volumeSlider) volumeSlider.value = parseInt(storedVolume, 10);
+        if (npVolumeSlider) npVolumeSlider.value = parseInt(storedVolume, 10);
+    }
+
+    // Hide our controls panel - Vimeo has its own controls
+    const controls = document.getElementById("controls");
+    if (controls) controls.classList.add("hidden");
+
+    // Show the trigger zone (button starts hidden)
+    const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+    const showBtn = document.getElementById("embeddedShowControlsBtn");
+    if (triggerZone) triggerZone.classList.remove("hidden");
+    if (showBtn) showBtn.classList.add("hidden");
+
+    // Update title and Now Playing info
+    vimeoPlayer.getVideoTitle().then(title => {
+        document.title = title + ' - PWA Player';
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: title,
+            artist: 'Vimeo',
+            album: 'Vimeo'
+        });
+
+        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
+        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
+        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
+        if (titleEl) titleEl.textContent = title;
+        if (artistEl) artistEl.textContent = 'Vimeo';
+        if (urlEl) urlEl.textContent = `https://vimeo.com/${videoId}`;
+    }).catch(() => {
+        // Title might not be available due to privacy settings
+        document.title = 'Vimeo Video - PWA Player';
+        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
+        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
+        if (titleEl) titleEl.textContent = 'Vimeo Video';
+        if (urlEl) urlEl.textContent = `https://vimeo.com/${videoId}`;
+    });
+
+    // Set up event handlers
+    vimeoPlayer.on('play', () => {
+        const playBtn = document.getElementById("playBtn");
+        const npPlayBtn = document.getElementById("npPlayBtn");
+        if (playBtn) playBtn.textContent = "⏸️";
+        if (npPlayBtn) npPlayBtn.textContent = "⏸️";
+        navigator.mediaSession.playbackState = 'playing';
+
+        if (!vimeoProgressInterval) {
+            vimeoProgressInterval = setInterval(updateVimeoProgress, 500);
+        }
+    });
+
+    vimeoPlayer.on('pause', () => {
+        const playBtn = document.getElementById("playBtn");
+        const npPlayBtn = document.getElementById("npPlayBtn");
+        if (playBtn) playBtn.textContent = "▶️";
+        if (npPlayBtn) npPlayBtn.textContent = "▶️";
+        navigator.mediaSession.playbackState = 'paused';
+    });
+
+    vimeoPlayer.on('ended', () => {
+        const playBtn = document.getElementById("playBtn");
+        const npPlayBtn = document.getElementById("npPlayBtn");
+        if (playBtn) playBtn.textContent = "▶️";
+        if (npPlayBtn) npPlayBtn.textContent = "▶️";
+        navigator.mediaSession.playbackState = 'paused';
+
+        if (vimeoProgressInterval) {
+            clearInterval(vimeoProgressInterval);
+            vimeoProgressInterval = null;
+        }
+
+        // Handle play mode behavior
+        handleVimeoVideoEnded();
+    });
+
+    // Start progress update interval
+    vimeoProgressInterval = setInterval(updateVimeoProgress, 500);
+}
+
+// Update progress display for Vimeo
+function updateVimeoProgress() {
+    if (!vimeoPlayer) return;
+
+    Promise.all([vimeoPlayer.getCurrentTime(), vimeoPlayer.getDuration()])
+        .then(([currentTime, duration]) => {
+            if (!duration || duration === 0) return;
+
+            const progressBar = document.getElementById("progressBar");
+            const npProgressBar = document.getElementById("npProgressBar");
+            const timeDisplay = document.getElementById("timeDisplay");
+            const npTimeDisplay = document.getElementById("npTimeDisplay");
+
+            const percent = (currentTime / duration) * 100;
+
+            if (progressBar) progressBar.value = percent;
+            if (npProgressBar) npProgressBar.value = percent;
+
+            const timeText = `${formatYtTime(currentTime)} / ${formatYtTime(duration)}`;
+            if (timeDisplay && !window.timeInputActive) timeDisplay.textContent = timeText;
+            if (npTimeDisplay && !window.npTimeInputActive) npTimeDisplay.textContent = timeText;
+        })
+        .catch(() => {});
+}
+
+// Handle Vimeo video ending
+function handleVimeoVideoEnded() {
+    const playMode = typeof getPlayMode === 'function' ? getPlayMode() : 'once';
+
+    // For repeat-one mode, replay the same video
+    if (playMode === 'repeat-one') {
+        if (vimeoPlayer) {
+            vimeoPlayer.setCurrentTime(0);
+            vimeoPlayer.play();
+        }
+        return;
+    }
+
+    // For other modes, try to play next in queue
+    if (typeof playNext === 'function') {
+        playNext();
+    }
+}
 
 // Create YouTube player with hidden controls
 function createYouTubePlayer(videoId) {
@@ -346,7 +641,18 @@ function stopEmbeddedPlayer() {
         ytProgressInterval = null;
     }
 
+    if (vimeoPlayer) {
+        vimeoPlayer.destroy();
+        vimeoPlayer = null;
+    }
+
+    if (vimeoProgressInterval) {
+        clearInterval(vimeoProgressInterval);
+        vimeoProgressInterval = null;
+    }
+
     window._currentYouTubeVideoId = null;
+    window._currentVimeoVideoId = null;
 
     // Hide the trigger zone and floating button, clear timers
     const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
@@ -402,12 +708,20 @@ function stopEmbeddedPlayer() {
     if (typeof clearABLoop === 'function') clearABLoop();
 }
 
-// Play from embedded URL (YouTube, etc.)
+// Play from embedded URL (YouTube, Vimeo, etc.)
 function playEmbeddedUrl(url) {
     if (isYouTubeUrl(url)) {
         const videoId = extractYouTubeVideoId(url);
         if (videoId) {
             createYouTubePlayer(videoId);
+            return true;
+        }
+    }
+
+    if (isVimeoUrl(url)) {
+        const videoId = extractVimeoVideoId(url);
+        if (videoId) {
+            createVimeoPlayer(videoId);
             return true;
         }
     }
@@ -421,33 +735,58 @@ function isEmbeddedPlayerActive() {
     return !embeddedPlayer.classList.contains('hidden');
 }
 
-// Toggle play/pause for embedded player
+// Toggle play/pause for embedded player (YouTube or Vimeo)
 function toggleEmbeddedPlayerPlayPause() {
-    if (!ytPlayer) return;
-
-    const state = ytPlayer.getPlayerState();
-    if (state === YT.PlayerState.PLAYING) {
-        ytPlayer.pauseVideo();
-    } else {
-        ytPlayer.playVideo();
+    if (ytPlayer) {
+        const state = ytPlayer.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+            ytPlayer.pauseVideo();
+        } else {
+            ytPlayer.playVideo();
+        }
+    } else if (vimeoPlayer) {
+        vimeoPlayer.getPaused().then(paused => {
+            if (paused) {
+                vimeoPlayer.play();
+            } else {
+                vimeoPlayer.pause();
+            }
+        }).catch(() => {});
     }
 }
 
-// Seek YouTube video
-function seekYtPlayer(percent) {
-    if (!ytPlayer || !ytPlayer.getDuration) return;
-
-    const duration = ytPlayer.getDuration();
-    const targetTime = (percent / 100) * duration;
-    ytPlayer.seekTo(targetTime, true);
+// Seek embedded video (YouTube or Vimeo)
+function seekEmbeddedPlayer(percent) {
+    if (ytPlayer && ytPlayer.getDuration) {
+        const duration = ytPlayer.getDuration();
+        const targetTime = (percent / 100) * duration;
+        ytPlayer.seekTo(targetTime, true);
+    } else if (vimeoPlayer) {
+        vimeoPlayer.getDuration().then(duration => {
+            const targetTime = (percent / 100) * duration;
+            vimeoPlayer.setCurrentTime(targetTime);
+        }).catch(() => {});
+    }
 }
 
-// Set YouTube volume
-function setYtVolume(percent) {
-    if (!ytPlayer) return;
+// Seek YouTube video (legacy function name)
+function seekYtPlayer(percent) {
+    seekEmbeddedPlayer(percent);
+}
 
-    ytPlayer.setVolume(percent);
+// Set embedded player volume (YouTube or Vimeo)
+function setEmbeddedVolume(percent) {
+    if (ytPlayer) {
+        ytPlayer.setVolume(percent);
+    } else if (vimeoPlayer) {
+        vimeoPlayer.setVolume(percent / 100); // Vimeo uses 0-1
+    }
     localStorage.setItem('volume', percent.toString());
+}
+
+// Set YouTube volume (legacy function name)
+function setYtVolume(percent) {
+    setEmbeddedVolume(percent);
 }
 
 // Hook into stop button to also stop embedded player

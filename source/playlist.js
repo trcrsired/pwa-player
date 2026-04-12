@@ -429,10 +429,17 @@ function showPlaylistHeaderMenu(playlistName, button) {
                 // Extract name from URL (filename part)
                 let name = trimmedUrl.split('/').pop()?.split('?')[0] || trimmedUrl;
 
-                // For YouTube URLs, extract video title later or use video ID as placeholder
-                if (typeof isYouTubeUrl === 'function' && isYouTubeUrl(trimmedUrl)) {
-                    const videoId = extractYouTubeVideoId(trimmedUrl);
-                    name = videoId ? `YouTube: ${videoId}` : 'YouTube Video';
+                // For embedded URLs (YouTube, Vimeo), use placeholder name
+                if (typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(trimmedUrl)) {
+                    if (typeof isYouTubeUrl === 'function' && isYouTubeUrl(trimmedUrl)) {
+                        const videoId = typeof extractYouTubeVideoId === 'function' ? extractYouTubeVideoId(trimmedUrl) : null;
+                        name = videoId ? `YouTube: ${videoId}` : 'YouTube Video';
+                    } else if (typeof isVimeoUrl === 'function' && isVimeoUrl(trimmedUrl)) {
+                        const videoId = typeof extractVimeoVideoId === 'function' ? extractVimeoVideoId(trimmedUrl) : null;
+                        name = videoId ? `Vimeo: ${videoId}` : 'Vimeo Video';
+                    } else {
+                        name = 'Web Video';
+                    }
                 }
 
                 // Ask for optional custom name

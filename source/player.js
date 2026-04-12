@@ -504,13 +504,13 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
 }
 
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
-  // Check if this is a YouTube URL - use embedded player instead
-  if (typeof playEmbeddedUrl === 'function' && typeof isYouTubeUrl === 'function' && isYouTubeUrl(blobURL)) {
+  // Check if this is an embedded URL (YouTube, Vimeo, etc.) - use embedded player instead
+  if (typeof playEmbeddedUrl === 'function' && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
     playEmbeddedUrl(blobURL);
     return;
   }
 
-  // Stop embedded player (YouTube) if active - we're switching to normal video
+  // Stop embedded player (YouTube/Vimeo) if active - we're switching to normal video
   if (typeof stopEmbeddedPlayer === 'function') {
     stopEmbeddedPlayer();
   }
