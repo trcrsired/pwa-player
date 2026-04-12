@@ -450,24 +450,49 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('play', () => {
         if (isEmbeddedPlayerActive() && currentPlatformInstance) {
             currentPlatformInstance.play();
+        } else {
+            // Normal video playback
+            const video = document.getElementById("player");
+            if (video && video.src) {
+                video.play().catch(() => {});
+            }
         }
     });
 
     navigator.mediaSession.setActionHandler('pause', () => {
         if (isEmbeddedPlayerActive() && currentPlatformInstance) {
             currentPlatformInstance.pause();
+        } else {
+            // Normal video playback
+            const video = document.getElementById("player");
+            if (video && video.src) {
+                video.pause();
+            }
         }
     });
 
     navigator.mediaSession.setActionHandler('stop', () => {
         if (isEmbeddedPlayerActive()) {
             stopEmbeddedPlayer();
+        } else {
+            // Normal video - stop by clearing source
+            const video = document.getElementById("player");
+            if (video) {
+                video.pause();
+                video.src = '';
+            }
         }
     });
 
     navigator.mediaSession.setActionHandler('seekto', (details) => {
         if (isEmbeddedPlayerActive() && currentPlatformInstance && details.seekTime) {
             currentPlatformInstance.seekToTime(details.seekTime);
+        } else {
+            // Normal video playback
+            const video = document.getElementById("player");
+            if (video && video.src && details.seekTime) {
+                video.currentTime = details.seekTime;
+            }
         }
     });
 }
