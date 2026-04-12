@@ -941,6 +941,8 @@ async function toggleStopBtn()
   // Clear last played/playlist so default playlist can take over on next play
   kv_delete("lastplaylist").catch(() => {});
   kv_delete("lastplayed").catch(() => {});
+  // Clear A-B loop
+  if (typeof clearABLoop === 'function') clearABLoop();
   // Show controls when nothing is playing
   ensureControlsVisibility();
 }
