@@ -614,22 +614,21 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
             }
 
             if (action === "share") {
-                // Share IPTV channel - name + optionally PWA Player URL (URLs passed separately)
+                // Share IPTV channel - name + URLs + optionally PWA Player URL (all in text)
                 const allUrls = channel.urls || [url];
 
-                // Build share text: name + optionally PWA Player URL (URLs are passed via url parameter)
-                let shareText = channel.name;
+                // Build share text: name + URLs + optionally PWA Player URL
+                let shareText = `${channel.name}\n${allUrls.length > 1 ? allUrls.join('\n') : url}`;
                 if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                     const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${channel.name}\n\nPWA Player: ${pwaUrl}`;
+                    shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
                 }
 
                 if (navigator.share) {
                     try {
                         await navigator.share({
                             title: channel.name,
-                            text: shareText,
-                            url: allUrls.length === 1 ? url : undefined
+                            text: shareText
                         });
                     } catch (e) {
                         if (e.name !== 'AbortError') {
@@ -637,14 +636,9 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                         }
                     }
                 } else {
-                    // Fallback: copy to clipboard (include URLs in text since we can't pass url separately)
-                    let clipboardText = allUrls.length > 1 ? allUrls.join('\n') : url;
-                    if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                        const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                        clipboardText = `${clipboardText}\n\nPWA Player: ${pwaUrl}`;
-                    }
+                    // Fallback: copy to clipboard
                     try {
-                        await navigator.clipboard.writeText(clipboardText);
+                        await navigator.clipboard.writeText(shareText);
                         alert(t('urlCopied', 'URL copied to clipboard'));
                     } catch (err) {
                         console.warn("Failed to copy URL:", err);

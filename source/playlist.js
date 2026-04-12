@@ -697,21 +697,19 @@ async function sharePlaylistEntry(entry) {
 
     // Check if it's a URL (internet resource)
     if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
-        // Build share text: name + optionally PWA Player URL (URL is passed separately)
-        let shareText = entry.name || '';
+        // Build share text: name + URL + optionally PWA Player URL (all in text, no separate url param)
+        let shareText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
         if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
             const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-            if (shareText) shareText += '\n\n';
-            shareText += `PWA Player: ${pwaUrl}`;
+            shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
         }
 
-        // Share URL (url is passed separately, not duplicated in text)
+        // Share (all in text - don't use url param to avoid duplication)
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: entry.name || entry.path,
-                    text: shareText,
-                    url: entry.path
+                    text: shareText
                 });
             } catch (e) {
                 if (e.name !== 'AbortError') {
@@ -719,14 +717,9 @@ async function sharePlaylistEntry(entry) {
                 }
             }
         } else {
-            // Fallback: copy to clipboard (include URL in text since we can't pass url separately)
-            let clipboardText = entry.path;
-            if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                clipboardText = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
-            }
+            // Fallback: copy to clipboard
             try {
-                await navigator.clipboard.writeText(clipboardText);
+                await navigator.clipboard.writeText(shareText);
                 alert(t('urlCopied', 'URL copied to clipboard'));
             } catch (e) {
                 console.warn('Copy failed:', e);
