@@ -415,18 +415,18 @@ if (videoPreviewEnabledCheckbox) {
     });
 }
 
-// Embedded controls auto-hide delay
-const embeddedControlsHideDelayInput = document.getElementById("embeddedControlsHideDelayInput");
+// Controls auto-hide delay (applies to both normal video and embedded player)
+const controlsAutoHideDelayInput = document.getElementById("controlsAutoHideDelayInput");
 
-if (embeddedControlsHideDelayInput) {
-    embeddedControlsHideDelayInput.value = localStorage.getItem("embeddedControlsHideDelay") || "5000";
-    embeddedControlsHideDelayInput.addEventListener("change", () => {
-        const delay = parseInt(embeddedControlsHideDelayInput.value, 10);
+if (controlsAutoHideDelayInput) {
+    controlsAutoHideDelayInput.value = localStorage.getItem("controlsAutoHideDelay") || "5000";
+    controlsAutoHideDelayInput.addEventListener("change", () => {
+        const delay = parseInt(controlsAutoHideDelayInput.value, 10);
         if (delay >= 0) {
-            localStorage.setItem("embeddedControlsHideDelay", delay.toString());
+            localStorage.setItem("controlsAutoHideDelay", delay.toString());
         } else {
-            localStorage.setItem("embeddedControlsHideDelay", "5000");
-            embeddedControlsHideDelayInput.value = "5000";
+            localStorage.setItem("controlsAutoHideDelay", "5000");
+            controlsAutoHideDelayInput.value = "5000";
         }
     });
 }

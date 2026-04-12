@@ -1546,13 +1546,16 @@ function showControls(autoHide = true) {
 
     clearTimeout(hideTimeout);
 
-    // Auto-hide after 5 seconds only when playing and not dragging progress bar
+    // Auto-hide after configured delay only when playing and not dragging progress bar
     if (autoHide && hasActiveSource && !isDraggingProgressBar) {
-        hideTimeout = setTimeout(() => {
-            controls.classList.add("hidden");
-            playerWrapper.classList.add("hide-cursor");
-            updateSubtitlePosition(false);
-        }, 5000);
+        const delay = parseInt(localStorage.getItem("controlsAutoHideDelay"), 10) || 5000;
+        if (delay > 0) {
+            hideTimeout = setTimeout(() => {
+                controls.classList.add("hidden");
+                playerWrapper.classList.add("hide-cursor");
+                updateSubtitlePosition(false);
+            }, delay);
+        }
     }
 }
 

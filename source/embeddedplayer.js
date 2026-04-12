@@ -115,6 +115,13 @@ function createYouTubePlayer(videoId) {
         ytProgressInterval = null;
     }
 
+    // Pause the normal video player before switching to embedded
+    // This prevents audio from continuing when hidden
+    const videoEl = document.getElementById("player");
+    if (videoEl && !videoEl.paused) {
+        videoEl.pause();
+    }
+
     // Clear the embedded player container
     embeddedPlayer.innerHTML = '';
 
@@ -526,8 +533,8 @@ let showBtnAutoHideTimer = null;
 let controlsAutoHideTimer = null;
 
 // Get auto-hide delay from settings (default 5 seconds)
-function getEmbeddedAutoHideDelay() {
-    const delay = parseInt(localStorage.getItem("embeddedControlsHideDelay"), 10);
+function getControlsAutoHideDelay() {
+    const delay = parseInt(localStorage.getItem("controlsAutoHideDelay"), 10);
     return delay > 0 ? delay : 5000;
 }
 
@@ -560,7 +567,7 @@ function startControlsAutoHide() {
             if (controls) controls.classList.add("hidden");
             if (triggerZone) triggerZone.classList.remove("hidden"); // Show trigger zone again
         }
-    }, getEmbeddedAutoHideDelay());
+    }, getControlsAutoHideDelay());
 }
 
 // Show controls and start auto-hide timer
