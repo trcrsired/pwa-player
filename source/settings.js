@@ -1366,3 +1366,28 @@ function initProfiles() {
 
 // Initialize on load
 initProfiles();
+
+// =====================================================
+// Share PWA Player URL Setting
+// =====================================================
+const sharePwaPlayerUrlCheckbox = document.getElementById("sharePwaPlayerUrl");
+
+// Load saved preference (default: false)
+if (sharePwaPlayerUrlCheckbox) {
+    sharePwaPlayerUrlCheckbox.checked = localStorage.getItem("sharePwaPlayerUrl") === "true";
+
+    sharePwaPlayerUrlCheckbox.addEventListener("change", () => {
+        localStorage.setItem("sharePwaPlayerUrl", sharePwaPlayerUrlCheckbox.checked ? "true" : "false");
+    });
+}
+
+// Helper function to check if sharing PWA Player URL is enabled
+function isSharePwaPlayerUrlEnabled() {
+    return localStorage.getItem("sharePwaPlayerUrl") === "true";
+}
+
+// Get PWA Player URL (the app's own URL)
+function getPwaPlayerUrl() {
+    // Return the current app URL
+    return window.location.href;
+}

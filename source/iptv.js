@@ -616,9 +616,16 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
             if (action === "share") {
                 // Share IPTV channel - all URLs if available (no CORS bypass info)
                 const allUrls = channel.urls || [url];
-                const shareText = allUrls.length > 1
+
+                // Build share text - optionally include PWA Player URL
+                let shareText = allUrls.length > 1
                     ? `${channel.name}\n\n${allUrls.join('\n')}`
                     : channel.name;
+
+                if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                    const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                    shareText += `\n\nWatch with PWA Player: ${pwaUrl}`;
+                }
 
                 if (navigator.share) {
                     try {
@@ -631,7 +638,7 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                         } else {
                             await navigator.share({
                                 title: channel.name,
-                                text: channel.name,
+                                text: shareText,
                                 url: url
                             });
                         }
@@ -643,7 +650,11 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                 } else {
                     // Fallback: copy all URLs to clipboard
                     try {
-                        const textToCopy = allUrls.length > 1 ? allUrls.join('\n') : url;
+                        let textToCopy = allUrls.length > 1 ? allUrls.join('\n') : url;
+                        if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                            const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                            textToCopy += `\n\nPWA Player: ${pwaUrl}`;
+                        }
                         await navigator.clipboard.writeText(textToCopy);
                         alert(t('urlCopied', 'URL copied to clipboard'));
                     } catch (err) {

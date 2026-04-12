@@ -327,5 +327,9 @@ const EN_TRANSLATIONS = {
     share: "Share",
     shareNotSupported: "Sharing this file type is not supported",
     pathCopied: "Path copied to clipboard",
-    urlsCopied: "URLs copied to clipboard"
+    urlsCopied: "URLs copied to clipboard",
+
+    // PWA Player Share
+    sharePwaPlayerUrl: "Include PWA Player URL when sharing",
+    sharePwaPlayerUrlHint: "When enabled, shares will also include the PWA Player app URL so recipients can get the player"
 };

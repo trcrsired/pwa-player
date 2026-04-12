@@ -327,5 +327,9 @@ const ZHCN_TRANSLATIONS = {
     share: "分享",
     shareNotSupported: "不支持分享此文件类型",
     pathCopied: "路径已复制到剪贴板",
-    urlsCopied: "URL已复制到剪贴板"
+    urlsCopied: "URL已复制到剪贴板",
+
+    // PWA Player Share
+    sharePwaPlayerUrl: "分享时包含PWA播放器URL",
+    sharePwaPlayerUrlHint: "启用后，分享内容时也会包含PWA播放器应用URL，方便接收者获取播放器"
 };

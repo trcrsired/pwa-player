@@ -324,5 +324,9 @@ const JA_TRANSLATIONS = {
     share: "共有",
     shareNotSupported: "このファイルタイプの共有はサポートされていません",
     pathCopied: "パスをクリップボードにコピーしました",
-    urlsCopied: "URLをクリップボードにコピーしました"
+    urlsCopied: "URLをクリップボードにコピーしました",
+
+    // PWA Player Share
+    sharePwaPlayerUrl: "共有時にPWAプレーヤーURLを含める",
+    sharePwaPlayerUrlHint: "有効にすると、共有時にPWAプレーヤーアプリのURLも含まれ、受信者がプレーヤーを取得できます"
 };

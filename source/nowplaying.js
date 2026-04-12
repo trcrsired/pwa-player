@@ -375,15 +375,27 @@ async function shareEntry(entry) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const title = entry.name || entry.path;
 
+    // Build share text - optionally include PWA Player URL
+    let shareText = title;
+    let shareUrl = null;
+
     // Check if it's a URL (internet resource)
     if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
+        shareUrl = entry.path;
+
+        // Include PWA Player URL if enabled
+        if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+            const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+            shareText = `${title}\n\nPlayed with PWA Player: ${pwaUrl}`;
+        }
+
         // Share URL
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: title,
-                    text: title,
-                    url: entry.path
+                    text: shareText,
+                    url: shareUrl
                 });
             } catch (e) {
                 if (e.name !== 'AbortError') {
@@ -393,13 +405,22 @@ async function shareEntry(entry) {
         } else {
             // Fallback: copy URL to clipboard
             try {
-                await navigator.clipboard.writeText(entry.path);
+                const textToCopy = typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()
+                    ? `${entry.path}\n\nPWA Player: ${typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href}`
+                    : entry.path;
+                await navigator.clipboard.writeText(textToCopy);
                 alert(t('urlCopied', 'URL copied to clipboard'));
             } catch (e) {
                 console.warn('Copy failed:', e);
             }
         }
         return;
+    }
+
+    // Include PWA Player URL if enabled for local files
+    if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+        const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+        shareText = `${title}\n\nFrom PWA Player: ${pwaUrl}`;
     }
 
     // For local files, try to share the file
@@ -417,7 +438,7 @@ async function shareEntry(entry) {
             if (file) {
                 const shareData = {
                     title: title,
-                    text: title,
+                    text: shareText,
                     files: [file]
                 };
 
@@ -430,7 +451,7 @@ async function shareEntry(entry) {
                 // Can't resolve to file, share path as text
                 await navigator.share({
                     title: title,
-                    text: entry.path
+                    text: shareText
                 });
             }
         } catch (e) {
@@ -438,7 +459,10 @@ async function shareEntry(entry) {
                 console.warn('Share failed:', e);
                 // Fallback: copy path to clipboard
                 try {
-                    await navigator.clipboard.writeText(entry.path);
+                    const textToCopy = typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()
+                        ? `${entry.path}\n\nPWA Player: ${typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href}`
+                        : entry.path;
+                    await navigator.clipboard.writeText(textToCopy);
                     alert(t('pathCopied', 'Path copied to clipboard'));
                 } catch (e2) {
                     console.warn('Copy failed:', e2);
@@ -448,7 +472,10 @@ async function shareEntry(entry) {
     } else {
         // Web Share not available, copy path
         try {
-            await navigator.clipboard.writeText(entry.path);
+            const textToCopy = typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()
+                ? `${entry.path}\n\nPWA Player: ${typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href}`
+                : entry.path;
+            await navigator.clipboard.writeText(textToCopy);
             alert(t('pathCopied', 'Path copied to clipboard'));
         } catch (e) {
             console.warn('Copy failed:', e);
