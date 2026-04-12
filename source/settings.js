@@ -1372,9 +1372,9 @@ initProfiles();
 // =====================================================
 const sharePwaPlayerUrlCheckbox = document.getElementById("sharePwaPlayerUrl");
 
-// Load saved preference (default: false)
+// Load saved preference (default: true - include PWA Player URL by default)
 if (sharePwaPlayerUrlCheckbox) {
-    sharePwaPlayerUrlCheckbox.checked = localStorage.getItem("sharePwaPlayerUrl") === "true";
+    sharePwaPlayerUrlCheckbox.checked = localStorage.getItem("sharePwaPlayerUrl") !== "false";
 
     sharePwaPlayerUrlCheckbox.addEventListener("change", () => {
         localStorage.setItem("sharePwaPlayerUrl", sharePwaPlayerUrlCheckbox.checked ? "true" : "false");
@@ -1383,11 +1383,10 @@ if (sharePwaPlayerUrlCheckbox) {
 
 // Helper function to check if sharing PWA Player URL is enabled
 function isSharePwaPlayerUrlEnabled() {
-    return localStorage.getItem("sharePwaPlayerUrl") === "true";
+    return localStorage.getItem("sharePwaPlayerUrl") !== "false";
 }
 
 // Get PWA Player URL (the app's own URL)
 function getPwaPlayerUrl() {
-    // Return the current app URL
     return window.location.href;
 }

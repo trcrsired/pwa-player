@@ -1211,11 +1211,11 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     try {
                         const file = await handle.getFile();
 
-                        // Build share text - optionally include PWA Player URL
-                        let shareText = name;
+                        // Build share text: path first, optionally PWA Player URL
+                        let shareText = fullPath || name;
                         if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                             const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                            shareText = `${name}\n\nFrom PWA Player: ${pwaUrl}`;
+                            shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
                         }
 
                         const shareData = {

@@ -617,45 +617,29 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                 // Share IPTV channel - all URLs if available (no CORS bypass info)
                 const allUrls = channel.urls || [url];
 
-                // Build share text - optionally include PWA Player URL
-                let shareText = allUrls.length > 1
-                    ? `${channel.name}\n\n${allUrls.join('\n')}`
-                    : channel.name;
-
+                // Build share text: URLs first, optionally PWA Player URL
+                let shareText = allUrls.length > 1 ? allUrls.join('\n') : url;
                 if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                     const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText += `\n\nWatch with PWA Player: ${pwaUrl}`;
+                    shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
                 }
 
                 if (navigator.share) {
                     try {
-                        // If multiple URLs, share as text; if single, share URL
-                        if (allUrls.length > 1) {
-                            await navigator.share({
-                                title: channel.name,
-                                text: shareText
-                            });
-                        } else {
-                            await navigator.share({
-                                title: channel.name,
-                                text: shareText,
-                                url: url
-                            });
-                        }
+                        await navigator.share({
+                            title: channel.name,
+                            text: shareText,
+                            url: allUrls.length === 1 ? url : undefined
+                        });
                     } catch (e) {
                         if (e.name !== 'AbortError') {
                             console.warn('Share failed:', e);
                         }
                     }
                 } else {
-                    // Fallback: copy all URLs to clipboard
+                    // Fallback: copy to clipboard
                     try {
-                        let textToCopy = allUrls.length > 1 ? allUrls.join('\n') : url;
-                        if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                            const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                            textToCopy += `\n\nPWA Player: ${pwaUrl}`;
-                        }
-                        await navigator.clipboard.writeText(textToCopy);
+                        await navigator.clipboard.writeText(shareText);
                         alert(t('urlCopied', 'URL copied to clipboard'));
                     } catch (err) {
                         console.warn("Failed to copy URL:", err);

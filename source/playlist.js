@@ -694,29 +694,23 @@ async function sharePlaylistEntry(entry) {
     if (!entry) return;
 
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-    const title = entry.name || entry.path;
-
-    // Build share text - optionally include PWA Player URL
-    let shareText = title;
-    let shareUrl = null;
 
     // Check if it's a URL (internet resource)
     if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
-        shareUrl = entry.path;
-
-        // Include PWA Player URL if enabled
+        // Build share text: URL first, optionally PWA Player URL
+        let shareText = entry.path;
         if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
             const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-            shareText = `${title}\n\nPlayed with PWA Player: ${pwaUrl}`;
+            shareText = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
         }
 
         // Share URL
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: title,
+                    title: entry.name || entry.path,
                     text: shareText,
-                    url: shareUrl
+                    url: entry.path
                 });
             } catch (e) {
                 if (e.name !== 'AbortError') {
@@ -724,24 +718,15 @@ async function sharePlaylistEntry(entry) {
                 }
             }
         } else {
-            // Fallback: copy URL to clipboard
+            // Fallback: copy to clipboard
             try {
-                const textToCopy = typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()
-                    ? `${entry.path}\n\nPWA Player: ${typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href}`
-                    : entry.path;
-                await navigator.clipboard.writeText(textToCopy);
+                await navigator.clipboard.writeText(shareText);
                 alert(t('urlCopied', 'URL copied to clipboard'));
             } catch (e) {
                 console.warn('Copy failed:', e);
             }
         }
         return;
-    }
-
-    // Include PWA Player URL if enabled for local files
-    if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-        const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-        shareText = `${title}\n\nFrom PWA Player: ${pwaUrl}`;
     }
 
     // For local files, try to share the file
@@ -757,8 +742,15 @@ async function sharePlaylistEntry(entry) {
             }
 
             if (file) {
+                // Build share text
+                let shareText = entry.path;
+                if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                    const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                    shareText = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+                }
+
                 const shareData = {
-                    title: title,
+                    title: entry.name || entry.path,
                     text: shareText,
                     files: [file]
                 };
@@ -770,8 +762,13 @@ async function sharePlaylistEntry(entry) {
                 }
             } else {
                 // Can't resolve to file, share path as text
+                let shareText = entry.path;
+                if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                    const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                    shareText = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+                }
                 await navigator.share({
-                    title: title,
+                    title: entry.name || entry.path,
                     text: shareText
                 });
             }
@@ -780,9 +777,11 @@ async function sharePlaylistEntry(entry) {
                 console.warn('Share failed:', e);
                 // Fallback: copy path to clipboard
                 try {
-                    const textToCopy = typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()
-                        ? `${entry.path}\n\nPWA Player: ${typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href}`
-                        : entry.path;
+                    let textToCopy = entry.path;
+                    if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                        const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                        textToCopy = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+                    }
                     await navigator.clipboard.writeText(textToCopy);
                     alert(t('pathCopied', 'Path copied to clipboard'));
                 } catch (e2) {
@@ -793,9 +792,11 @@ async function sharePlaylistEntry(entry) {
     } else {
         // Web Share not available, copy path
         try {
-            const textToCopy = typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()
-                ? `${entry.path}\n\nPWA Player: ${typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href}`
-                : entry.path;
+            let textToCopy = entry.path;
+            if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                textToCopy = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+            }
             await navigator.clipboard.writeText(textToCopy);
             alert(t('pathCopied', 'Path copied to clipboard'));
         } catch (e) {
