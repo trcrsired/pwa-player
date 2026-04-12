@@ -649,15 +649,11 @@ document.addEventListener("fullscreenchange", () => {
     if (!isEmbeddedPlayerActive()) return;
 
     const controls = document.getElementById("controls");
-    const showBtn = document.getElementById("embeddedShowControlsBtn");
-    const fullscreenBtn = document.getElementById("fullscreenBtn");
-    const npFullscreenBtn = document.getElementById("npFullscreenBtn");
 
     const isFullscreen = document.fullscreenElement !== null;
 
-    // Update our fullscreen button icons
-    if (fullscreenBtn) fullscreenBtn.textContent = isFullscreen ? "⛶" : "FullScreen";
-    if (npFullscreenBtn) npFullscreenBtn.textContent = isFullscreen ? "⛶" : "FullScreen";
+    // Fullscreen button should always show ⛶
+    // (no need to change text - it's always the same icon)
 
     if (isFullscreen) {
         // In fullscreen - hide our controls and trigger zone
@@ -690,14 +686,11 @@ document.addEventListener("webkitfullscreenchange", () => {
     if (!isEmbeddedPlayerActive()) return;
 
     const controls = document.getElementById("controls");
-    const fullscreenBtn = document.getElementById("fullscreenBtn");
-    const npFullscreenBtn = document.getElementById("npFullscreenBtn");
 
     const isFullscreen = document.webkitFullscreenElement !== null;
 
-    // Update our fullscreen button icons
-    if (fullscreenBtn) fullscreenBtn.textContent = isFullscreen ? "⛶" : "FullScreen";
-    if (npFullscreenBtn) npFullscreenBtn.textContent = isFullscreen ? "⛶" : "FullScreen";
+    // Fullscreen button should always show ⛶
+    // (no need to change text - it's always the same icon)
 
     if (isFullscreen) {
         // In fullscreen - hide our controls and trigger zone
