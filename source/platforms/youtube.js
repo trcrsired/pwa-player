@@ -255,9 +255,10 @@ class YouTubePlatform extends BasePlatform {
         const videoUrl = this.getVideoUrl(videoId);
 
         if (videoData && videoData.title) {
-            // Use custom entry name if available, otherwise use YouTube title
+            // Use custom entry name if it's not a URL, otherwise use YouTube title
             const entryName = this.pendingOptions?.entryName;
-            const displayTitle = entryName && entryName !== videoUrl
+            const isEntryNameUrl = entryName && (entryName.startsWith('http://') || entryName.startsWith('https://'));
+            const displayTitle = entryName && !isEntryNameUrl
                 ? entryName
                 : videoData.title;
 

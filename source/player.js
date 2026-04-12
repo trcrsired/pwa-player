@@ -541,8 +541,12 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
   // Check if this is an embedded URL (YouTube, Vimeo, etc.) - use embedded player instead
   if (typeof playEmbeddedUrl === 'function' && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
-    // Use entry name from playlist if provided, otherwise use metadata title
-    const entryName = playlist?.entryName || mediametadata.title;
+    // Use entry name from playlist if provided
+    // For embedded URLs without entry name, use the full URL instead of extracted filename
+    let entryName = playlist?.entryName;
+    if (!entryName) {
+        entryName = sourceobject; // Full URL
+    }
     playEmbeddedUrl(blobURL, {
       playlist: playlist,
       entryName: entryName,
@@ -654,8 +658,16 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     // Store original metadata for subtitle updates
     currentMediaMetadata = { ...mediametadata };
-    // Set MediaSession with transparent artwork
-    const displayTitle = playlist?.entryName || mediametadata.title;
+    // Set MediaSession - use entry name if available
+    // For embedded URLs without entry name, use full URL instead of extracted filename
+    let displayTitle;
+    if (playlist?.entryName) {
+        displayTitle = playlist.entryName;
+    } else if (typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
+        displayTitle = sourceobject; // Full URL for embedded content without custom name
+    } else {
+        displayTitle = mediametadata.title;
+    }
     navigator.mediaSession.metadata = new MediaMetadata({
       title: displayTitle,
       artist: mediametadata.artist || '',
@@ -664,7 +676,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     document.title = `PWA Player ▶️ ${displayTitle}`;
 
     const entry = {
-      name: playlist?.entryName || mediametadata.title,
+      name: displayTitle,
       artist: mediametadata.artist || "",
       path: playlist?.entryPath || blobURL
     };

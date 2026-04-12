@@ -181,6 +181,21 @@ async function updatePlaylistEntryName(playlistName, entryPath, newName, skipIfH
             if (typeof renderNowPlayingQueue === 'function') {
                 renderNowPlayingQueue();
             }
+
+            // Update Now Playing info display if this is the currently playing entry
+            const currentTrack = typeof getCurrentTrack === 'function' ? getCurrentTrack() : null;
+            if (currentTrack && currentTrack.path === entryPath && currentTrack.playlistName === playlistName) {
+                // Update the Now Playing info panel
+                const titleEl = document.querySelector("#nowPlayingInfo .track-title");
+                if (titleEl) titleEl.textContent = newName;
+                // Update MediaSession and document title
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: newName,
+                    artist: currentTrack.artist || '',
+                    album: currentTrack.album || ''
+                });
+                document.title = newName + ' - PWA Player';
+            }
         }
     } catch (e) {
         console.warn('Failed to update playlist entry name:', e);

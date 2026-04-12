@@ -341,9 +341,10 @@ class SpotifyPlatform extends BasePlatform {
                 }
             }
 
-            // Update title - use entry name if available, otherwise generate title
+            // Update title - use entry name if it's a custom name (not a URL), otherwise generate title
             const entryName = this.pendingOptions?.entryName;
-            const displayName = entryName && entryName !== this.getVideoUrl(videoId)
+            const isEntryNameUrl = entryName && (entryName.startsWith('http://') || entryName.startsWith('https://') || entryName.startsWith('spotify:'));
+            const displayName = entryName && !isEntryNameUrl
                 ? entryName
                 : this.getTitle();
             document.title = `${displayName} - PWA Player`;
@@ -631,9 +632,10 @@ window.onSpotifyIframeApiReady = (IFrameAPI) => {
                 platformInstance.updateProgress();
             });
 
-            // Use entry name if available, otherwise generate title
+            // Use entry name if it's a custom name (not a URL), otherwise generate title
             const entryName = options?.entryName;
-            const displayName = entryName && entryName !== platformInstance.getVideoUrl(videoId)
+            const isEntryNameUrl = entryName && (entryName.startsWith('http://') || entryName.startsWith('https://') || entryName.startsWith('spotify:'));
+            const displayName = entryName && !isEntryNameUrl
                 ? entryName
                 : platformInstance.getTitle();
             document.title = `${displayName} - PWA Player`;
