@@ -54,10 +54,15 @@ async function startNowPlayingFromPlaylist(playlistName, startIndex) {
     if (playMode !== "shuffle") {
         nowPlayingIndex = startIndex;
     } else {
-        // Find the shuffled index corresponding to startIndex
-        const startEntry = nowPlayingQueue[startIndex];
-        const foundIndex = shuffledQueue.findIndex(e => e.path === startEntry.path && e.playlistName === startEntry.playlistName);
-        nowPlayingIndex = (foundIndex >= 0) ? foundIndex : 0;
+        // In shuffle mode with startIndex=0, just play shuffledQueue[0]
+        // Otherwise find the shuffled position of the requested item
+        if (startIndex === 0) {
+            nowPlayingIndex = 0;
+        } else {
+            const startEntry = nowPlayingQueue[startIndex];
+            const foundIndex = shuffledQueue.findIndex(e => e.path === startEntry.path && e.playlistName === startEntry.playlistName);
+            nowPlayingIndex = (foundIndex >= 0) ? foundIndex : 0;
+        }
     }
 
     await nowPlaying_playIndex(nowPlayingIndex);

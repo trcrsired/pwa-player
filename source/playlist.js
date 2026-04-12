@@ -394,18 +394,13 @@ function showPlaylistHeaderMenu(playlistName, button) {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
             const playlists = await playlists_load();
-
-            if (action === "play") {
-                // Play this playlist from actual first item (not shuffle)
-                await startNowPlayingFromPlaylistFirst(playlistName);
-                closeActiveView();
-                closeMenu();
-                return;
-            }
-
-            if (action === "play-keep-open") {
-                // Play this playlist from actual first item (keep panel open)
-                await startNowPlayingFromPlaylistFirst(playlistName);
+            const actionisplay = action ==="play";
+            if (actionisplay || action === "play-keep-open") {
+                // Play this playlist - respects shuffle mode
+                await startNowPlayingFromPlaylist(playlistName, 0);
+                if (actionisplay) {
+                    closeActiveView();
+                }
                 closeMenu();
                 return;
             }
