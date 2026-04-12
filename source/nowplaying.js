@@ -282,24 +282,38 @@ function confirmRemoveFromNowPlaying(index) {
 function showNowPlayingItemMenu(index, button) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
+    const queue = getActiveQueue();
+    const entry = queue[index];
+    const isUrl = entry && entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'));
+
     const menu = document.createElement("div");
     menu.className = "context-menu";
 
-    menu.innerHTML = `
+    let menuHtml = `
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
+        <div class="menu-item" data-action="share">${t('share', 'Share')}</div>
+    `;
+    if (isUrl) {
+        menuHtml += `<div class="menu-item" data-action="copy-url">${t('copyUrl', 'Copy URL')}</div>`;
+    }
+    menuHtml += `
         <div class="menu-item danger" data-action="remove">${t('removeFromQueue', 'Remove from Queue')}</div>
         <div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
+
+    menu.innerHTML = menuHtml;
 
     if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
 
     menu.querySelectorAll(".menu-item").forEach(item => {
-        item.addEventListener("click", () => {
+        item.addEventListener("click", async () => {
             const action = item.dataset.action;
+            const queue = getActiveQueue();
+            const entry = queue[index];
 
             if (action === "play") {
                 nowPlaying_playIndex(index);
@@ -314,13 +328,31 @@ function showNowPlayingItemMenu(index, button) {
                 return;
             }
 
+            if (action === "share") {
+                await shareEntry(entry);
+                closeMenu();
+                return;
+            }
+
+            if (action === "copy-url") {
+                // Copy URL/path to clipboard
+                if (entry && entry.path) {
+                    try {
+                        await navigator.clipboard.writeText(entry.path);
+                        alert(t('urlCopied', 'URL copied to clipboard'));
+                    } catch (e) {
+                        console.warn('Copy failed:', e);
+                    }
+                }
+                closeMenu();
+                return;
+            }
+
             if (action === "remove") {
                 confirmRemoveFromNowPlaying(index);
             }
 
             if (action === "properties") {
-                const queue = getActiveQueue();
-                const entry = queue[index];
                 const info = [
                     `${t('index', 'Index')}: ${index + 1} / ${queue.length}`,
                     `${t('name', 'Name')}: ${entry?.name || 'N/A'}`,
@@ -334,6 +366,94 @@ function showNowPlayingItemMenu(index, button) {
             closeMenu();
         });
     });
+}
+
+// Share an entry using Web Share API
+async function shareEntry(entry) {
+    if (!entry) return;
+
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+    const title = entry.name || entry.path;
+
+    // Check if it's a URL (internet resource)
+    if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
+        // Share URL
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: title,
+                    text: title,
+                    url: entry.path
+                });
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    console.warn('Share failed:', e);
+                }
+            }
+        } else {
+            // Fallback: copy URL to clipboard
+            try {
+                await navigator.clipboard.writeText(entry.path);
+                alert(t('urlCopied', 'URL copied to clipboard'));
+            } catch (e) {
+                console.warn('Copy failed:', e);
+            }
+        }
+        return;
+    }
+
+    // For local files, try to share the file
+    if (navigator.share && navigator.canShare) {
+        try {
+            const resolved = await storage_resolvePath(entry.path);
+            let file = null;
+
+            if (resolved instanceof FileSystemFileHandle) {
+                file = await resolved.getFile();
+            } else if (resolved instanceof File) {
+                file = resolved;
+            }
+
+            if (file) {
+                const shareData = {
+                    title: title,
+                    text: title,
+                    files: [file]
+                };
+
+                if (navigator.canShare(shareData)) {
+                    await navigator.share(shareData);
+                } else {
+                    alert(t('shareNotSupported', 'Sharing this file type is not supported'));
+                }
+            } else {
+                // Can't resolve to file, share path as text
+                await navigator.share({
+                    title: title,
+                    text: entry.path
+                });
+            }
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                console.warn('Share failed:', e);
+                // Fallback: copy path to clipboard
+                try {
+                    await navigator.clipboard.writeText(entry.path);
+                    alert(t('pathCopied', 'Path copied to clipboard'));
+                } catch (e2) {
+                    console.warn('Copy failed:', e2);
+                }
+            }
+        }
+    } else {
+        // Web Share not available, copy path
+        try {
+            await navigator.clipboard.writeText(entry.path);
+            alert(t('pathCopied', 'Path copied to clipboard'));
+        } catch (e) {
+            console.warn('Copy failed:', e);
+        }
+    }
 }
 
 function renderNowPlayingQueue() {

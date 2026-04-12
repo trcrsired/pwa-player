@@ -321,5 +321,11 @@ const EN_TRANSLATIONS = {
     youtubeInvalidId: "Invalid YouTube video ID",
     youtubeHtml5Error: "YouTube HTML5 player error",
     youtubeNotFound: "YouTube video not found or removed",
-    youtubeNotAllowed: "YouTube video not allowed to be embedded"
+    youtubeNotAllowed: "YouTube video not allowed to be embedded",
+
+    // Share
+    share: "Share",
+    shareNotSupported: "Sharing this file type is not supported",
+    pathCopied: "Path copied to clipboard",
+    urlsCopied: "URLs copied to clipboard"
 };

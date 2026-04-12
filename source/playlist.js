@@ -204,15 +204,27 @@ async function storage_resolvePath(pointer) {
 }
 
 
-function showPlaylistItemMenu(playlistName, index, button) {
+async function showPlaylistItemMenu(playlistName, index, button) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    // Fetch entry first to check if it's a URL
+    const playlists = await playlists_load();
+    const list = playlists[playlistName];
+    const entry = list?.[index];
+    const isUrl = entry && entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'));
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
 
-    menu.innerHTML = `
+    let menuHtml = `
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
+        <div class="menu-item" data-action="share">${t('share', 'Share')}</div>
+    `;
+    if (isUrl) {
+        menuHtml += `<div class="menu-item" data-action="copy-url">${t('copyUrl', 'Copy URL')}</div>`;
+    }
+    menuHtml += `
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
         <div class="menu-item" data-action="add-to-playlist">${t('addToPlaylist', 'Add to Playlist')}</div>
         <div class="menu-item danger" data-action="delete">${t('remove', 'Remove')}</div>
@@ -222,6 +234,8 @@ function showPlaylistItemMenu(playlistName, index, button) {
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;
 
+    menu.innerHTML = menuHtml;
+
     if (!positionMenu(menu, button)) return;
 
     const closeMenu = () => menu.remove();
@@ -229,8 +243,10 @@ function showPlaylistItemMenu(playlistName, index, button) {
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
-            const playlists = await playlists_load();
-            const list = playlists[playlistName];
+            // Reload playlists for actions that modify it
+            const currentPlaylists = await playlists_load();
+            const currentList = currentPlaylists[playlistName];
+            const currentEntry = currentList?.[index];
 
             if (action === "play") {
                 await startNowPlayingFromPlaylist(playlistName, index);
@@ -245,12 +261,30 @@ function showPlaylistItemMenu(playlistName, index, button) {
                 return;
             }
 
+            if (action === "share") {
+                await sharePlaylistEntry(currentEntry);
+                closeMenu();
+                return;
+            }
+
+            if (action === "copy-url") {
+                if (currentEntry && currentEntry.path) {
+                    try {
+                        await navigator.clipboard.writeText(currentEntry.path);
+                        alert(t('urlCopied', 'URL copied to clipboard'));
+                    } catch (e) {
+                        console.warn('Copy failed:', e);
+                    }
+                }
+                closeMenu();
+                return;
+            }
+
             if (action === "rename") {
-                const entry = list[index];
-                const currentName = entry.name || entry.path;
+                const currentName = currentEntry.name || currentEntry.path;
                 const newName = prompt(t('newEntryName', 'New entry name:'), currentName);
                 if (newName && newName.trim()) {
-                    list[index].name = newName.trim();
+                    currentList[index].name = newName.trim();
                 }
             }
 
@@ -271,11 +305,10 @@ function showPlaylistItemMenu(playlistName, index, button) {
                     const targetIndex = parseInt(choice, 10) - 1;
                     if (targetIndex >= 0 && targetIndex < names.length) {
                         const targetName = names[targetIndex];
-                        const item = list[index];
-                        allPlaylists[targetName].push({ name: item.name, path: item.path, corsBypass: item.corsBypass });
+                        allPlaylists[targetName].push({ name: currentEntry.name, path: currentEntry.path, corsBypass: currentEntry.corsBypass });
                         await playlists_save(allPlaylists);
                         playlist_renderTree();
-                        alert(`${t('addedToPlaylistSuccess', 'Added')} "${item.name}" ${t('toPlaylist', 'to playlist')} "${targetName}".`);
+                        alert(`${t('addedToPlaylistSuccess', 'Added')} "${currentEntry.name}" ${t('toPlaylist', 'to playlist')} "${targetName}".`);
                     }
                 }
                 closeMenu();
@@ -285,23 +318,23 @@ function showPlaylistItemMenu(playlistName, index, button) {
             if (action === "delete") {
                 const ok = confirm(`${t('confirmRemoveItem', 'Remove this item from playlist')} "${playlistName}"?`);
                 if (ok) {
-                    list.splice(index, 1);
+                    currentList.splice(index, 1);
                 }
             }
 
             if (action === "move-up" && index > 0) {
-                [list[index - 1], list[index]] = [list[index], list[index - 1]];
+                [currentList[index - 1], currentList[index]] = [currentList[index], currentList[index - 1]];
             }
 
-            if (action === "move-down" && index < list.length - 1) {
-                [list[index + 1], list[index]] = [list[index], list[index + 1]];
+            if (action === "move-down" && index < currentList.length - 1) {
+                [currentList[index + 1], currentList[index]] = [currentList[index], currentList[index + 1]];
             }
 
             if (action === "properties") {
-                const item = list[index];
+                const item = currentList[index];
                 const info = [
                     `${t('playlistName', 'Playlist')}: ${playlistName}`,
-                    `${t('index', 'Index')}: ${index + 1} / ${list.length}`,
+                    `${t('index', 'Index')}: ${index + 1} / ${currentList.length}`,
                     `${t('name', 'Name')}: ${item.name || 'N/A'}`,
                     `${t('path', 'Path')}: ${item.path || 'N/A'}`
                 ];
@@ -314,7 +347,7 @@ function showPlaylistItemMenu(playlistName, index, button) {
                 return;
             }
 
-            await playlists_save(playlists);
+            await playlists_save(currentPlaylists);
             playlist_renderTree();
             closeMenu();
         });
@@ -655,3 +688,91 @@ document.getElementById("exportPlaylistBtn").addEventListener("click", () => {
 
 // Initial render when script loads
 playlist_renderTree();
+
+// Share a playlist entry using Web Share API
+async function sharePlaylistEntry(entry) {
+    if (!entry) return;
+
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+    const title = entry.name || entry.path;
+
+    // Check if it's a URL (internet resource)
+    if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
+        // Share URL
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: title,
+                    text: title,
+                    url: entry.path
+                });
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    console.warn('Share failed:', e);
+                }
+            }
+        } else {
+            // Fallback: copy URL to clipboard
+            try {
+                await navigator.clipboard.writeText(entry.path);
+                alert(t('urlCopied', 'URL copied to clipboard'));
+            } catch (e) {
+                console.warn('Copy failed:', e);
+            }
+        }
+        return;
+    }
+
+    // For local files, try to share the file
+    if (navigator.share && navigator.canShare) {
+        try {
+            const resolved = await storage_resolvePath(entry.path);
+            let file = null;
+
+            if (resolved instanceof FileSystemFileHandle) {
+                file = await resolved.getFile();
+            } else if (resolved instanceof File) {
+                file = resolved;
+            }
+
+            if (file) {
+                const shareData = {
+                    title: title,
+                    text: title,
+                    files: [file]
+                };
+
+                if (navigator.canShare(shareData)) {
+                    await navigator.share(shareData);
+                } else {
+                    alert(t('shareNotSupported', 'Sharing this file type is not supported'));
+                }
+            } else {
+                // Can't resolve to file, share path as text
+                await navigator.share({
+                    title: title,
+                    text: entry.path
+                });
+            }
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                console.warn('Share failed:', e);
+                // Fallback: copy path to clipboard
+                try {
+                    await navigator.clipboard.writeText(entry.path);
+                    alert(t('pathCopied', 'Path copied to clipboard'));
+                } catch (e2) {
+                    console.warn('Copy failed:', e2);
+                }
+            }
+        }
+    } else {
+        // Web Share not available, copy path
+        try {
+            await navigator.clipboard.writeText(entry.path);
+            alert(t('pathCopied', 'Path copied to clipboard'));
+        } catch (e) {
+            console.warn('Copy failed:', e);
+        }
+    }
+}

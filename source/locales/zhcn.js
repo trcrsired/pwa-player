@@ -321,5 +321,11 @@ const ZHCN_TRANSLATIONS = {
     youtubeInvalidId: "无效的YouTube视频ID",
     youtubeHtml5Error: "YouTube HTML5播放器错误",
     youtubeNotFound: "YouTube视频不存在或已被删除",
-    youtubeNotAllowed: "YouTube视频不允许嵌入播放"
+    youtubeNotAllowed: "YouTube视频不允许嵌入播放",
+
+    // Share
+    share: "分享",
+    shareNotSupported: "不支持分享此文件类型",
+    pathCopied: "路径已复制到剪贴板",
+    urlsCopied: "URL已复制到剪贴板"
 };

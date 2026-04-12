@@ -167,6 +167,7 @@ function showIPTVChannelMenu(channel, url, button) {
     }
 
     items.push(
+        { action: "share", label: t('share', 'Share') },
         { action: "copy-url", label: t('copyUrl', 'Copy URL') },
         { action: "close", label: t('close', 'Close') }
     );
@@ -221,12 +222,56 @@ function showIPTVChannelMenu(channel, url, button) {
                 alert(`${t('addedToPlaylistSuccess', 'Added')} "${channel.name}" ${t('toPlaylist', 'to playlist')} "${names[index]}".`);
             }
 
+            if (action === "share") {
+                // Share IPTV channel - all URLs if available
+                const allUrls = channel.urls || [url];
+                const shareText = allUrls.length > 1
+                    ? `${channel.name}\n\n${allUrls.join('\n')}`
+                    : channel.name;
+
+                if (navigator.share) {
+                    try {
+                        // If multiple URLs, share as text; if single, share URL
+                        if (allUrls.length > 1) {
+                            await navigator.share({
+                                title: channel.name,
+                                text: shareText
+                            });
+                        } else {
+                            await navigator.share({
+                                title: channel.name,
+                                text: channel.name,
+                                url: url
+                            });
+                        }
+                    } catch (e) {
+                        if (e.name !== 'AbortError') {
+                            console.warn('Share failed:', e);
+                        }
+                    }
+                } else {
+                    // Fallback: copy all URLs to clipboard
+                    try {
+                        const textToCopy = allUrls.length > 1 ? allUrls.join('\n') : url;
+                        await navigator.clipboard.writeText(textToCopy);
+                        alert(t('urlCopied', 'URL copied to clipboard'));
+                    } catch (err) {
+                        console.warn("Failed to copy URL:", err);
+                    }
+                }
+            }
+
             if (action === "copy-url") {
+                // Copy all URLs if available
+                const allUrls = channel.urls || [url];
+                const textToCopy = allUrls.length > 1 ? allUrls.join('\n') : url;
                 try {
-                    await navigator.clipboard.writeText(url);
+                    await navigator.clipboard.writeText(textToCopy);
                     const toast = document.getElementById("toast");
                     if (toast) {
-                        toast.textContent = t('urlCopied', 'URL copied to clipboard');
+                        toast.textContent = allUrls.length > 1
+                            ? t('urlsCopied', 'URLs copied to clipboard')
+                            : t('urlCopied', 'URL copied to clipboard');
                         toast.classList.add("show");
                         setTimeout(() => toast.classList.remove("show"), 2000);
                     }
@@ -511,6 +556,7 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
     items.push(
         { action: "add", label: t('addToPlaylist', 'Add to Playlist'), cors: corsEnabled },
         { action: "add-no-cors", label: corsEnabled ? t('addToPlaylistNoCors', 'Add to Playlist (no CORS)') : t('addToPlaylistWithCors', 'Add to Playlist (with CORS)'), cors: !corsEnabled },
+        { action: "share", label: t('share', 'Share') },
         { action: "copy-url", label: t('copyUrl', 'Copy URL') },
         { action: "rename", label: t('rename', 'Rename') },
         { action: "delete", label: t('deleteChannel', 'Delete Channel'), close: true },
@@ -567,12 +613,56 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                 alert(`${t('addedToPlaylistSuccess', 'Added')} "${channel.name}" ${t('toPlaylist', 'to playlist')} "${names[index]}".`);
             }
 
+            if (action === "share") {
+                // Share IPTV channel - all URLs if available (no CORS bypass info)
+                const allUrls = channel.urls || [url];
+                const shareText = allUrls.length > 1
+                    ? `${channel.name}\n\n${allUrls.join('\n')}`
+                    : channel.name;
+
+                if (navigator.share) {
+                    try {
+                        // If multiple URLs, share as text; if single, share URL
+                        if (allUrls.length > 1) {
+                            await navigator.share({
+                                title: channel.name,
+                                text: shareText
+                            });
+                        } else {
+                            await navigator.share({
+                                title: channel.name,
+                                text: channel.name,
+                                url: url
+                            });
+                        }
+                    } catch (e) {
+                        if (e.name !== 'AbortError') {
+                            console.warn('Share failed:', e);
+                        }
+                    }
+                } else {
+                    // Fallback: copy all URLs to clipboard
+                    try {
+                        const textToCopy = allUrls.length > 1 ? allUrls.join('\n') : url;
+                        await navigator.clipboard.writeText(textToCopy);
+                        alert(t('urlCopied', 'URL copied to clipboard'));
+                    } catch (err) {
+                        console.warn("Failed to copy URL:", err);
+                    }
+                }
+            }
+
             if (action === "copy-url") {
+                // Copy all URLs if available
+                const allUrls = channel.urls || [url];
+                const textToCopy = allUrls.length > 1 ? allUrls.join('\n') : url;
                 try {
-                    await navigator.clipboard.writeText(url);
+                    await navigator.clipboard.writeText(textToCopy);
                     const toast = document.getElementById("toast");
                     if (toast) {
-                        toast.textContent = t('urlCopied', 'URL copied to clipboard');
+                        toast.textContent = allUrls.length > 1
+                            ? t('urlsCopied', 'URLs copied to clipboard')
+                            : t('urlCopied', 'URL copied to clipboard');
                         toast.classList.add("show");
                         setTimeout(() => toast.classList.remove("show"), 2000);
                     }

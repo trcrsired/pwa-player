@@ -804,6 +804,7 @@ function showStorageDirMenu(entry, dirName, button) {
     if (!isRoot) {
         menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
         // Only show rename if both allowModification and allowFolderRename are true
         if (entry.allowModification && entry.allowFolderRename !== false) {
             menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
@@ -865,6 +866,16 @@ function showStorageDirMenu(entry, dirName, button) {
             }
 
             if (action === "export") {
+                if (entry.schema === "indexeddb") {
+                    await exportIndexedDBFolder(dirName);
+                } else {
+                    await exportDirectory(entry, dirName, parent);
+                }
+            }
+
+            if (action === "share") {
+                // Share directory - export as zip-like structure or show info
+                // For directories, we can't directly share, so we'll export instead
                 if (entry.schema === "indexeddb") {
                     await exportIndexedDBFolder(dirName);
                 } else {
@@ -1085,6 +1096,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
         menuItems.push(`<div class="menu-item" data-action="load-subtitle">📝 ${t('loadSubtitles', 'Load Subtitles')}</div>`);
     }
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
+    menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
     if (entry.allowFileRename !== false) {
         menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
     }
@@ -1190,6 +1202,56 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 } catch (err) {
                     console.error("Failed to export file:", err);
                     alert(t('failedToExport', "Failed to export file."));
+                }
+            }
+
+            if (action === "share") {
+                // Share the file using Web Share API
+                if (navigator.share && navigator.canShare) {
+                    try {
+                        const file = await handle.getFile();
+                        const shareData = {
+                            title: name,
+                            text: name,
+                            files: [file]
+                        };
+
+                        if (navigator.canShare(shareData)) {
+                            await navigator.share(shareData);
+                        } else {
+                            alert(t('shareNotSupported', 'Sharing this file type is not supported'));
+                        }
+                    } catch (e) {
+                        if (e.name !== 'AbortError') {
+                            console.warn('Share failed:', e);
+                            // Fallback: export the file instead
+                            try {
+                                const file = await handle.getFile();
+                                const url = URL.createObjectURL(file);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = name;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            } catch (err) {
+                                console.error("Failed to export file:", err);
+                            }
+                        }
+                    }
+                } else {
+                    // Web Share not available, export the file instead
+                    try {
+                        const file = await handle.getFile();
+                        const url = URL.createObjectURL(file);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = name;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    } catch (err) {
+                        console.error("Failed to export file:", err);
+                        alert(t('failedToExport', "Failed to export file."));
+                    }
                 }
             }
 
@@ -1452,6 +1514,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
         menuItems.push(`<div class="menu-item" data-action="load-subtitle">📝 ${t('loadSubtitles', 'Load Subtitles')}</div>`);
     }
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
+    menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
     if (entry.allowFileRename !== false) {
         menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
     }
@@ -1552,6 +1615,54 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                 } catch (err) {
                     console.error("Failed to export file:", err);
                     alert(t('failedToExport', "Failed to export file."));
+                }
+            }
+
+            if (action === "share") {
+                // Share IndexedDB file using Web Share API
+                if (navigator.share && navigator.canShare) {
+                    try {
+                        const file = new File([fileEntry.blob], name, { type: fileEntry.type || "application/octet-stream" });
+                        const shareData = {
+                            title: name,
+                            text: name,
+                            files: [file]
+                        };
+
+                        if (navigator.canShare(shareData)) {
+                            await navigator.share(shareData);
+                        } else {
+                            alert(t('shareNotSupported', 'Sharing this file type is not supported'));
+                        }
+                    } catch (e) {
+                        if (e.name !== 'AbortError') {
+                            console.warn('Share failed:', e);
+                            // Fallback: export the file instead
+                            try {
+                                const url = URL.createObjectURL(fileEntry.blob);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = name;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            } catch (err) {
+                                console.error("Failed to export file:", err);
+                            }
+                        }
+                    }
+                } else {
+                    // Web Share not available, export instead
+                    try {
+                        const url = URL.createObjectURL(fileEntry.blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = name;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    } catch (err) {
+                        console.error("Failed to export file:", err);
+                        alert(t('failedToExport', "Failed to export file."));
+                    }
                 }
             }
 

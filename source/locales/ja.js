@@ -318,5 +318,11 @@ const JA_TRANSLATIONS = {
     youtubeInvalidId: "無効なYouTube動画ID",
     youtubeHtml5Error: "YouTube HTML5プレーヤーエラー",
     youtubeNotFound: "YouTube動画が見つかりませんまたは削除されました",
-    youtubeNotAllowed: "YouTube動画は埋め込み再生が許可されていません"
+    youtubeNotAllowed: "YouTube動画は埋め込み再生が許可されていません",
+
+    // Share
+    share: "共有",
+    shareNotSupported: "このファイルタイプの共有はサポートされていません",
+    pathCopied: "パスをクリップボードにコピーしました",
+    urlsCopied: "URLをクリップボードにコピーしました"
 };
