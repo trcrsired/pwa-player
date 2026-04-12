@@ -554,10 +554,10 @@ if (videoForABLoop) {
         }
     });
 
-    // Reset AB loop to A when video source changes
+    // Reset AB loop completely when video source changes
     videoForABLoop.addEventListener("loadstart", () => {
-        if (abLoopState === 2) {
-            resetABLoopToA();
+        if (abLoopState !== 0) {
+            clearABLoop();
         }
     });
 
