@@ -156,6 +156,8 @@ const EN_TRANSLATIONS = {
     shortcutLoopEnabled: "J/K/L - A-B Loop",
     abLoop: "A-B Loop",
     videoPreviewEnabled: "Video preview on timeline",
+    embeddedControlsHideDelay: "Embedded Controls Auto-hide (ms)",
+    embeddedControlsHideDelayHint: "Controls auto-hide delay for embedded player (YouTube). Default 5000ms (5 seconds). Set to 0 to disable auto-hide.",
     preservePitch: "Preserve pitch",
     speedAudioOnly: "Speed control for audio only",
     aboutThisApp: "About This App",

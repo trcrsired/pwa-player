@@ -126,16 +126,15 @@ function createYouTubePlayer(videoId) {
     const playMode = typeof getPlayMode === 'function' ? getPlayMode() : 'once';
     const shouldLoop = playMode === 'repeat-one';
 
-    // Build playerVars
+    // Build playerVars - enable YouTube controls
     const playerVars = {
         'playsinline': 1,
         'autoplay': 1,
-        'controls': 0,        // Hide YouTube controls
-        'modestbranding': 1,  // Hide YouTube logo
+        'controls': 1,        // Enable YouTube controls
+        'modestbranding': 1,  // Reduce YouTube branding
         'rel': 0,             // Only show related videos from same channel
-        'fs': 0,              // Disable fullscreen button
-        'iv_load_policy': 3,  // Hide annotations
-        'disablekb': 1        // Disable keyboard controls
+        'fs': 1,              // Enable fullscreen button
+        'iv_load_policy': 3   // Hide annotations
     };
 
     // For repeat-one mode, enable YouTube's native loop
@@ -145,7 +144,7 @@ function createYouTubePlayer(videoId) {
         playerVars['playlist'] = videoId;
     }
 
-    // Create YouTube player with hidden UI (use our own controls)
+    // Create YouTube player with YouTube controls enabled
     ytPlayer = new YT.Player('embeddedPlayer', {
         height: '100%',
         width: '100%',
@@ -194,6 +193,16 @@ function updateYtProgress() {
 function onYouTubePlayerReady(event) {
     event.target.playVideo();
 
+    // Hide our controls panel - YouTube has its own controls
+    const controls = document.getElementById("controls");
+    if (controls) controls.classList.add("hidden");
+
+    // Show the trigger zone (button starts hidden)
+    const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+    const showBtn = document.getElementById("embeddedShowControlsBtn");
+    if (triggerZone) triggerZone.classList.remove("hidden");
+    if (showBtn) showBtn.classList.add("hidden"); // Button hidden until mouse enters trigger zone
+
     // Set volume from stored preference
     const storedVolume = localStorage.getItem('volume');
     if (storedVolume) {
@@ -229,11 +238,6 @@ function onYouTubePlayerReady(event) {
 
     // Start progress update interval
     ytProgressInterval = setInterval(updateYtProgress, 500);
-
-    // Show controls
-    if (typeof ensureControlsVisibility === 'function') {
-        ensureControlsVisibility();
-    }
 }
 
 // YouTube player state change
@@ -337,9 +341,29 @@ function stopEmbeddedPlayer() {
 
     window._currentYouTubeVideoId = null;
 
+    // Hide the trigger zone and floating button, clear timers
+    const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+    const showBtn = document.getElementById("embeddedShowControlsBtn");
+    if (triggerZone) triggerZone.classList.add("hidden");
+    if (showBtn) showBtn.classList.add("hidden");
+
+    if (showBtnAutoHideTimer) {
+        clearTimeout(showBtnAutoHideTimer);
+        showBtnAutoHideTimer = null;
+    }
+
+    if (controlsAutoHideTimer) {
+        clearTimeout(controlsAutoHideTimer);
+        controlsAutoHideTimer = null;
+    }
+
     embeddedPlayer.innerHTML = '';
     embeddedPlayer.classList.add('hidden');
     videoPlayer.classList.remove('hidden');
+
+    // Show our controls panel
+    const controls = document.getElementById("controls");
+    if (controls) controls.classList.remove("hidden");
 
     document.title = 'PWA Player';
     navigator.mediaSession.metadata = new MediaMetadata({});
@@ -496,3 +520,201 @@ if ('mediaSession' in navigator) {
         }
     });
 }
+
+// Auto-hide timers
+let showBtnAutoHideTimer = null;
+let controlsAutoHideTimer = null;
+
+// Get auto-hide delay from settings (default 5 seconds)
+function getEmbeddedAutoHideDelay() {
+    const delay = parseInt(localStorage.getItem("embeddedControlsHideDelay"), 10);
+    return delay > 0 ? delay : 5000;
+}
+
+// Start auto-hide timer for the floating show button (3 seconds)
+function startShowBtnAutoHide() {
+    if (showBtnAutoHideTimer) {
+        clearTimeout(showBtnAutoHideTimer);
+    }
+
+    showBtnAutoHideTimer = setTimeout(() => {
+        if (isEmbeddedPlayerActive()) {
+            const showBtn = document.getElementById("embeddedShowControlsBtn");
+            const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+            if (showBtn) showBtn.classList.add("hidden"); // Hide button
+            // Trigger zone remains visible for future hover
+        }
+    }, 3000);
+}
+
+// Start auto-hide timer for controls
+function startControlsAutoHide() {
+    if (controlsAutoHideTimer) {
+        clearTimeout(controlsAutoHideTimer);
+    }
+
+    controlsAutoHideTimer = setTimeout(() => {
+        if (isEmbeddedPlayerActive()) {
+            const controls = document.getElementById("controls");
+            const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+            if (controls) controls.classList.add("hidden");
+            if (triggerZone) triggerZone.classList.remove("hidden"); // Show trigger zone again
+        }
+    }, getEmbeddedAutoHideDelay());
+}
+
+// Show controls and start auto-hide timer
+function showEmbeddedControls() {
+    const controls = document.getElementById("controls");
+    const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+    const showBtn = document.getElementById("embeddedShowControlsBtn");
+
+    if (!controls || !isEmbeddedPlayerActive()) return;
+
+    controls.classList.remove("hidden");
+    if (triggerZone) triggerZone.classList.add("hidden"); // Hide trigger zone while controls visible
+    if (showBtn) showBtn.classList.add("hidden"); // Hide button while controls visible
+
+    startControlsAutoHide();
+}
+
+// Trigger zone mouseenter shows the floating button
+const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+if (triggerZone) {
+    triggerZone.addEventListener("mouseenter", () => {
+        if (!isEmbeddedPlayerActive()) return;
+
+        const showBtn = document.getElementById("embeddedShowControlsBtn");
+        if (showBtn) {
+            showBtn.classList.remove("hidden");
+            startShowBtnAutoHide();
+        }
+    });
+}
+
+// Floating button click handler
+const showBtn = document.getElementById("embeddedShowControlsBtn");
+if (showBtn) {
+    showBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showEmbeddedControls();
+    });
+}
+
+// Touch on trigger zone also shows the button (for mobile)
+if (triggerZone) {
+    triggerZone.addEventListener("touchstart", () => {
+        if (!isEmbeddedPlayerActive()) return;
+
+        const showBtn = document.getElementById("embeddedShowControlsBtn");
+        if (showBtn) {
+            showBtn.classList.remove("hidden");
+            startShowBtnAutoHide();
+        }
+    }, { passive: true });
+}
+
+// Click outside controls to hide them
+document.addEventListener("click", (e) => {
+    if (!isEmbeddedPlayerActive()) return;
+
+    const controls = document.getElementById("controls");
+    const overlay = document.getElementById("embeddedPlayerOverlay");
+    const showBtn = document.getElementById("embeddedShowControlsBtn");
+    const embeddedPlayerEl = document.getElementById("embeddedPlayer");
+
+    if (!controls) return;
+
+    // If controls are visible and click is outside controls and not on showBtn
+    if (!controls.classList.contains("hidden")) {
+        const target = e.target;
+        // Allow clicks on overlay, embeddedPlayer, and our UI - only hide if truly outside
+        if (!controls.contains(target) && target !== showBtn && target !== overlay && !embeddedPlayerEl?.contains(target)) {
+            // Hide controls and overlay
+            controls.classList.add("hidden");
+            if (overlay) overlay.classList.add("hidden");
+        }
+    }
+});
+
+// Detect fullscreen changes (user clicking YouTube's fullscreen button)
+document.addEventListener("fullscreenchange", () => {
+    if (!isEmbeddedPlayerActive()) return;
+
+    const controls = document.getElementById("controls");
+    const showBtn = document.getElementById("embeddedShowControlsBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const npFullscreenBtn = document.getElementById("npFullscreenBtn");
+
+    const isFullscreen = document.fullscreenElement !== null;
+
+    // Update our fullscreen button icons
+    if (fullscreenBtn) fullscreenBtn.textContent = isFullscreen ? "⛶" : "FullScreen";
+    if (npFullscreenBtn) npFullscreenBtn.textContent = isFullscreen ? "⛶" : "FullScreen";
+
+    if (isFullscreen) {
+        // In fullscreen - hide our controls and trigger zone
+        // YouTube has its own fullscreen controls
+        if (controls) controls.classList.add("hidden");
+        const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+        if (triggerZone) triggerZone.classList.add("hidden");
+        if (showBtn) showBtn.classList.add("hidden");
+
+        // Clear timers
+        if (showBtnAutoHideTimer) {
+            clearTimeout(showBtnAutoHideTimer);
+            showBtnAutoHideTimer = null;
+        }
+        if (controlsAutoHideTimer) {
+            clearTimeout(controlsAutoHideTimer);
+            controlsAutoHideTimer = null;
+        }
+    } else {
+        // Exited fullscreen - show trigger zone again (if controls were hidden)
+        if (controls && controls.classList.contains("hidden")) {
+            const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+            if (triggerZone) triggerZone.classList.remove("hidden");
+        }
+    }
+});
+
+// Also listen for webkit fullscreen change (Safari)
+document.addEventListener("webkitfullscreenchange", () => {
+    if (!isEmbeddedPlayerActive()) return;
+
+    const controls = document.getElementById("controls");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const npFullscreenBtn = document.getElementById("npFullscreenBtn");
+
+    const isFullscreen = document.webkitFullscreenElement !== null;
+
+    // Update our fullscreen button icons
+    if (fullscreenBtn) fullscreenBtn.textContent = isFullscreen ? "⛶" : "FullScreen";
+    if (npFullscreenBtn) npFullscreenBtn.textContent = isFullscreen ? "⛶" : "FullScreen";
+
+    if (isFullscreen) {
+        // In fullscreen - hide our controls and trigger zone
+        // YouTube has its own fullscreen controls
+        if (controls) controls.classList.add("hidden");
+        const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+        const showBtn = document.getElementById("embeddedShowControlsBtn");
+        if (triggerZone) triggerZone.classList.add("hidden");
+        if (showBtn) showBtn.classList.add("hidden");
+
+        // Clear timers
+        if (showBtnAutoHideTimer) {
+            clearTimeout(showBtnAutoHideTimer);
+            showBtnAutoHideTimer = null;
+        }
+        if (controlsAutoHideTimer) {
+            clearTimeout(controlsAutoHideTimer);
+            controlsAutoHideTimer = null;
+        }
+    } else {
+        // Exited fullscreen - show trigger zone again (if controls were hidden)
+        if (controls && controls.classList.contains("hidden")) {
+            const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+            if (triggerZone) triggerZone.classList.remove("hidden");
+        }
+    }
+});

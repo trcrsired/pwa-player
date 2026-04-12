@@ -68,7 +68,8 @@ html, body {
 
 #controls.hidden {
   opacity: 0;
-  pointer-events: none; /* disable all clicks */
+  pointer-events: none;
+  display: none;
 }
 
 
@@ -552,8 +553,40 @@ button:hover,
 #embeddedPlayer iframe {
   width: 100%;
   height: 100%;
-  transform: scaleY(1.15); /* Slightly stretch to push YouTube bar below visible area */
-  pointer-events: none;    /* Block all user input to iframe - our UI handles everything */
+}
+
+/* Floating button to show controls for embedded player (YouTube) */
+#embeddedShowControlsBtn {
+  position: fixed;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+#embeddedShowControlsBtn:hover {
+  opacity: 1;
+}
+
+/* Invisible trigger zone on right side to reveal the button */
+#embeddedShowBtnTriggerZone {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 100vh;
+  z-index: 999;
+  background: transparent;
+  pointer-events: auto;
 }
 
 .iptv-nsfw-badge {

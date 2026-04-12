@@ -156,6 +156,8 @@ const ZHCN_TRANSLATIONS = {
     shortcutLoopEnabled: "J/K/L - A-B循环",
     abLoop: "A-B循环",
     videoPreviewEnabled: "时间轴视频预览",
+    embeddedControlsHideDelay: "嵌入式播放器控件自动隐藏（毫秒）",
+    embeddedControlsHideDelayHint: "嵌入式播放器（YouTube）控件自动隐藏延迟。默认5000毫秒（5秒）。设置为0禁用自动隐藏。",
     preservePitch: "保持音高",
     speedAudioOnly: "速度控制仅用于音频",
     aboutThisApp: "关于此应用",
