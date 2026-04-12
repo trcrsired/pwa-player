@@ -63,6 +63,38 @@ async function startNowPlayingFromPlaylist(playlistName, startIndex) {
     await nowPlaying_playIndex(nowPlayingIndex);
 }
 
+// Play playlist from actual first item (ignores shuffle mode)
+async function startNowPlayingFromPlaylistFirst(playlistName) {
+    const playlists = await playlists_load();
+    const list = playlists[playlistName];
+    if (!list) return;
+
+    nowPlayingQueue = list.map(item => ({
+        ...item,
+        playlistName
+    }));
+
+    // Build shuffled queue (for later use if user switches to shuffle)
+    shuffledQueue = shuffleArray(nowPlayingQueue);
+
+    // Always play actual first item (index 0)
+    nowPlayingIndex = 0;
+
+    // Temporarily use ordered queue to play first item
+    const entry = nowPlayingQueue[0];
+    if (!entry) return;
+
+    const resolved = await storage_resolvePath(entry.path);
+
+    await play_source(resolved, {
+        playlistName: entry.playlistName,
+        entryPath: entry.path,
+        index: 0,
+    }, entry.corsBypass);
+
+    renderNowPlayingQueue();
+}
+
 async function playPrevious() {
     if (nowPlayingQueue.length === 0) return;
 

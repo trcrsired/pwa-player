@@ -372,6 +372,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
 
     menu.innerHTML = `
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
+        <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
         <div class="menu-item" data-action="set-default">${isDefault ? '⭐ ' + t('defaultPlaylist', 'Default') : t('setDefaultPlaylist', 'Set as Default')}</div>
         <div class="menu-item" data-action="add-url">${t('addUrlToPlaylist', 'Add URL to Playlist')}</div>
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
@@ -395,9 +396,16 @@ function showPlaylistHeaderMenu(playlistName, button) {
             const playlists = await playlists_load();
 
             if (action === "play") {
-                // Play this playlist from beginning
-                await startNowPlayingFromPlaylist(playlistName, 0);
+                // Play this playlist from actual first item (not shuffle)
+                await startNowPlayingFromPlaylistFirst(playlistName);
                 closeActiveView();
+                closeMenu();
+                return;
+            }
+
+            if (action === "play-keep-open") {
+                // Play this playlist from actual first item (keep panel open)
+                await startNowPlayingFromPlaylistFirst(playlistName);
                 closeMenu();
                 return;
             }
