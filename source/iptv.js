@@ -614,14 +614,17 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
             }
 
             if (action === "share") {
-                // Share IPTV channel - all URLs if available (no CORS bypass info)
+                // Share IPTV channel - name + all URLs + optionally PWA Player URL
                 const allUrls = channel.urls || [url];
 
-                // Build share text: URLs first, optionally PWA Player URL
-                let shareText = allUrls.length > 1 ? allUrls.join('\n') : url;
+                // Build base share text: name + URLs
+                let baseText = `${channel.name}\n${allUrls.length > 1 ? allUrls.join('\n') : url}`;
+
+                // Add PWA Player URL if enabled
+                let shareText = baseText;
                 if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                     const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
+                    shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
                 }
 
                 if (navigator.share) {

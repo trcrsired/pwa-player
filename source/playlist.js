@@ -695,13 +695,16 @@ async function sharePlaylistEntry(entry) {
 
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
+    // Build base share text: name (if available) + path
+    let baseText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
+
     // Check if it's a URL (internet resource)
     if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
-        // Build share text: URL first, optionally PWA Player URL
-        let shareText = entry.path;
+        // Build share text with optional PWA Player URL
+        let shareText = baseText;
         if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
             const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-            shareText = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+            shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
         }
 
         // Share URL
@@ -742,11 +745,11 @@ async function sharePlaylistEntry(entry) {
             }
 
             if (file) {
-                // Build share text
-                let shareText = entry.path;
+                // Build share text with optional PWA Player URL
+                let shareText = baseText;
                 if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                     const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+                    shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
                 }
 
                 const shareData = {
@@ -762,10 +765,10 @@ async function sharePlaylistEntry(entry) {
                 }
             } else {
                 // Can't resolve to file, share path as text
-                let shareText = entry.path;
+                let shareText = baseText;
                 if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                     const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+                    shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
                 }
                 await navigator.share({
                     title: entry.name || entry.path,
@@ -775,14 +778,14 @@ async function sharePlaylistEntry(entry) {
         } catch (e) {
             if (e.name !== 'AbortError') {
                 console.warn('Share failed:', e);
-                // Fallback: copy path to clipboard
+                // Fallback: copy to clipboard
                 try {
-                    let textToCopy = entry.path;
+                    let shareText = baseText;
                     if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                         const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                        textToCopy = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+                        shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
                     }
-                    await navigator.clipboard.writeText(textToCopy);
+                    await navigator.clipboard.writeText(shareText);
                     alert(t('pathCopied', 'Path copied to clipboard'));
                 } catch (e2) {
                     console.warn('Copy failed:', e2);
@@ -790,14 +793,14 @@ async function sharePlaylistEntry(entry) {
             }
         }
     } else {
-        // Web Share not available, copy path
+        // Web Share not available, copy to clipboard
         try {
-            let textToCopy = entry.path;
+            let shareText = baseText;
             if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                 const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                textToCopy = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+                shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
             }
-            await navigator.clipboard.writeText(textToCopy);
+            await navigator.clipboard.writeText(shareText);
             alert(t('pathCopied', 'Path copied to clipboard'));
         } catch (e) {
             console.warn('Copy failed:', e);
