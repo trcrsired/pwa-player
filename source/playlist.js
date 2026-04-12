@@ -371,6 +371,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
     menu.className = "context-menu";
 
     menu.innerHTML = `
+        <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="set-default">${isDefault ? '⭐ ' + t('defaultPlaylist', 'Default') : t('setDefaultPlaylist', 'Set as Default')}</div>
         <div class="menu-item" data-action="add-url">${t('addUrlToPlaylist', 'Add URL to Playlist')}</div>
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
@@ -392,6 +393,14 @@ function showPlaylistHeaderMenu(playlistName, button) {
         item.addEventListener("click", async () => {
             const action = item.dataset.action;
             const playlists = await playlists_load();
+
+            if (action === "play") {
+                // Play this playlist from beginning
+                await startNowPlayingFromPlaylist(playlistName, 0);
+                closeActiveView();
+                closeMenu();
+                return;
+            }
 
             if (action === "set-default") {
                 if (isDefault) {
