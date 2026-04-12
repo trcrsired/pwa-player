@@ -157,11 +157,23 @@ function getCurrentTrack() {
 
 // Try to restore last playback state.
 // Priority:
-// 1. Last playlist (playlistName + index)
-// 2. Last single file
-// 3. Default playlist
+// 1. Now playing queue (if still has items after stop)
+// 2. Last playlist (playlistName + index)
+// 3. Last single file
+// 4. Default playlist
 // Returns true if something was restored and playback started.
 async function restoreLastPlayback() {
+
+    // Case 0: now playing queue still has items (after stop)
+    const queue = getActiveQueue();
+    if (queue.length > 0) {
+        // Use current index, or reset to 0 if out of bounds
+        if (nowPlayingIndex < 0 || nowPlayingIndex >= queue.length) {
+            nowPlayingIndex = 0;
+        }
+        await nowPlaying_playIndex(nowPlayingIndex);
+        return true;
+    }
 
     // Case 1: restore last playlist
     const lastplaylist = await kv_get("lastplaylist");
