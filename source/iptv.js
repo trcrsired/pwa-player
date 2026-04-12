@@ -614,17 +614,14 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
             }
 
             if (action === "share") {
-                // Share IPTV channel - name + all URLs + optionally PWA Player URL
+                // Share IPTV channel - name + optionally PWA Player URL (URLs passed separately)
                 const allUrls = channel.urls || [url];
 
-                // Build base share text: name + URLs
-                let baseText = `${channel.name}\n${allUrls.length > 1 ? allUrls.join('\n') : url}`;
-
-                // Add PWA Player URL if enabled
-                let shareText = baseText;
+                // Build share text: name + optionally PWA Player URL (URLs are passed via url parameter)
+                let shareText = channel.name;
                 if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                     const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
+                    shareText = `${channel.name}\n\nPWA Player: ${pwaUrl}`;
                 }
 
                 if (navigator.share) {
@@ -640,9 +637,14 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                         }
                     }
                 } else {
-                    // Fallback: copy to clipboard
+                    // Fallback: copy to clipboard (include URLs in text since we can't pass url separately)
+                    let clipboardText = allUrls.length > 1 ? allUrls.join('\n') : url;
+                    if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                        const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                        clipboardText = `${clipboardText}\n\nPWA Player: ${pwaUrl}`;
+                    }
                     try {
-                        await navigator.clipboard.writeText(shareText);
+                        await navigator.clipboard.writeText(clipboardText);
                         alert(t('urlCopied', 'URL copied to clipboard'));
                     } catch (err) {
                         console.warn("Failed to copy URL:", err);

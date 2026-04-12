@@ -695,19 +695,17 @@ async function sharePlaylistEntry(entry) {
 
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
-    // Build base share text: name (if available) + path
-    let baseText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
-
     // Check if it's a URL (internet resource)
     if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
-        // Build share text with optional PWA Player URL
-        let shareText = baseText;
+        // Build share text: name + optionally PWA Player URL (URL is passed separately)
+        let shareText = entry.name || '';
         if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
             const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-            shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
+            if (shareText) shareText += '\n\n';
+            shareText += `PWA Player: ${pwaUrl}`;
         }
 
-        // Share URL
+        // Share URL (url is passed separately, not duplicated in text)
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -721,9 +719,14 @@ async function sharePlaylistEntry(entry) {
                 }
             }
         } else {
-            // Fallback: copy to clipboard
+            // Fallback: copy to clipboard (include URL in text since we can't pass url separately)
+            let clipboardText = entry.path;
+            if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                clipboardText = `${entry.path}\n\nPWA Player: ${pwaUrl}`;
+            }
             try {
-                await navigator.clipboard.writeText(shareText);
+                await navigator.clipboard.writeText(clipboardText);
                 alert(t('urlCopied', 'URL copied to clipboard'));
             } catch (e) {
                 console.warn('Copy failed:', e);
@@ -731,6 +734,9 @@ async function sharePlaylistEntry(entry) {
         }
         return;
     }
+
+    // Build base share text for local files: name (if available) + path
+    let baseText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
 
     // For local files, try to share the file
     if (navigator.share && navigator.canShare) {
