@@ -215,7 +215,7 @@ function showPlaylistItemMenu(playlistName, index, button) {
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
         <div class="menu-item" data-action="add-to-playlist">${t('addToPlaylist', 'Add to Playlist')}</div>
-        <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
+        <div class="menu-item danger" data-action="delete">${t('remove', 'Remove')}</div>
         <div class="menu-item" data-action="move-up">${t('moveUp', 'Move Up')}</div>
         <div class="menu-item" data-action="move-down">${t('moveDown', 'Move Down')}</div>
         <div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>
@@ -422,7 +422,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
         <div class="menu-item" data-action="export">${t('export', 'Export')}</div>
         <div class="menu-item" data-action="add-all-to-playlist">${t('addAllToPlaylist', 'Add All to Playlist')}</div>
         <div class="menu-item" data-action="import-from-now-playing">${t('importFromNowPlaying', 'Import from Now Playing')}</div>
-        <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
+        <div class="menu-item danger" data-action="delete">${t('remove', 'Remove')}</div>
         <div class="menu-item danger" data-action="clear">${t('clearPlaylist', 'Clear Playlist')}</div>
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
     `;

@@ -60,49 +60,14 @@ class SpotifyPlatform extends BasePlatform {
         return null;
     }
 
-    // Load Spotify playlist - fetches track list (requires CORS bypass or embed parsing)
+    // Load Spotify playlist - fetches track list
     static async loadPlaylist(url) {
         const playlistId = this.extractPlaylistId(url);
         if (!playlistId) return null;
 
         const tracks = [];
 
-        // Method 1: Try Spotify API via CORS bypass
-        const corsBypassUrl = typeof getCorsBypassUrl === 'function' ? getCorsBypassUrl() : localStorage.getItem("corsBypassUrl") || "";
-        const corsEnabled = typeof isCorsBypassEnabled === 'function' ? isCorsBypassEnabled() : localStorage.getItem("corsBypassEnabled") === "true";
-
-        if (corsEnabled && corsBypassUrl) {
-            try {
-                const apiUrl = `${corsBypassUrl}https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100&fields=items(track(id,name,artists(name)))`;
-                const response = await fetch(apiUrl);
-
-                if (response.ok) {
-                    const data = await response.json();
-
-                    for (const item of data.items || []) {
-                        const track = item.track;
-                        if (track && track.id) {
-                            const artistName = track.artists?.[0]?.name || '';
-                            const displayName = artistName ? `${track.name} - ${artistName}` : track.name;
-                            tracks.push({
-                                name: displayName,
-                                path: `https://open.spotify.com/track/${track.id}`,
-                                isUrl: true,
-                                platform: this.name
-                            });
-                        }
-                    }
-
-                    if (tracks.length > 0) {
-                        return tracks;
-                    }
-                }
-            } catch (e) {
-                console.warn("Spotify API fetch failed:", e);
-            }
-        }
-
-        // Method 2: Try embed page parsing
+        // Try embed page parsing
         try {
             const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
             const response = await fetch(embedUrl);

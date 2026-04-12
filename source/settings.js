@@ -802,24 +802,14 @@ if (corsBypassUrlInput) {
     });
 }
 
-// CORS Bypass toggle
-const corsBypassToggle = document.getElementById("corsBypassToggle");
-
-if (corsBypassToggle) {
-    corsBypassToggle.checked = localStorage.getItem("corsBypassEnabled") === "true";
-    corsBypassToggle.addEventListener("change", () => {
-        localStorage.setItem("corsBypassEnabled", corsBypassToggle.checked ? "true" : "false");
-    });
+// Helper function to get CORS bypass URL (for playlist fetching only)
+function getCorsBypassUrl() {
+    return localStorage.getItem("corsBypassUrl") || "";
 }
 
 // Helper function to get CORS bypass URL
 function getCorsBypassUrl() {
     return localStorage.getItem("corsBypassUrl") || "";
-}
-
-// Helper function to check if CORS bypass is enabled
-function isCorsBypassEnabled() {
-    return localStorage.getItem("corsBypassEnabled") === "true";
 }
 
 // Helper function to apply CORS bypass to a URL
@@ -982,7 +972,6 @@ function getProfileSettingsKeys() {
         "shortcutLoopEnabled",
         "videoPreviewEnabled",
         "corsBypassUrl",
-        "corsBypassEnabled",
         "networkRetryCount",
         "iptvSourceRetryCount",
         "retryDelay",
@@ -1034,7 +1023,6 @@ function createDefaultProfileData() {
             shortcutLoopEnabled: "true",
             videoPreviewEnabled: "true",
             corsBypassUrl: "",
-            corsBypassEnabled: "false",
             networkRetryCount: DEFAULT_NETWORK_RETRY_COUNT.toString(),
             iptvSourceRetryCount: DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString(),
             retryDelay: DEFAULT_RETRY_DELAY.toString(),
@@ -1125,9 +1113,6 @@ async function applyProfileData(profileData) {
 
     const corsBypassUrl = document.getElementById("corsBypassUrl");
     if (corsBypassUrl) corsBypassUrl.value = localStorage.getItem("corsBypassUrl") || "";
-
-    const corsBypassToggle = document.getElementById("corsBypassToggle");
-    if (corsBypassToggle) corsBypassToggle.checked = localStorage.getItem("corsBypassEnabled") === "true";
 
     const networkRetryInput = document.getElementById("networkRetryCount");
     if (networkRetryInput) networkRetryInput.value = localStorage.getItem("networkRetryCount") || DEFAULT_NETWORK_RETRY_COUNT.toString();

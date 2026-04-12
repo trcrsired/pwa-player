@@ -78,51 +78,22 @@ class YouTubePlatform extends BasePlatform {
         return null;
     }
 
-    // YouTube playlists are handled natively by IFrame API - just return single entry
+    // Load YouTube playlist - IFrame API handles playlists via list parameter
+    // Just return the playlist URL as a single entry
     static async loadPlaylist(url) {
         const playlistId = this.extractPlaylistId(url);
-        const videoId = this.extractVideoId(url);
+        if (!playlistId) return null;
 
-        // Return a single entry - YouTube IFrame API handles playlist playback
+        // YouTube IFrame API handles playlist playback natively
+        // Return single entry - player will use list parameter
         return [{
-            name: videoId ? `YouTube Video in Playlist` : `YouTube Playlist`,
+            name: `YouTube Playlist (${playlistId})`,
             path: url,
             isUrl: true,
             isPlaylist: true,
-            platform: this.name,
             playlistId: playlistId,
-            videoId: videoId  // If specific video within playlist
+            platform: this.name
         }];
-    }
-
-    // Extract playlist ID from URL
-    static extractPlaylistId(url) {
-        if (!url) return null;
-
-        try {
-            const urlObj = new URL(url);
-            const hostname = urlObj.hostname;
-
-            if (hostname.endsWith('youtube.com') || hostname === 'youtu.be') {
-                // youtube.com/playlist?list=PLAYLIST_ID
-                if (urlObj.pathname === '/playlist') {
-                    return urlObj.searchParams.get('list');
-                }
-                // youtube.com/watch?v=VIDEO_ID&list=PLAYLIST_ID
-                if (urlObj.pathname === '/watch') {
-                    return urlObj.searchParams.get('list');
-                }
-            }
-        } catch (e) {
-            return null;
-        }
-
-        return null;
-    }
-
-    // Check if URL is a YouTube playlist
-    static isPlaylistUrl(url) {
-        return this.extractPlaylistId(url) !== null;
     }
 
     // Extract either video ID or playlist info

@@ -140,29 +140,33 @@ function showIPTVChannelMenu(channel, url, button) {
     menu.className = "context-menu";
 
     const corsBypassUrl = localStorage.getItem("corsBypassUrl") || "";
-    const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
 
-    // Build menu items - default play uses the toggle setting
+    // Build menu items - default play without CORS
     const items = [
-        { action: "play", label: t('playThis', 'Play'), cors: corsEnabled, close: true },
-        { action: "play-keep-open", label: t('playKeepPanel', 'Play (keep panel open)'), cors: corsEnabled, close: false }
+        { action: "play", label: t('playThis', 'Play'), cors: false, close: true },
+        { action: "play-keep-open", label: t('playKeepPanel', 'Play (keep panel open)'), cors: false, close: false }
     ];
 
-    // Add CORS override options only if bypass server is configured
+    // Add CORS options only if bypass server is configured
     if (corsBypassUrl) {
-        const corsOverride = !corsEnabled;
-        const corsLabel = corsEnabled ? t('playWithoutCors', 'Play without CORS') : t('playWithCors', 'Play with CORS');
-        const corsKeepOpenLabel = corsEnabled ? t('playWithoutCorsKeepOpen', 'Play without CORS (keep open)') : t('playWithCorsKeepOpen', 'Play with CORS (keep open)');
-
         items.push(
-            { action: "play-cors", label: corsLabel, cors: corsOverride, close: true },
-            { action: "play-cors-keep-open", label: corsKeepOpenLabel, cors: corsOverride, close: false }
+            { action: "play-cors", label: t('playWithCors', 'Play with CORS'), cors: true, close: true },
+            { action: "play-cors-keep-open", label: t('playWithCorsKeepOpen', 'Play with CORS (keep open)'), cors: true, close: false }
         );
     }
 
     items.push(
-        { action: "add", label: t('addToPlaylist', 'Add to Playlist'), cors: corsEnabled },
-        { action: "add-no-cors", label: corsEnabled ? t('addToPlaylistNoCors', 'Add to Playlist (no CORS)') : t('addToPlaylistWithCors', 'Add to Playlist (with CORS)'), cors: !corsEnabled },
+        { action: "add", label: t('addToPlaylist', 'Add to Playlist'), cors: false }
+    );
+
+    // Add to Playlist with CORS if server configured
+    if (corsBypassUrl) {
+        items.push(
+            { action: "add-cors", label: t('addToPlaylistWithCors', 'Add to Playlist with CORS'), cors: true }
+        );
+    }
+
+    items.push(
         { action: "copy-url", label: t('copyUrl', 'Copy URL') },
         { action: "close", label: t('close', 'Close') }
     );
@@ -392,13 +396,12 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
     // Click on name plays the channel (with fallback to other URLs if multiple)
     nameSpan.addEventListener("click", () => {
         if (!primaryUrl) return;
-        const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
 
         // If multiple URLs, use fallback logic
         if (urlList.length > 1 && typeof play_iptv_with_fallback === 'function') {
-            play_iptv_with_fallback(urlList, channel.name, corsEnabled);
+            play_iptv_with_fallback(urlList, channel.name, false);  // No CORS by default
         } else {
-            play_source_title(primaryUrl, channel.name, null, corsEnabled);
+            play_source_title(primaryUrl, channel.name, null, false);  // No CORS by default
         }
 
         if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
@@ -430,10 +433,9 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
             urlSpan.appendChild(badge);
         }
 
-        // Click on URL plays it
+        // Click on URL plays it (no CORS by default)
         urlSpan.addEventListener("click", () => {
-            const corsEnabled = localStorage.getItem("corsBypassEnabled") === "true";
-            play_source_title(url, channel.name, null, corsEnabled);
+            play_source_title(url, channel.name, null, false);
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
             }
