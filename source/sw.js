@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "266";
+const PWAPLAYER_VERSION = "275";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "/",
@@ -7,6 +7,7 @@ const urlsToCache = [
   "/indexeddb.js",
   "/nowplaying.js",
   "/player.js",
+  "/embeddedplayer.js",
   "/storage.js",
   "/playlist.js",
   "/iptvchannels.js",

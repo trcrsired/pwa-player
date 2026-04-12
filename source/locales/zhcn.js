@@ -94,6 +94,8 @@ const ZHCN_TRANSLATIONS = {
     confirmRemoveItem: "从播放列表中移除此项目",
     setDefaultPlaylist: "设为默认",
     defaultPlaylist: "默认",
+    addUrlToPlaylist: "添加URL到播放列表",
+    itemNameOptional: "项目名称（可选）：",
     addedToPlaylist: "已添加",
     toPlaylist: "到播放列表",
     exportedToConsole: "播放列表已导出到控制台。",
@@ -308,5 +310,12 @@ const ZHCN_TRANSLATIONS = {
     // Video status
     videoLoading: "加载中...",
     videoLoadFailed: "视频加载失败。格式可能不受支持。",
-    videoFormatNotSupported: "此视频格式可能不受支持。.webm 是网络标准格式，在所有平台上兼容性最好，且无授权费用。例如，微软Edge安卓版仅支持 .webm 视频。请使用 FFmpeg 等工具转换为 .webm 格式，或尝试其他浏览器如 Google Chrome。"
+    videoFormatNotSupported: "此视频格式可能不受支持。.webm 是网络标准格式，在所有平台上兼容性最好，且无授权费用。例如，微软Edge安卓版仅支持 .webm 视频。请使用 FFmpeg 等工具转换为 .webm 格式，或尝试其他浏览器如 Google Chrome。",
+
+    // YouTube
+    youtubeError: "YouTube播放错误",
+    youtubeInvalidId: "无效的YouTube视频ID",
+    youtubeHtml5Error: "YouTube HTML5播放器错误",
+    youtubeNotFound: "YouTube视频不存在或已被删除",
+    youtubeNotAllowed: "YouTube视频不允许嵌入播放"
 };

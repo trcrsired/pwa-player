@@ -23,6 +23,8 @@
         <div id="playerContainer">
             <div id="playerWrapper">
                 <video id="player" crossorigin="anonymous" autoplay></video>
+                <!-- Embedded player container (YouTube, etc.) -->
+                <div id="embeddedPlayer" class="hidden"></div>
                 <!-- Video status overlay (loading/error) -->
                 <div id="videoStatusOverlay" class="video-status-overlay hidden">
                     <div class="video-status-content">
@@ -408,6 +410,7 @@
         <script src="playlist.js"></script>
         <script src="storage.js"></script>
         <script src="player.js"></script>
+        <script src="embeddedplayer.js"></script>
         <script src="iptv.js" type="module"></script>
 
         <!-- Floating scroll buttons - defined before extrafeatures.js -->

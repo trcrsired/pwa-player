@@ -372,6 +372,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
 
     menu.innerHTML = `
         <div class="menu-item" data-action="set-default">${isDefault ? '⭐ ' + t('defaultPlaylist', 'Default') : t('setDefaultPlaylist', 'Set as Default')}</div>
+        <div class="menu-item" data-action="add-url">${t('addUrlToPlaylist', 'Add URL to Playlist')}</div>
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
         <div class="menu-item" data-action="duplicate">${t('duplicate', 'Duplicate')}</div>
         <div class="menu-item" data-action="export">${t('export', 'Export')}</div>
@@ -400,6 +401,41 @@ function showPlaylistHeaderMenu(playlistName, button) {
                     // Set as default
                     localStorage.setItem("defaultPlaylist", playlistName);
                 }
+                playlist_renderTree();
+                closeMenu();
+                return;
+            }
+
+            if (action === "add-url") {
+                const url = prompt(t('enterWebURL', 'Enter web URL:'));
+                if (!url || !url.trim()) {
+                    closeMenu();
+                    return;
+                }
+
+                const trimmedUrl = url.trim();
+                // Extract name from URL (filename part)
+                let name = trimmedUrl.split('/').pop()?.split('?')[0] || trimmedUrl;
+
+                // For YouTube URLs, extract video title later or use video ID as placeholder
+                if (typeof isYouTubeUrl === 'function' && isYouTubeUrl(trimmedUrl)) {
+                    const videoId = extractYouTubeVideoId(trimmedUrl);
+                    name = videoId ? `YouTube: ${videoId}` : 'YouTube Video';
+                }
+
+                // Ask for optional custom name
+                const customName = prompt(t('itemNameOptional', 'Item name (optional):'), name);
+                if (customName && customName.trim()) {
+                    name = customName.trim();
+                }
+
+                // Add to playlist
+                playlists[playlistName].push({
+                    name: name,
+                    path: trimmedUrl,
+                    isUrl: true  // Mark as URL for future reference
+                });
+                await playlists_save(playlists);
                 playlist_renderTree();
                 closeMenu();
                 return;

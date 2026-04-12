@@ -504,6 +504,17 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
 }
 
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
+  // Check if this is a YouTube URL - use embedded player instead
+  if (typeof playEmbeddedUrl === 'function' && typeof isYouTubeUrl === 'function' && isYouTubeUrl(blobURL)) {
+    playEmbeddedUrl(blobURL);
+    return;
+  }
+
+  // Stop embedded player (YouTube) if active - we're switching to normal video
+  if (typeof stopEmbeddedPlayer === 'function') {
+    stopEmbeddedPlayer();
+  }
+
   try {
     revokeBlobURL();
     currentBlobURL = blobURL;
@@ -904,6 +915,10 @@ async function addDirectoryToExternalStorage(dirHandle) {
 
 async function togglePlayBtn()
 {
+    // If embedded player (YouTube) is active → let embeddedplayer.js handle it
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        return;
+    }
     // If a video is already loaded → toggle play/pause
     if (hasActiveSource) {
         if (video.readyState < 3) return;
@@ -1174,6 +1189,10 @@ webBtn.onclick = () => {
 
     if (url)
     {
+      // Check if it's a YouTube URL first
+      if (typeof playEmbeddedUrl === 'function' && playEmbeddedUrl(url)) {
+        return; // YouTube player created successfully
+      }
       play_source(url).catch(nop);
     }
   }
