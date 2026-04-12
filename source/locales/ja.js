@@ -97,6 +97,10 @@ const JA_TRANSLATIONS = {
     addedToPlaylist: "追加済み",
     toPlaylist: "プレイリストへ",
     exportedToConsole: "プレイリストがコンソールにエクスポートされました。",
+    loadingExternalPlaylist: "プレイリストを読み込み中...",
+    playlistLoaded: "プレイリストを読み込みました",
+    failedToLoadPlaylist: "プレイリストの読み込みに失敗しました。",
+    playlistLoadError: "プレイリスト読み込みエラー",
 
     // IPTV
     iptvChannels: "📺 IPTVチャンネル",

@@ -840,3 +840,16 @@ button:hover,
 .video-status-icon.error::before {
     content: "❌";
 }
+
+/* Secure input - completely hides characters */
+.secure-input {
+    -webkit-text-security: disc;
+    text-security: disc;
+}
+
+/* Alternative: completely invisible characters (no dots/discs shown) */
+.secure-input.invisible {
+    color: transparent !important;
+    caret-color: var(--color-text);
+    text-shadow: none;
+}

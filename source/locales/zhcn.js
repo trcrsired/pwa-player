@@ -100,6 +100,10 @@ const ZHCN_TRANSLATIONS = {
     addedToPlaylist: "已添加",
     toPlaylist: "到播放列表",
     exportedToConsole: "播放列表已导出到控制台。",
+    loadingExternalPlaylist: "正在加载播放列表...",
+    playlistLoaded: "播放列表已加载",
+    failedToLoadPlaylist: "加载播放列表失败或播放列表为空。",
+    playlistLoadError: "加载播放列表出错",
 
     // IPTV
     iptvChannels: "📺 网络电视频道",

@@ -17,6 +17,7 @@ class YouTubePlatform extends BasePlatform {
         ];
     }
 
+    // Extract video ID from URL
     static extractVideoId(url) {
         if (!url) return null;
 
@@ -47,6 +48,101 @@ class YouTubePlatform extends BasePlatform {
         return null;
     }
 
+    // Check if URL is a YouTube playlist
+    static isPlaylistUrl(url) {
+        return this.extractPlaylistId(url) !== null;
+    }
+
+    // Extract playlist ID from URL
+    static extractPlaylistId(url) {
+        if (!url) return null;
+
+        try {
+            const urlObj = new URL(url);
+            const hostname = urlObj.hostname;
+
+            if (hostname.endsWith('youtube.com') || hostname === 'youtu.be') {
+                // youtube.com/playlist?list=PLAYLIST_ID
+                if (urlObj.pathname === '/playlist') {
+                    return urlObj.searchParams.get('list');
+                }
+                // youtube.com/watch?v=VIDEO_ID&list=PLAYLIST_ID
+                if (urlObj.pathname === '/watch') {
+                    return urlObj.searchParams.get('list');
+                }
+            }
+        } catch (e) {
+            return null;
+        }
+
+        return null;
+    }
+
+    // YouTube playlists are handled natively by IFrame API - just return single entry
+    static async loadPlaylist(url) {
+        const playlistId = this.extractPlaylistId(url);
+        const videoId = this.extractVideoId(url);
+
+        // Return a single entry - YouTube IFrame API handles playlist playback
+        return [{
+            name: videoId ? `YouTube Video in Playlist` : `YouTube Playlist`,
+            path: url,
+            isUrl: true,
+            isPlaylist: true,
+            platform: this.name,
+            playlistId: playlistId,
+            videoId: videoId  // If specific video within playlist
+        }];
+    }
+
+    // Extract playlist ID from URL
+    static extractPlaylistId(url) {
+        if (!url) return null;
+
+        try {
+            const urlObj = new URL(url);
+            const hostname = urlObj.hostname;
+
+            if (hostname.endsWith('youtube.com') || hostname === 'youtu.be') {
+                // youtube.com/playlist?list=PLAYLIST_ID
+                if (urlObj.pathname === '/playlist') {
+                    return urlObj.searchParams.get('list');
+                }
+                // youtube.com/watch?v=VIDEO_ID&list=PLAYLIST_ID
+                if (urlObj.pathname === '/watch') {
+                    return urlObj.searchParams.get('list');
+                }
+            }
+        } catch (e) {
+            return null;
+        }
+
+        return null;
+    }
+
+    // Check if URL is a YouTube playlist
+    static isPlaylistUrl(url) {
+        return this.extractPlaylistId(url) !== null;
+    }
+
+    // Extract either video ID or playlist info
+    static extractContentInfo(url) {
+        const videoId = this.extractVideoId(url);
+        const playlistId = this.extractPlaylistId(url);
+
+        if (playlistId && videoId) {
+            // Video within a playlist
+            return { type: 'video-in-playlist', videoId, playlistId };
+        } else if (playlistId) {
+            // Pure playlist URL
+            return { type: 'playlist', playlistId };
+        } else if (videoId) {
+            // Single video
+            return { type: 'video', videoId };
+        }
+        return null;
+    }
+
     loadApi() {
         if (this.apiReady || this.apiLoading) return;
 
@@ -58,15 +154,22 @@ class YouTubePlatform extends BasePlatform {
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     }
 
-    createPlayer(videoId, container, options = {}) {
-        this.currentVideoId = videoId;
+    createPlayer(contentInfo, container, options = {}) {
+        // Handle both string (video ID) and object (content info)
+        if (typeof contentInfo === 'string') {
+            contentInfo = { type: 'video', videoId: contentInfo };
+        } else if (!contentInfo) {
+            return null;
+        }
+
+        this.currentContentInfo = contentInfo;
         this.pendingOptions = options;
 
         if (!window._ytApiReady) {
             this.loadApi();
             // Store this instance for callback
             window._pendingYouTubeInstance = this;
-            window._pendingYouTubeVideoId = videoId;
+            window._pendingYouTubeContentInfo = contentInfo;
             window._pendingYouTubeContainer = container;
             return null;
         }
@@ -86,22 +189,65 @@ class YouTubePlatform extends BasePlatform {
             'iv_load_policy': 3
         };
 
-        if (shouldLoop) {
-            playerVars['loop'] = 1;
-            playerVars['playlist'] = videoId;
+        // Configure based on content type
+        let playerConfig;
+
+        if (contentInfo.type === 'playlist') {
+            // Load entire playlist using YouTube's built-in playlist support
+            playerVars.listType = 'playlist';
+            playerVars.list = contentInfo.playlistId;
+
+            playerConfig = {
+                height: '100%',
+                width: '100%',
+                playerVars: playerVars,
+                events: {
+                    'onReady': (event) => this.onReady(event, this.pendingOptions),
+                    'onStateChange': (event) => this.onStateChange(event, this.pendingOptions),
+                    'onError': (event) => this.onError(event, this.pendingOptions)
+                }
+            };
+        } else if (contentInfo.type === 'video-in-playlist') {
+            // Load specific video within playlist
+            playerVars.listType = 'playlist';
+            playerVars.list = contentInfo.playlistId;
+            // Index will be determined by YouTube, or we can load specific video
+
+            playerConfig = {
+                height: '100%',
+                width: '100%',
+                playerVars: playerVars,
+                events: {
+                    'onReady': (event) => {
+                        // Seek to specific video in playlist
+                        // Find index by loading playlist and matching video
+                        this.onReady(event, this.pendingOptions);
+                    },
+                    'onStateChange': (event) => this.onStateChange(event, this.pendingOptions),
+                    'onError': (event) => this.onError(event, this.pendingOptions)
+                }
+            };
+        } else {
+            // Single video
+            if (shouldLoop) {
+                playerVars['loop'] = 1;
+                playerVars['playlist'] = contentInfo.videoId;
+            }
+
+            playerConfig = {
+                height: '100%',
+                width: '100%',
+                videoId: contentInfo.videoId,
+                playerVars: playerVars,
+                events: {
+                    'onReady': (event) => this.onReady(event, this.pendingOptions),
+                    'onStateChange': (event) => this.onStateChange(event, this.pendingOptions),
+                    'onError': (event) => this.onError(event, this.pendingOptions)
+                }
+            };
         }
 
-        this.player = new YT.Player(container, {
-            height: '100%',
-            width: '100%',
-            videoId: videoId,
-            playerVars: playerVars,
-            events: {
-                'onReady': (event) => this.onReady(event, this.pendingOptions),
-                'onStateChange': (event) => this.onStateChange(event, this.pendingOptions),
-                'onError': (event) => this.onError(event, this.pendingOptions)
-            }
-        });
+        this.player = new YT.Player(container, playerConfig);
 
         return this.player;
     }

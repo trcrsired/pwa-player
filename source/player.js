@@ -1352,12 +1352,17 @@ video.addEventListener("timeupdate", () => {
 
 function fullscreencallback()
 {
+  const embeddedActive = typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive();
+
   if (document.fullscreenElement) {
     document.exitFullscreen();
-    showControls(hasActiveSource);
+    if (!embeddedActive) {
+        showControls(hasActiveSource);
+    }
   } else {
     document.documentElement.requestFullscreen();
-    if (hasActiveSource) {
+    // For embedded player, don't hide controls - fullscreen works same as non-fullscreen
+    if (hasActiveSource && !embeddedActive) {
         hideControls();
     }
   }

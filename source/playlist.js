@@ -1,3 +1,35 @@
+// ===============================
+// External Playlist Loading - Uses Platform Registry
+// ===============================
+
+// Check if URL is a playlist that needs loading
+// Returns true if the platform needs to fetch individual tracks (like Spotify)
+// Returns false if the platform handles playlists natively (like YouTube IFrame API)
+function needsPlaylistExtraction(url) {
+    if (typeof isPlaylistUrl !== 'function') return false;
+    if (!isPlaylistUrl(url)) return false;
+
+    // Get the platform and check if it extracts tracks
+    const platformClass = typeof getPlatformForUrl === 'function' ? getPlatformForUrl(url) : null;
+    if (!platformClass) return false;
+
+    // Spotify needs extraction, YouTube handles natively
+    // The platform's loadPlaylist method decides what to return
+    return platformClass.name === 'spotify';
+}
+
+// Load playlist using platform's loadPlaylist method
+async function loadPlaylistFromPlatform(url) {
+    if (typeof loadPlaylistFromUrl === 'function') {
+        return await loadPlaylistFromUrl(url);
+    }
+    return null;
+}
+
+// ===============================
+// Playlist Storage Functions
+// ===============================
+
 // Load all playlists from IndexedDB
 async function playlists_load() {
     // Structure:
@@ -436,25 +468,50 @@ function showPlaylistHeaderMenu(playlistName, button) {
                 }
 
                 const trimmedUrl = url.trim();
-                // Extract name from URL (end part)
-                let name = trimmedUrl.split('/').pop()?.split('?')[0] || trimmedUrl;
-                // Decode URL encoding if present
-                try {
-                    name = decodeURIComponent(name);
-                } catch (e) {
-                    // Keep original if decode fails
+
+                // Use platform registry for playlist handling
+                const platformClass = typeof getPlatformForUrl === 'function' ? getPlatformForUrl(trimmedUrl) : null;
+
+                if (platformClass && typeof platformClass.isPlaylistUrl === 'function' && platformClass.isPlaylistUrl(trimmedUrl)) {
+                    // It's a playlist URL - use platform's loadPlaylist method
+                    const loadingMsg = t('loadingExternalPlaylist', 'Loading playlist...');
+                    if (typeof showToast === 'function') {
+                        showToast(loadingMsg);
+                    }
+
+                    try {
+                        const entries = await platformClass.loadPlaylist(trimmedUrl);
+                        if (entries && entries.length > 0) {
+                            for (const entry of entries) {
+                                playlists[playlistName].push(entry);
+                            }
+                            await playlists_save(playlists);
+                            playlist_renderTree();
+                            if (typeof showToast === 'function') {
+                                showToast(t('playlistLoaded', `Loaded ${entries.length} items`));
+                            }
+                        } else {
+                            alert(t('failedToLoadPlaylist', 'Failed to load playlist or playlist is empty.'));
+                        }
+                    } catch (e) {
+                        console.error("Failed to load playlist:", e);
+                        alert(t('playlistLoadError', `Error: ${e.message}`));
+                    }
+                    closeMenu();
+                    return;
                 }
 
-                // Add to playlist directly - title will be fetched when played
+                // Regular URL or single video/track
+                let name = trimmedUrl.split('/').pop()?.split('?')[0] || trimmedUrl;
+                try {
+                    name = decodeURIComponent(name);
+                } catch (e) {}
+
                 playlists[playlistName].push({
                     name: name,
                     path: trimmedUrl,
-                    isUrl: true  // Mark as URL for future reference
-                });
-                playlists[playlistName].push({
-                    name: name,
-                    path: trimmedUrl,
-                    isUrl: true  // Mark as URL for future reference
+                    isUrl: true,
+                    platform: platformClass ? platformClass.name : null
                 });
                 await playlists_save(playlists);
                 playlist_renderTree();

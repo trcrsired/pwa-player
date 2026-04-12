@@ -45,6 +45,114 @@ class SpotifyPlatform extends BasePlatform {
         return null;
     }
 
+    // Check if URL is a Spotify playlist
+    static isPlaylistUrl(url) {
+        const videoId = this.extractVideoId(url);
+        return videoId && videoId.type === 'playlist';
+    }
+
+    // Extract playlist ID from URL
+    static extractPlaylistId(url) {
+        const videoId = this.extractVideoId(url);
+        if (videoId && videoId.type === 'playlist') {
+            return videoId.id;
+        }
+        return null;
+    }
+
+    // Load Spotify playlist - fetches track list (requires CORS bypass or embed parsing)
+    static async loadPlaylist(url) {
+        const playlistId = this.extractPlaylistId(url);
+        if (!playlistId) return null;
+
+        const tracks = [];
+
+        // Method 1: Try Spotify API via CORS bypass
+        const corsBypassUrl = typeof getCorsBypassUrl === 'function' ? getCorsBypassUrl() : localStorage.getItem("corsBypassUrl") || "";
+        const corsEnabled = typeof isCorsBypassEnabled === 'function' ? isCorsBypassEnabled() : localStorage.getItem("corsBypassEnabled") === "true";
+
+        if (corsEnabled && corsBypassUrl) {
+            try {
+                const apiUrl = `${corsBypassUrl}https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100&fields=items(track(id,name,artists(name)))`;
+                const response = await fetch(apiUrl);
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    for (const item of data.items || []) {
+                        const track = item.track;
+                        if (track && track.id) {
+                            const artistName = track.artists?.[0]?.name || '';
+                            const displayName = artistName ? `${track.name} - ${artistName}` : track.name;
+                            tracks.push({
+                                name: displayName,
+                                path: `https://open.spotify.com/track/${track.id}`,
+                                isUrl: true,
+                                platform: this.name
+                            });
+                        }
+                    }
+
+                    if (tracks.length > 0) {
+                        return tracks;
+                    }
+                }
+            } catch (e) {
+                console.warn("Spotify API fetch failed:", e);
+            }
+        }
+
+        // Method 2: Try embed page parsing
+        try {
+            const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
+            const response = await fetch(embedUrl);
+
+            if (response.ok) {
+                const html = await response.text();
+
+                // Extract track IDs from various patterns
+                const idSet = new Set();
+                const uriPattern = /spotify:track:([a-zA-Z0-9]{22})/g;
+                const urlPattern = /["\/]track[\/":]([a-zA-Z0-9]{22})/g;
+
+                let match;
+                while ((match = uriPattern.exec(html)) !== null) {
+                    idSet.add(match[1]);
+                }
+                while ((match = urlPattern.exec(html)) !== null) {
+                    idSet.add(match[1]);
+                }
+
+                // Try to extract names
+                const namePattern = /"name":"([^"]{3,50})"/g;
+                const names = [];
+                while ((match = namePattern.exec(html)) !== null) {
+                    const name = match[1];
+                    if (!name.toLowerCase().includes('spotify') && !name.toLowerCase().includes('playlist')) {
+                        names.push(name);
+                    }
+                }
+
+                for (const id of idSet) {
+                    tracks.push({
+                        name: names[tracks.length] || `Spotify Track`,
+                        path: `https://open.spotify.com/track/${id}`,
+                        isUrl: true,
+                        platform: this.name
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn("Spotify embed parse failed:", e);
+        }
+
+        if (tracks.length === 0) {
+            throw new Error("Could not load Spotify playlist. Enable CORS bypass or add tracks manually.");
+        }
+
+        return tracks;
+    }
+
     constructor() {
         super();
         this.embedController = null;
@@ -56,8 +164,8 @@ class SpotifyPlatform extends BasePlatform {
             playingURI: null
         };
         this.trackEndedTriggered = false;
-        this.wasNearEnd = false; // Track if we were near the end of the track
-        this.lastPlayingURI = null; // Track the URI that was playing
+        this.wasNearEnd = false;
+        this.lastPlayingURI = null;
     }
 
     loadApi() {

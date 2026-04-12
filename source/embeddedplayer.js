@@ -92,6 +92,9 @@ function playEmbeddedUrl(url, metadata = {}) {
             const showBtn = document.getElementById("embeddedShowControlsBtn");
             if (triggerZone) triggerZone.classList.remove("hidden");
             if (showBtn) showBtn.classList.add("hidden");
+
+            // Start periodic fullscreen check for iframe internal fullscreen
+            startFullscreenCheck();
         }
     });
 
@@ -195,6 +198,9 @@ function stopEmbeddedPlayer() {
 
     // Clear A-B loop
     if (typeof clearABLoop === 'function') clearABLoop();
+
+    // Stop fullscreen check interval
+    stopFullscreenCheck();
 }
 
 // Check if embedded player is active
@@ -427,12 +433,31 @@ if (triggerZone) {
     }, { passive: false });
 }
 
-// Floating button click handler
+// Floating button click handler - toggles controls visibility
 const showBtn = document.getElementById("embeddedShowControlsBtn");
 if (showBtn) {
     showBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        showEmbeddedControls();
+
+        const controls = document.getElementById("controls");
+        if (!controls || !isEmbeddedPlayerActive()) return;
+
+        // Toggle: if controls are shown, hide them; if hidden, show them
+        if (controls.classList.contains("hidden")) {
+            showEmbeddedControls();
+        } else {
+            // Hide controls and show trigger zone
+            controls.classList.add("hidden");
+            const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+            if (triggerZone) triggerZone.classList.remove("hidden");
+            if (showBtn) showBtn.classList.add("hidden");
+
+            // Clear auto-hide timer
+            if (controlsAutoHideTimer) {
+                clearTimeout(controlsAutoHideTimer);
+                controlsAutoHideTimer = null;
+            }
+        }
     });
 }
 
@@ -457,34 +482,59 @@ document.addEventListener("click", (e) => {
     }
 });
 
-// Detect fullscreen changes
-function handleFullscreenChange(isFullscreen) {
-    if (!isEmbeddedPlayerActive()) return;
+// Detect fullscreen changes (document-level fullscreen)
+function handleFullscreenChange() {
+    const inFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    const embeddedActive = isEmbeddedPlayerActive();
 
-    const controls = document.getElementById("controls");
-    const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
-    const showBtn = document.getElementById("embeddedShowControlsBtn");
+    // Clear any pending timers when entering/exiting fullscreen
+    if (showBtnAutoHideTimer) {
+        clearTimeout(showBtnAutoHideTimer);
+        showBtnAutoHideTimer = null;
+    }
+    if (controlsAutoHideTimer) {
+        clearTimeout(controlsAutoHideTimer);
+        controlsAutoHideTimer = null;
+    }
 
-    if (isFullscreen) {
-        if (controls) controls.classList.add("hidden");
-        if (triggerZone) triggerZone.classList.add("hidden");
-        if (showBtn) showBtn.classList.add("hidden");
-
-        if (showBtnAutoHideTimer) {
-            clearTimeout(showBtnAutoHideTimer);
-            showBtnAutoHideTimer = null;
-        }
-        if (controlsAutoHideTimer) {
-            clearTimeout(controlsAutoHideTimer);
-            controlsAutoHideTimer = null;
+    // For embedded player, fullscreen behaves the same as non-fullscreen
+    // Trigger zone and button visibility are handled by user interaction, not fullscreen state
+    if (embeddedActive) {
+        // Ensure trigger zone is visible (in case it was hidden somehow)
+        const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+        if (triggerZone && triggerZone.classList.contains("hidden")) {
+            triggerZone.classList.remove("hidden");
         }
     }
+    // For normal video player, showControls/hideControls handle visibility
 }
 
-document.addEventListener("fullscreenchange", () => {
-    handleFullscreenChange(document.fullscreenElement !== null);
-});
+document.addEventListener("fullscreenchange", handleFullscreenChange);
+document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+document.addEventListener("mozfullscreenchange", handleFullscreenChange);
 
-document.addEventListener("webkitfullscreenchange", () => {
-    handleFullscreenChange(document.webkitFullscreenElement !== null);
-});
+// Periodic check to ensure trigger zone is visible (handles edge cases)
+let fullscreenCheckInterval = null;
+
+function startFullscreenCheck() {
+    if (fullscreenCheckInterval) return;
+    fullscreenCheckInterval = setInterval(() => {
+        if (!isEmbeddedPlayerActive()) {
+            stopFullscreenCheck();
+            return;
+        }
+
+        // Ensure trigger zone is visible
+        const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
+        if (triggerZone && triggerZone.classList.contains("hidden")) {
+            triggerZone.classList.remove("hidden");
+        }
+    }, 1000);
+}
+
+function stopFullscreenCheck() {
+    if (fullscreenCheckInterval) {
+        clearInterval(fullscreenCheckInterval);
+        fullscreenCheckInterval = null;
+    }
+}

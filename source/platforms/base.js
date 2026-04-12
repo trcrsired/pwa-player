@@ -44,7 +44,32 @@ class BasePlatform {
         throw new Error('Platform must implement static extractVideoId');
     }
 
-    // Load platform API
+    // Check if URL is a playlist for this platform (default: false)
+    static isPlaylistUrl(url) {
+        return false;
+    }
+
+    // Extract playlist ID from URL (default: null)
+    static extractPlaylistId(url) {
+        return null;
+    }
+
+    // Load playlist - returns array of track entries or single playlist entry
+    // Default: return single entry with the URL (platform handles playlist natively)
+    static async loadPlaylist(url) {
+        // Most platforms (like YouTube) can handle playlists natively via their player
+        // Just return a single entry that marks it as a playlist
+        const playlistId = this.extractPlaylistId(url);
+        return [{
+            name: `${this.name} Playlist (${playlistId || 'unknown'})`,
+            path: url,
+            isUrl: true,
+            isPlaylist: true,
+            platform: this.name
+        }];
+    }
+
+    // Load API
     loadApi() {
         throw new Error('Platform must implement loadApi');
     }
@@ -198,6 +223,32 @@ function isEmbeddedUrl(url) {
     return getPlatformForUrl(url) !== null;
 }
 
+// Check if URL is a playlist for any platform
+function isPlaylistUrl(url) {
+    const platformClass = getPlatformForUrl(url);
+    if (!platformClass) return false;
+    return platformClass.isPlaylistUrl(url);
+}
+
+// Load playlist using the appropriate platform
+async function loadPlaylistFromUrl(url) {
+    const platformClass = getPlatformForUrl(url);
+    if (!platformClass) return null;
+
+    if (platformClass.isPlaylistUrl(url)) {
+        return await platformClass.loadPlaylist(url);
+    }
+
+    // Single video/track - return as single entry
+    const videoId = platformClass.extractVideoId(url);
+    return [{
+        name: url.split('/').pop()?.split('?')[0] || url,
+        path: url,
+        isUrl: true,
+        platform: platformClass.name
+    }];
+}
+
 // Format time for display (shared utility)
 function formatEmbedTime(seconds) {
     const mins = Math.floor(seconds / 60);
@@ -211,4 +262,6 @@ window.registerPlatform = registerPlatform;
 window.getPlatformForUrl = getPlatformForUrl;
 window.getPlatformInstance = getPlatformInstance;
 window.isEmbeddedUrl = isEmbeddedUrl;
+window.isPlaylistUrl = isPlaylistUrl;
+window.loadPlaylistFromUrl = loadPlaylistFromUrl;
 window.formatEmbedTime = formatEmbedTime;

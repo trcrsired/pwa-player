@@ -100,6 +100,10 @@ const EN_TRANSLATIONS = {
     addedToPlaylist: "Added",
     toPlaylist: "to playlist",
     exportedToConsole: "Playlist exported to console.",
+    loadingExternalPlaylist: "Loading playlist...",
+    playlistLoaded: "Playlist loaded",
+    failedToLoadPlaylist: "Failed to load playlist or playlist is empty.",
+    playlistLoadError: "Error loading playlist",
 
     // IPTV
     iptvChannels: "📺 IPTV Channels",
