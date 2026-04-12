@@ -20,7 +20,7 @@
   --controls-padding: 10px 14px;
   --controls-radius: 10px;
   --controls-width: 92vw;
-  --controls-z: 1000;
+  --controls-z: 1002;  /* Above trigger zone and button */
   --progress-z: 999;
 
   --controls-ui-bg: rgba(255, 255, 255, 0);
@@ -548,6 +548,7 @@ button:hover,
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 1;  /* Below trigger zone and controls */
 }
 
 #embeddedPlayer iframe {
@@ -561,7 +562,7 @@ button:hover,
   top: 50%;
   right: 15px;
   transform: translateY(-50%);
-  z-index: 1000;
+  z-index: 1001;  /* Above trigger zone */
   background: rgba(0, 0, 0, 0.6);
   color: white;
   border: none;
@@ -577,16 +578,17 @@ button:hover,
   opacity: 1;
 }
 
-/* Invisible trigger zone on right side to reveal the button */
+/* Trigger zone overlay - small area around button position */
 #embeddedShowBtnTriggerZone {
   position: fixed;
-  top: 0;
+  top: 40%;
   right: 0;
   width: 60px;
-  height: 100vh;
-  z-index: 999;
+  height: 20%;
+  z-index: 1000;  /* Above iframe */
   background: transparent;
-  pointer-events: auto;
+  pointer-events: auto;  /* Capture mouse events */
+  cursor: default;
 }
 
 .iptv-nsfw-badge {

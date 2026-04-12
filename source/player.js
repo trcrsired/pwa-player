@@ -291,13 +291,40 @@ const subtitleBtn = document.getElementById('subtitleBtn');
 let timeInputActive = false;
 let npTimeInputActive = false;
 
+function getActiveDuration() {
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        if (typeof getEmbeddedDuration === 'function') {
+            return getEmbeddedDuration();
+        }
+        return 0;
+    }
+    return video.duration;
+}
+
+function seekActivePlayerToTime(seconds) {
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        if (typeof seekEmbeddedPlayerToTime === 'function') {
+            seekEmbeddedPlayerToTime(seconds);
+        }
+    } else {
+        video.currentTime = seconds;
+    }
+}
+
 if (timeDisplay) {
+    timeDisplay.style.cursor = 'pointer';
     timeDisplay.addEventListener('click', () => {
-        // Only allow if playing and duration is not Infinity (not live stream)
-        if (!hasActiveSource || !isFinite(video.duration) || video.duration <= 0) return;
+        // Check if embedded player or normal video is active
+        const isEmbedded = typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive();
+        const duration = getActiveDuration();
+
+        // Only allow if something is playing and duration is valid
+        if (!hasActiveSource && !isEmbedded) return;
+        if (!isFinite(duration) || duration <= 0) return;
         if (timeInputActive) return;
 
         timeInputActive = true;
+        window.timeInputActive = true; // Global flag for platforms
         const originalText = timeDisplay.textContent;
         const input = document.createElement('input');
         input.type = 'text';
@@ -312,6 +339,7 @@ if (timeDisplay) {
 
         const finishEdit = () => {
             timeInputActive = false;
+            window.timeInputActive = false;
             timeDisplay.textContent = originalText;
         };
 
@@ -324,8 +352,8 @@ if (timeDisplay) {
                 e.preventDefault();
                 const timeStr = input.value.trim();
                 const seconds = parseTimeString(timeStr);
-                if (seconds !== null && seconds >= 0 && seconds <= video.duration) {
-                    video.currentTime = seconds;
+                if (seconds !== null && seconds >= 0 && seconds <= duration) {
+                    seekActivePlayerToTime(seconds);
                 }
                 finishEdit();
             }
@@ -337,11 +365,17 @@ if (timeDisplay) {
 if (npTimeDisplay) {
     npTimeDisplay.style.cursor = 'pointer';
     npTimeDisplay.addEventListener('click', () => {
-        // Only allow if playing and duration is not Infinity (not live stream)
-        if (!hasActiveSource || !isFinite(video.duration) || video.duration <= 0) return;
+        // Check if embedded player or normal video is active
+        const isEmbedded = typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive();
+        const duration = getActiveDuration();
+
+        // Only allow if something is playing and duration is valid
+        if (!hasActiveSource && !isEmbedded) return;
+        if (!isFinite(duration) || duration <= 0) return;
         if (npTimeInputActive) return;
 
         npTimeInputActive = true;
+        window.npTimeInputActive = true; // Global flag for platforms
         const originalText = npTimeDisplay.textContent;
         const input = document.createElement('input');
         input.type = 'text';
@@ -356,6 +390,7 @@ if (npTimeDisplay) {
 
         const finishEdit = () => {
             npTimeInputActive = false;
+            window.npTimeInputActive = false;
             npTimeDisplay.textContent = originalText;
         };
 
@@ -368,8 +403,8 @@ if (npTimeDisplay) {
                 e.preventDefault();
                 const timeStr = input.value.trim();
                 const seconds = parseTimeString(timeStr);
-                if (seconds !== null && seconds >= 0 && seconds <= video.duration) {
-                    video.currentTime = seconds;
+                if (seconds !== null && seconds >= 0 && seconds <= duration) {
+                    seekActivePlayerToTime(seconds);
                 }
                 finishEdit();
             }
@@ -506,7 +541,11 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
   // Check if this is an embedded URL (YouTube, Vimeo, etc.) - use embedded player instead
   if (typeof playEmbeddedUrl === 'function' && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
-    playEmbeddedUrl(blobURL);
+    playEmbeddedUrl(blobURL, {
+      playlist: playlist,
+      title: mediametadata.title,
+      sourceobject: sourceobject
+    });
     return;
   }
 
@@ -521,6 +560,9 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     // Clear previous subtitles
     clearSubtitles();
+
+    // Reset video position to start
+    video.currentTime = 0;
 
     // Show loading indicator
     showVideoLoading();
@@ -593,6 +635,8 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Wait for metadata before playing
     video.onloadedmetadata = () => {
       hideVideoStatus(); // Hide loading when metadata loads
+      // Ensure video starts from beginning
+      video.currentTime = 0;
       video.play().catch(err => console.warn("Play failed:", err));
       // Resize window to video dimensions if enabled
       if (typeof resizeWindowToVideo === 'function') {
@@ -937,6 +981,19 @@ async function togglePlayBtn()
 playBtn.onclick = togglePlayBtn;
 npPlayBtn.onclick = togglePlayBtn;
 
+// Clear video source when switching to embedded player (iframe)
+function clearVideoSource() {
+  video.pause();
+  video.currentTime = 0;
+  video.removeAttribute("src");
+  video.load();
+  hasActiveSource = false;
+  clearVideoPreview();
+  revokeBlobURL();
+}
+// Make it globally accessible for embedded player
+window.clearVideoSource = clearVideoSource;
+
 async function toggleStopBtn()
 {
   video.pause();
@@ -1254,6 +1311,11 @@ rotationBtn.addEventListener("click", () => {
 });
 
 video.addEventListener("timeupdate", () => {
+  // Skip when embedded player is active - let embedded player handle progress
+  if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+    return;
+  }
+
   const duration = video.duration;
   if (!hasActiveSource || Number.isNaN(duration))
   {
@@ -1273,7 +1335,7 @@ video.addEventListener("timeupdate", () => {
   }
 
   // Don't update progress bar value while user is dragging it
-  if (!isDraggingProgressBar) {
+  if (!window.isDraggingProgressBar) {
     let todisplay;
     if (total) {
       todisplay = `${current} / ${total}`;
@@ -1384,7 +1446,7 @@ function clearVideoPreview() {
 }
 
 // Track when user is actively dragging the progress bar (pointer down)
-let isDraggingProgressBar = false;
+window.isDraggingProgressBar = false;
 
 // Progress bar preview events (using pointer events for cross-device support)
 if (progressContainer && progressBar) {
@@ -1412,7 +1474,7 @@ if (progressContainer && progressBar) {
   progressBar.addEventListener("pointerdown", (e) => {
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
-    isDraggingProgressBar = true;
+    window.isDraggingProgressBar = true;
     showControls(false); // Show controls without auto-hide while dragging
 
     const rect = progressBar.getBoundingClientRect();
@@ -1424,7 +1486,7 @@ if (progressContainer && progressBar) {
   });
 
   progressBar.addEventListener("pointerup", () => {
-    isDraggingProgressBar = false;
+    window.isDraggingProgressBar = false;
     // Restart auto-hide timer if playing
     if (hasActiveSource && !video.paused) {
         showControls(true);
@@ -1432,7 +1494,7 @@ if (progressContainer && progressBar) {
   });
 
   progressBar.addEventListener("pointercancel", () => {
-    isDraggingProgressBar = false;
+    window.isDraggingProgressBar = false;
   });
 }
 
@@ -1547,8 +1609,8 @@ function showControls(autoHide = true) {
     clearTimeout(hideTimeout);
 
     // Auto-hide after configured delay only when playing and not dragging progress bar
-    if (autoHide && hasActiveSource && !isDraggingProgressBar) {
-        const delay = parseInt(localStorage.getItem("controlsAutoHideDelay"), 10) || 5000;
+    if (autoHide && hasActiveSource && !window.isDraggingProgressBar) {
+        const delay = parseInt(localStorage.getItem("controlsAutoHideDelay"), 10) || 10000;
         if (delay > 0) {
             hideTimeout = setTimeout(() => {
                 controls.classList.add("hidden");

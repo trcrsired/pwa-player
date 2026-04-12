@@ -158,7 +158,7 @@ const ZHCN_TRANSLATIONS = {
     abLoop: "A-B循环",
     videoPreviewEnabled: "时间轴视频预览",
     controlsAutoHideDelay: "控件自动隐藏（毫秒）",
-    controlsAutoHideDelayHint: "控件自动隐藏延迟，适用于视频和嵌入式播放器。默认5000毫秒（5秒）。设置为0禁用自动隐藏。",
+    controlsAutoHideDelayHint: "控件自动隐藏延迟，适用于视频和嵌入式播放器。默认10000毫秒（10秒）。设置为0禁用自动隐藏。",
     preservePitch: "保持音高",
     speedAudioOnly: "速度控制仅用于音频",
     aboutThisApp: "关于此应用",

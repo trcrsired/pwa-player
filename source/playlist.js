@@ -436,29 +436,21 @@ function showPlaylistHeaderMenu(playlistName, button) {
                 }
 
                 const trimmedUrl = url.trim();
-                // Extract name from URL (filename part)
+                // Extract name from URL (end part)
                 let name = trimmedUrl.split('/').pop()?.split('?')[0] || trimmedUrl;
-
-                // For embedded URLs (YouTube, Vimeo), use placeholder name
-                if (typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(trimmedUrl)) {
-                    if (typeof isYouTubeUrl === 'function' && isYouTubeUrl(trimmedUrl)) {
-                        const videoId = typeof extractYouTubeVideoId === 'function' ? extractYouTubeVideoId(trimmedUrl) : null;
-                        name = videoId ? `YouTube: ${videoId}` : 'YouTube Video';
-                    } else if (typeof isVimeoUrl === 'function' && isVimeoUrl(trimmedUrl)) {
-                        const videoId = typeof extractVimeoVideoId === 'function' ? extractVimeoVideoId(trimmedUrl) : null;
-                        name = videoId ? `Vimeo: ${videoId}` : 'Vimeo Video';
-                    } else {
-                        name = 'Web Video';
-                    }
+                // Decode URL encoding if present
+                try {
+                    name = decodeURIComponent(name);
+                } catch (e) {
+                    // Keep original if decode fails
                 }
 
-                // Ask for optional custom name
-                const customName = prompt(t('itemNameOptional', 'Item name (optional):'), name);
-                if (customName && customName.trim()) {
-                    name = customName.trim();
-                }
-
-                // Add to playlist
+                // Add to playlist directly - title will be fetched when played
+                playlists[playlistName].push({
+                    name: name,
+                    path: trimmedUrl,
+                    isUrl: true  // Mark as URL for future reference
+                });
                 playlists[playlistName].push({
                     name: name,
                     path: trimmedUrl,

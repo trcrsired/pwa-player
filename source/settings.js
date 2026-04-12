@@ -419,14 +419,14 @@ if (videoPreviewEnabledCheckbox) {
 const controlsAutoHideDelayInput = document.getElementById("controlsAutoHideDelayInput");
 
 if (controlsAutoHideDelayInput) {
-    controlsAutoHideDelayInput.value = localStorage.getItem("controlsAutoHideDelay") || "5000";
+    controlsAutoHideDelayInput.value = localStorage.getItem("controlsAutoHideDelay") || "10000";
     controlsAutoHideDelayInput.addEventListener("change", () => {
         const delay = parseInt(controlsAutoHideDelayInput.value, 10);
         if (delay >= 0) {
             localStorage.setItem("controlsAutoHideDelay", delay.toString());
         } else {
-            localStorage.setItem("controlsAutoHideDelay", "5000");
-            controlsAutoHideDelayInput.value = "5000";
+            localStorage.setItem("controlsAutoHideDelay", "10000");
+            controlsAutoHideDelayInput.value = "10000";
         }
     });
 }
@@ -508,13 +508,14 @@ function clearABLoop() {
 
 // Handle AB button click (cycles: A -> B -> AB -> A)
 function handleABLoopClick() {
-    const video = document.getElementById("player");
-    if (!video || !isNonLiveVideo()) return;
+    if (!isNonLiveVideo()) return;
+
+    const currentTime = getActiveCurrentTime();
 
     switch (abLoopState) {
         case 0:
             // Set A point
-            abLoopStart = video.currentTime;
+            abLoopStart = currentTime;
             abLoopEnd = null;
             abLoopActive = false;
             abLoopState = 1;
@@ -523,7 +524,7 @@ function handleABLoopClick() {
 
         case 1:
             // Set B point and activate
-            abLoopEnd = video.currentTime;
+            abLoopEnd = currentTime;
             if (abLoopEnd > abLoopStart) {
                 abLoopActive = true;
                 abLoopState = 2;
@@ -557,16 +558,20 @@ if (videoForABLoop) {
     videoForABLoop.addEventListener("ended", () => {
         // If A point is set but not B, auto-set B to end and start loop
         if (abLoopState === 1 && abLoopStart !== null) {
-            const video = document.getElementById("player");
-            abLoopEnd = video.duration;
+            abLoopEnd = getActiveDuration();
             abLoopActive = true;
             abLoopState = 2;
             startABLoopCheck();
             updateABLoopButton();
             showABLoopStatus(`A-B: ${formatTime(abLoopStart)} - ${formatTime(abLoopEnd)}`);
             // Seek back to A and play
-            video.currentTime = abLoopStart;
-            video.play().catch(() => {});
+            seekActivePlayerToTime(abLoopStart);
+            const video = document.getElementById("player");
+            if (video && !isEmbeddedPlayerActive()) {
+                video.play().catch(() => {});
+            } else if (typeof playEmbeddedPlayer === 'function') {
+                playEmbeddedPlayer();
+            }
         }
     });
 
@@ -586,8 +591,58 @@ if (videoForABLoop) {
     });
 }
 
-// Check if video is non-live
+// Get active player current time (handles both video and embedded)
+function getActiveCurrentTime() {
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        if (typeof getEmbeddedCurrentTime === 'function') {
+            const time = getEmbeddedCurrentTime();
+            // Handle Promise (Vimeo) or direct value (YouTube)
+            if (time && typeof time.then === 'function') {
+                return window._cachedEmbeddedCurrentTime || 0;
+            }
+            return time || 0;
+        }
+        return 0;
+    }
+    const video = document.getElementById("player");
+    return video ? video.currentTime : 0;
+}
+
+// Get active player duration (handles both video and embedded)
+function getActiveDuration() {
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        if (typeof getEmbeddedDuration === 'function') {
+            const duration = getEmbeddedDuration();
+            // Handle Promise (Vimeo) or direct value (YouTube)
+            if (duration && typeof duration.then === 'function') {
+                return window._cachedEmbeddedDuration || 0;
+            }
+            return duration || 0;
+        }
+        return 0;
+    }
+    const video = document.getElementById("player");
+    return video ? video.duration : 0;
+}
+
+// Seek active player to time (handles both video and embedded)
+function seekActivePlayerToTime(seconds) {
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        if (typeof seekEmbeddedPlayerToTime === 'function') {
+            seekEmbeddedPlayerToTime(seconds);
+        }
+    } else {
+        const video = document.getElementById("player");
+        if (video) video.currentTime = seconds;
+    }
+}
+
+// Check if video is non-live (handles both video and embedded)
 function isNonLiveVideo() {
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        const duration = getActiveDuration();
+        return duration > 0 && isFinite(duration);
+    }
     const video = document.getElementById("player");
     if (!video || !video.src) return false;
     return isFinite(video.duration) && video.duration !== Infinity;
@@ -605,11 +660,22 @@ function startABLoopCheck() {
     if (abLoopCheckInterval) return;
 
     abLoopCheckInterval = setInterval(() => {
-        const video = document.getElementById("player");
-        if (!video || video.paused || !abLoopActive) return;
+        if (!abLoopActive) return;
 
-        if (abLoopEnd !== null && video.currentTime >= abLoopEnd) {
-            video.currentTime = abLoopStart;
+        // Check if embedded player is paused
+        if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+            // For embedded players, use cached time from progress updates
+            const currentTime = window._cachedEmbeddedCurrentTime || 0;
+            if (abLoopEnd !== null && currentTime >= abLoopEnd) {
+                seekActivePlayerToTime(abLoopStart);
+            }
+        } else {
+            const video = document.getElementById("player");
+            if (!video || video.paused) return;
+
+            if (abLoopEnd !== null && video.currentTime >= abLoopEnd) {
+                video.currentTime = abLoopStart;
+            }
         }
     }, 100);
 }
@@ -674,7 +740,7 @@ document.addEventListener("keydown", (e) => {
         case "j":
             // J: Set A point
             if (isShortcutLoopEnabled() && isNonLiveVideo()) {
-                abLoopStart = video.currentTime;
+                abLoopStart = getActiveCurrentTime();
                 abLoopEnd = null;
                 abLoopActive = false;
                 abLoopState = 1;
@@ -686,7 +752,7 @@ document.addEventListener("keydown", (e) => {
         case "l":
             // L: Set B point and activate
             if (isShortcutLoopEnabled() && isNonLiveVideo() && abLoopState === 1) {
-                abLoopEnd = video.currentTime;
+                abLoopEnd = getActiveCurrentTime();
                 if (abLoopEnd > abLoopStart) {
                     abLoopActive = true;
                     abLoopState = 2;

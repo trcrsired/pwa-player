@@ -158,7 +158,7 @@ const EN_TRANSLATIONS = {
     abLoop: "A-B Loop",
     videoPreviewEnabled: "Video preview on timeline",
     controlsAutoHideDelay: "Controls Auto-hide (ms)",
-    controlsAutoHideDelayHint: "Controls auto-hide delay for both video and embedded player. Default 5000ms (5 seconds). Set to 0 to disable auto-hide.",
+    controlsAutoHideDelayHint: "Controls auto-hide delay for both video and embedded player. Default 10000ms (10 seconds). Set to 0 to disable auto-hide.",
     preservePitch: "Preserve pitch",
     speedAudioOnly: "Speed control for audio only",
     aboutThisApp: "About This App",

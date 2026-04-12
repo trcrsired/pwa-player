@@ -298,7 +298,7 @@
                     <span data-i18n="controlsAutoHideDelay">Controls Auto-hide (ms)</span>
                     <input type="number" id="controlsAutoHideDelayInput" class="setting-input-small" min="0" max="60000">
                 </label>
-                <p class="setting-hint" data-i18n="controlsAutoHideDelayHint">Controls auto-hide delay for both video and embedded player. Default 5000ms (5 seconds). Set to 0 to disable auto-hide.</p>
+                <p class="setting-hint" data-i18n="controlsAutoHideDelayHint">Controls auto-hide delay for both video and embedded player. Default 10000ms (10 seconds). Set to 0 to disable auto-hide.</p>
 
                 <h3 data-i18n="keyboardShortcuts">Keyboard Shortcuts</h3>
                 <label class="setting-toggle">
@@ -418,6 +418,19 @@
         <script src="nowplaying.js"></script>
         <script src="playlist.js"></script>
         <script src="storage.js"></script>
+        <!-- Platform support for embedded players -->
+        <script src="platforms/base.js"></script>
+        <script src="platforms/youtube.js"></script>
+        <script src="platforms/vimeo.js"></script>
+        <script src="platforms/bilibili.js"></script>
+        <script src="platforms/douyin.js"></script>
+        <script src="platforms/tiktok.js"></script>
+        <script src="platforms/twitch.js"></script>
+        <script src="platforms/spotify.js"></script>
+        <script src="platforms/soundcloud.js"></script>
+        <script src="platforms/applemusic.js"></script>
+        <script src="platforms/kick.js"></script>
+        <script src="platforms/neteasemusic.js"></script>
         <script src="embeddedplayer.js"></script>
         <script src="player.js"></script>
         <script src="iptv.js" type="module"></script>

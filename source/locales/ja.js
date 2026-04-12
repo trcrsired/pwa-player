@@ -155,7 +155,7 @@ const JA_TRANSLATIONS = {
     abLoop: "A-Bループ",
     videoPreviewEnabled: "タイムライン動画プレビュー",
     controlsAutoHideDelay: "制御自動非表示（ミリ秒）",
-    controlsAutoHideDelayHint: "制御自動非表示遅延、動画と埋め込みプレーヤー共通。デフォルト5000ミリ秒（5秒）。0で自動非表示を無効。",
+    controlsAutoHideDelayHint: "制御自動非表示遅延、動画と埋め込みプレーヤー共通。デフォルト10000ミリ秒（10秒）。0で自動非表示を無効。",
     preservePitch: "ピッチを維持",
     speedAudioOnly: "速度制御は音声のみ",
     aboutThisApp: "このアプリについて",
