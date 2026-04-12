@@ -1211,8 +1211,8 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     try {
                         const file = await handle.getFile();
 
-                        // Build share text: path first, optionally PWA Player URL
-                        let shareText = fullPath || name;
+                        // Build share text: name, path, optionally PWA Player URL
+                        let shareText = `${name}\n${fullPath || name}`;
                         if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
                             const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
                             shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
