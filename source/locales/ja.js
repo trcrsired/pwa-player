@@ -93,6 +93,7 @@ const JA_TRANSLATIONS = {
     defaultPlaylist: "デフォルト",
     addUrlToPlaylist: "URLをプレイリストに追加",
     itemNameOptional: "アイテム名（オプション）：",
+    newEntryName: "新しいエントリ名：",
     addedToPlaylist: "追加済み",
     toPlaylist: "プレイリストへ",
     exportedToConsole: "プレイリストがコンソールにエクスポートされました。",

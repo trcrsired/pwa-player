@@ -181,6 +181,7 @@ function showPlaylistItemMenu(playlistName, index, button) {
     menu.innerHTML = `
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
+        <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
         <div class="menu-item" data-action="add-to-playlist">${t('addToPlaylist', 'Add to Playlist')}</div>
         <div class="menu-item danger" data-action="delete">${t('delete', 'Delete')}</div>
         <div class="menu-item" data-action="move-up">${t('moveUp', 'Move Up')}</div>
@@ -210,6 +211,15 @@ function showPlaylistItemMenu(playlistName, index, button) {
                 await startNowPlayingFromPlaylist(playlistName, index);
                 closeMenu();
                 return;
+            }
+
+            if (action === "rename") {
+                const entry = list[index];
+                const currentName = entry.name || entry.path;
+                const newName = prompt(t('newEntryName', 'New entry name:'), currentName);
+                if (newName && newName.trim()) {
+                    list[index].name = newName.trim();
+                }
             }
 
             if (action === "add-to-playlist") {

@@ -96,6 +96,7 @@ const ZHCN_TRANSLATIONS = {
     defaultPlaylist: "默认",
     addUrlToPlaylist: "添加URL到播放列表",
     itemNameOptional: "项目名称（可选）：",
+    newEntryName: "新条目名称：",
     addedToPlaylist: "已添加",
     toPlaylist: "到播放列表",
     exportedToConsole: "播放列表已导出到控制台。",

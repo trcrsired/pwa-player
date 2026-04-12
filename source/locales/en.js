@@ -96,6 +96,7 @@ const EN_TRANSLATIONS = {
     defaultPlaylist: "Default",
     addUrlToPlaylist: "Add URL to Playlist",
     itemNameOptional: "Item name (optional):",
+    newEntryName: "New entry name:",
     addedToPlaylist: "Added",
     toPlaylist: "to playlist",
     exportedToConsole: "Playlist exported to console.",
