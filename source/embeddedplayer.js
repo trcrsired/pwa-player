@@ -182,9 +182,36 @@ async function updatePlaylistEntryName(playlistName, entryPath, newName, skipIfH
                 }
             }
 
-            // Also update now playing queue display
-            if (typeof renderNowPlayingQueue === 'function') {
-                renderNowPlayingQueue();
+            // Update only the items in now playing queue display (update name and fix indicators)
+            const ul = document.getElementById("nowPlayingQueue");
+            if (ul) {
+                const items = ul.querySelectorAll("li.list-item");
+                const queue = typeof getActiveQueue === 'function' ? getActiveQueue() : [];
+                const currentTrack = typeof getCurrentTrack === 'function' ? getCurrentTrack() : null;
+
+                items.forEach((li, itemIndex) => {
+                    const titleSpan = li.querySelector(".np-item-title");
+                    if (titleSpan) {
+                        const queueEntry = queue[itemIndex];
+                        if (queueEntry) {
+                            // Get badges
+                            const badgesHtml = typeof getEntryBadgeHtml === 'function' ? getEntryBadgeHtml(queueEntry) : '';
+
+                            // Check if this is the current track
+                            const isCurrentTrack = currentTrack && queueEntry.path === currentTrack.path &&
+                                (queueEntry.playlistName === currentTrack.playlistName || (!queueEntry.playlistName && !currentTrack.playlistName));
+
+                            const playingIndicator = isCurrentTrack ? '▶ ' : '';
+
+                            // Update name if this is the entry we're updating, otherwise keep existing name
+                            const displayName = (queueEntry.path === entryPath && queueEntry.playlistName === playlistName)
+                                ? newName
+                                : (queueEntry.name || queueEntry.path);
+
+                            titleSpan.innerHTML = `${playingIndicator}${escapeHTML(displayName)}${badgesHtml}`;
+                        }
+                    }
+                });
             }
 
             // Update Now Playing info display if this is the currently playing entry
