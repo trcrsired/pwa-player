@@ -331,5 +331,9 @@ const EN_TRANSLATIONS = {
 
     // PWA Player Share
     sharePwaPlayerUrl: "Include PWA Player URL when sharing",
-    sharePwaPlayerUrlHint: "When enabled, shares will also include the PWA Player app URL so recipients can get the player"
+    sharePwaPlayerUrlHint: "When enabled, shares will also include the PWA Player app URL so recipients can get the player",
+
+    // Skip iframes in background
+    skipIframesInBackground: "Skip embedded content when playing in background",
+    skipIframesInBackgroundHint: "When tab is hidden, skip YouTube/Spotify/etc. entries to avoid browser autoplay policy issues."
 };

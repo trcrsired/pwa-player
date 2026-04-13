@@ -1390,3 +1390,22 @@ function isSharePwaPlayerUrlEnabled() {
 function getPwaPlayerUrl() {
     return window.location.href;
 }
+
+// =====================================================
+// Skip Iframes in Background Setting
+// =====================================================
+const skipIframesInBackgroundCheckbox = document.getElementById("skipIframesInBackground");
+
+// Load saved preference (default: true - skip iframes when tab is hidden)
+if (skipIframesInBackgroundCheckbox) {
+    skipIframesInBackgroundCheckbox.checked = localStorage.getItem("skipIframesInBackground") !== "false";
+
+    skipIframesInBackgroundCheckbox.addEventListener("change", () => {
+        localStorage.setItem("skipIframesInBackground", skipIframesInBackgroundCheckbox.checked ? "true" : "false");
+    });
+}
+
+// Helper function to check if skipping iframes in background is enabled
+function isSkipIframesInBackgroundEnabled() {
+    return localStorage.getItem("skipIframesInBackground") !== "false";
+}

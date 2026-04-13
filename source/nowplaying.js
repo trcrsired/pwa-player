@@ -11,7 +11,7 @@ let playMode = "shuffle";
 
 function shuffleArray(arr) {
     const a = arr.slice();
-    for (let i = a.length - 1; i > 0; --i) {
+    for (let i = a.length; i--;) {
         const j = Math.floor(Math.random() * (i + 1));
         [a[i], a[j]] = [a[j], a[i]];
     }
@@ -24,6 +24,66 @@ async function nowPlaying_playIndex(index) {
         : nowPlayingQueue[index];
 
     if (!entry) return;
+
+    // Check if we should skip iframe entries when in background
+    const isBackground = document.visibilityState === 'hidden';
+    const isIframe = typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(entry.path);
+    const shouldSkip = typeof isSkipIframesInBackgroundEnabled === 'function' && isSkipIframesInBackgroundEnabled();
+
+    if (isBackground && isIframe && shouldSkip) {
+        // Skip this iframe entry and find next playable entry
+        const queue = getActiveQueue();
+        let nextIndex = index + 1;
+        let found = false;
+
+        // Search forward from current position
+        while (nextIndex < queue.length) {
+            const nextEntry = queue[nextIndex];
+            if (nextEntry && !(typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
+                found = true;
+                break;
+            }
+            ++nextIndex;
+        }
+
+        // If not found and in shuffle/repeat mode, loop back and search from start
+        if (!found && (playMode === 'shuffle' || playMode === 'repeat')) {
+            if (playMode === 'shuffle') {
+                // Reshuffle and search from beginning
+                shuffledQueue = shuffleArray(nowPlayingQueue);
+                nextIndex = 0;
+                while (nextIndex < shuffledQueue.length) {
+                    const nextEntry = shuffledQueue[nextIndex];
+                    if (nextEntry && !(typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
+                        found = true;
+                        break;
+                    }
+                    ++nextIndex;
+                }
+            } else {
+                // Repeat mode - search from beginning of normal queue
+                nextIndex = 0;
+                while (nextIndex < nowPlayingQueue.length) {
+                    const nextEntry = nowPlayingQueue[nextIndex];
+                    if (nextEntry && !(typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
+                        found = true;
+                        break;
+                    }
+                    ++nextIndex;
+                }
+            }
+        }
+
+        if (!found) {
+            // No playable entries in entire queue - stop playback
+            return;
+        }
+
+        // Found a playable entry - play it
+        nowPlayingIndex = nextIndex;
+        await nowPlaying_playIndex(nextIndex);
+        return;
+    }
 
     const resolved = await storage_resolvePath(entry.path);
 

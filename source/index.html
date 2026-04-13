@@ -265,6 +265,7 @@
                     <input type="checkbox" id="disableRotateBtn">
                     <span data-i18n="disableRotateBtn">Disable rotate screen button</span>
                 </label>
+                <p class="setting-hint" data-i18n="disableRotateBtnHint">On some devices like VR headsets, the rotate screen feature may not work correctly and could make the device unusable.</p>
 
                 <h3 data-i18n="playback">Playback</h3>
                 <label class="setting-label">
@@ -298,6 +299,11 @@
                     <input type="checkbox" id="sharePwaPlayerUrl" checked>
                     <span data-i18n="sharePwaPlayerUrl">Include PWA Player URL when sharing</span>
                 </label>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="skipIframesInBackground" checked>
+                    <span data-i18n="skipIframesInBackground">Skip embedded content when playing in background</span>
+                </label>
+                <p class="setting-hint" data-i18n="skipIframesInBackgroundHint">When tab is hidden, skip YouTube/Spotify/etc. entries to avoid browser autoplay policy issues.</p>
                 <label class="setting-label">
                     <span data-i18n="controlsAutoHideDelay">Controls Auto-hide (ms)</span>
                     <input type="number" id="controlsAutoHideDelayInput" class="setting-input-small" min="0" max="60000">

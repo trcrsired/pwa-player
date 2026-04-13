@@ -328,5 +328,9 @@ const JA_TRANSLATIONS = {
 
     // PWA Player Share
     sharePwaPlayerUrl: "共有時にPWAプレーヤーURLを含める",
-    sharePwaPlayerUrlHint: "有効にすると、共有時にPWAプレーヤーアプリのURLも含まれ、受信者がプレーヤーを取得できます"
+    sharePwaPlayerUrlHint: "有効にすると、共有時にPWAプレーヤーアプリのURLも含まれ、受信者がプレーヤーを取得できます",
+
+    // Skip iframes in background
+    skipIframesInBackground: "バックグラウンド再生時に埋め込みコンテンツをスキップ",
+    skipIframesInBackgroundHint: "タブが非表示の時、YouTube/Spotifyなどをスキップしてブラウザの自動再生ポリシー問題を回避します。"
 };

@@ -331,5 +331,9 @@ const ZHCN_TRANSLATIONS = {
 
     // PWA Player Share
     sharePwaPlayerUrl: "分享时包含PWA播放器URL",
-    sharePwaPlayerUrlHint: "启用后，分享内容时也会包含PWA播放器应用URL，方便接收者获取播放器"
+    sharePwaPlayerUrlHint: "启用后，分享内容时也会包含PWA播放器应用URL，方便接收者获取播放器",
+
+    // Skip iframes in background
+    skipIframesInBackground: "后台播放时跳过嵌入式内容",
+    skipIframesInBackgroundHint: "当标签页隐藏时，跳过YouTube/Spotify等内容，避免浏览器自动播放策略问题。"
 };
