@@ -1469,54 +1469,89 @@ function clearVideoPreview() {
 // Track when user is actively dragging the progress bar (pointer down)
 window.isDraggingProgressBar = false;
 
-// Progress bar preview events (using pointer events for cross-device support)
-if (progressContainer && progressBar) {
-  progressContainer.addEventListener("pointermove", (e) => {
+// Common function to setup pointer events for a progress bar
+function setupProgressBarPointerEvents(progressBarEl, containerEl) {
+  if (!progressBarEl) return;
+
+  const container = containerEl || progressBarEl.parentElement;
+
+  // pointermove: show preview and update visual position
+  container.addEventListener("pointermove", (e) => {
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
-    showControls(false); // Show controls without auto-hide while hovering
+    // Show controls without auto-hide while hovering (only for main player)
+    if (typeof showControls === 'function' && containerEl === progressContainer) {
+      showControls(false);
+    }
 
-    const rect = progressBar.getBoundingClientRect();
+    const rect = progressBarEl.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percent = Math.max(0, Math.min(1, x / rect.width));
     const time = percent * video.duration;
 
-    showVideoPreview(time, x);
-  });
-
-  progressContainer.addEventListener("pointerleave", () => {
-    hideVideoPreview();
-    // Restart auto-hide timer if playing
-    if (hasActiveSource && !video.paused) {
-        showControls(true);
+    // Show video preview (only for main player progress bar)
+    if (containerEl === progressContainer) {
+      showVideoPreview(time, x);
     }
   });
 
-  progressBar.addEventListener("pointerdown", (e) => {
+  // pointerleave: hide preview
+  container.addEventListener("pointerleave", () => {
+    // Hide video preview (only for main player)
+    if (containerEl === progressContainer) {
+      hideVideoPreview();
+    }
+    // Restart auto-hide timer if playing (only for main player)
+    if (containerEl === progressContainer && hasActiveSource && !video.paused) {
+      showControls(true);
+    }
+  });
+
+  // pointerdown: start dragging
+  progressBarEl.addEventListener("pointerdown", (e) => {
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
     window.isDraggingProgressBar = true;
-    showControls(false); // Show controls without auto-hide while dragging
 
-    const rect = progressBar.getBoundingClientRect();
+    // Show controls without auto-hide while dragging (only for main player)
+    if (typeof showControls === 'function' && containerEl === progressContainer) {
+      showControls(false);
+    }
+
+    const rect = progressBarEl.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percent = Math.max(0, Math.min(1, x / rect.width));
     const time = percent * video.duration;
 
-    showVideoPreview(time, x);
-  });
-
-  progressBar.addEventListener("pointerup", () => {
-    window.isDraggingProgressBar = false;
-    // Restart auto-hide timer if playing
-    if (hasActiveSource && !video.paused) {
-        showControls(true);
+    // Show video preview (only for main player progress bar)
+    if (containerEl === progressContainer) {
+      showVideoPreview(time, x);
     }
   });
 
-  progressBar.addEventListener("pointercancel", () => {
+  // pointerup: end dragging
+  progressBarEl.addEventListener("pointerup", () => {
+    window.isDraggingProgressBar = false;
+    // Restart auto-hide timer if playing (only for main player)
+    if (containerEl === progressContainer && hasActiveSource && !video.paused) {
+      showControls(true);
+    }
+  });
+
+  // pointercancel: end dragging
+  progressBarEl.addEventListener("pointercancel", () => {
     window.isDraggingProgressBar = false;
   });
+}
+
+// Setup pointer events for main player progress bar
+if (progressContainer && progressBar) {
+  setupProgressBarPointerEvents(progressBar, progressContainer);
+}
+
+// Setup pointer events for now playing progress bar
+if (npProgressBar) {
+  setupProgressBarPointerEvents(npProgressBar, null);
 }
 
 document.addEventListener("keydown", (e) => {
