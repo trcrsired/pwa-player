@@ -58,6 +58,11 @@ settingsYearEl.addEventListener("click", () => {
             localStorage.setItem("hiddenfeatures", "true");
             showToast("Hidden features enabled");
         }
+
+        // Re-render IPTV channels to show/hide hidden features
+        if (typeof renderIPTVList === 'function') {
+            renderIPTVList();
+        }
     }
 });
 
