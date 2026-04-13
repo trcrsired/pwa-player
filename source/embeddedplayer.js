@@ -118,6 +118,11 @@ function playEmbeddedUrl(url, metadata = {}) {
 
             // Start periodic fullscreen check for iframe internal fullscreen
             startFullscreenCheck();
+
+            // Re-render now playing queue to show playing indicator
+            if (typeof renderNowPlayingQueue === 'function') {
+                renderNowPlayingQueue();
+            }
         }
     });
 

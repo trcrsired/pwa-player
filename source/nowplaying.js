@@ -551,24 +551,31 @@ function renderNowPlayingQueue() {
     ul.innerHTML = "";
 
     const queue = getActiveQueue();
+    const currentTrack = getCurrentTrack();
 
     queue.forEach((entry, i) => {
         const li = document.createElement("li");
         li.className = "list-item";
 
+        // Check if this entry is the currently playing one
+        const isCurrentTrack = currentTrack && entry.path === currentTrack.path &&
+            (entry.playlistName === currentTrack.playlistName || (!entry.playlistName && !currentTrack.playlistName));
+
         // Highlight current track
-        if (i === nowPlayingIndex) {
+        if (isCurrentTrack) {
             li.classList.add("active");
         }
 
-        // Track title with optional badges
+        // Track title with playing indicator and badges
         const titleSpan = document.createElement("span");
         titleSpan.className = "np-item-title";
 
         // Get badges using polymorphic platform method
         const badgesHtml = typeof getEntryBadgeHtml === 'function' ? getEntryBadgeHtml(entry) : '';
 
-        titleSpan.innerHTML = `${escapeHTML(entry.name || entry.path)}${badgesHtml}`;
+        // Add playing indicator if this is the current track
+        const playingIndicator = isCurrentTrack ? '▶ ' : '';
+        titleSpan.innerHTML = `${playingIndicator}${escapeHTML(entry.name || entry.path)}${badgesHtml}`;
 
         // Click on title → play
         titleSpan.addEventListener("click", () => {
