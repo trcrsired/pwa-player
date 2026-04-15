@@ -184,7 +184,7 @@ async function idb_getFilesInFolder(folder) {
 }
 
 // Add all files from an IndexedDB folder to a playlist
-async function addIndexedDBFolderToPlaylist(folderName) {
+async function addIndexedDBFolderToPlaylist(folderName, tonowplaying) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     try {
         const files = await idb_getFilesInFolder(folderName);
@@ -197,6 +197,17 @@ async function addIndexedDBFolderToPlaylist(folderName) {
         const playableFiles = files.filter(f => isPlaylistFile(f.name));
         if (playableFiles.length === 0) {
             alert(`${t('noPlayableFiles', 'No playable files found in folder')} "${folderName}".`);
+            return;
+        }
+
+        if (tonowplaying)
+        {
+            const items = playableFiles.map(f => ({
+                name: f.name,
+                path: `indexeddb://idb/${f.folder}/${f.name}`,
+                playlistName: f.folder
+            }));
+            await startNowPlayingFromPlaylistTable(items, 0, null, true);
             return;
         }
 
@@ -506,6 +517,11 @@ async function collectPointers(dirHandle, schema, basePath) {
     return result;
 }
 
+function compareString(a,b)
+{
+    return a < b ? -1 : a > b ? 1 : 0;
+}
+
 // ============================================================
 // Add all pointers from a directory (any root) to a playlist
 // ============================================================
@@ -561,6 +577,13 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
             return;
         }
 
+        pointers.sort((a, b) => compareString(a.path,b.path));
+
+        if (playlistName == null) {
+            await startNowPlayingFromPlaylistTable(pointers, 0, null, true);
+            return;
+        }
+
         const playlists = await playlists_load();
         if (!playlists[playlistName]) {
             playlists[playlistName] = [];
@@ -580,7 +603,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
 // ============================================================
 // Choose playlist and add directory contents
 // ============================================================
-async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
+async function choosePlaylistAndAdd(rootDirHandle, entry, dirName, tonowplaying) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const playlists = await playlists_load();
     const names = Object.keys(playlists);
@@ -600,6 +623,7 @@ async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
     }
 
     const selectedName = names[index];
+    if (!selectedName) return;
 
     await addDirectoryToPlaylist(
         rootDirHandle,
@@ -802,6 +826,8 @@ function showStorageDirMenu(entry, dirName, button) {
     const menuItems = [];
 
     if (!isRoot) {
+        menuItems.push(`<div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
@@ -854,6 +880,19 @@ function showStorageDirMenu(entry, dirName, button) {
             else {
                 alert(t('unknownStorageSchema', "Unknown storage schema."));
                 return;
+            }
+
+            const isactionplay = action === "play";
+            if (isactionplay || action === "play-keep-open" ) {
+                if (entry.schema === "indexeddb") {
+                    await addIndexedDBFolderToPlaylist(dirName, true);
+                } else {
+                    await addDirectoryToPlaylist(parent, entry.schema, entry.rootName, dirName, null);
+                }
+                if (isactionplay)
+                {
+                    return;
+                }
             }
 
             if (action === "add") {
@@ -1832,8 +1871,8 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
     }
 
     // Sort directories and files alphabetically
-    dirs.sort((a, b) => a.name.localeCompare(b.name));
-    files.sort((a, b) => a.name.localeCompare(b.name));
+    dirs.sort((a, b) => compareString(a.name,b.name));
+    files.sort((a, b) => compareString(a.name,b.name));
 
     // Render directories first
     for (const { name, handle } of dirs) {

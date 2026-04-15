@@ -98,18 +98,18 @@ async function nowPlaying_playIndex(index) {
     renderNowPlayingQueue();
 }
 
-async function startNowPlayingFromPlaylist(playlistName, startIndex) {
-    const playlists = await playlists_load();
-    const list = playlists[playlistName];
-    if (!list) return;
+async function startNowPlayingFromPlaylistTable(playlist, startIndex, playlistName, noshufflefirsttime) {
+    nowPlayingQueue = playlistName
+        ? playlist.map(item => ({ ...item, playlistName }))
+        : playlist.slice();
 
-    nowPlayingQueue = list.map(item => ({
-        ...item,
-        playlistName
-    }));
-
-    // Build shuffled queue
-    shuffledQueue = shuffleArray(nowPlayingQueue);
+    if (noshufflefirsttime) {
+        shuffledQueue = nowPlayingQueue.slice();
+    }
+    else {
+        // Build shuffled queue
+        shuffledQueue = shuffleArray(nowPlayingQueue);
+    }
 
     // Use startIndex directly for ordered queue
     if (playMode !== "shuffle") {
@@ -127,6 +127,13 @@ async function startNowPlayingFromPlaylist(playlistName, startIndex) {
     }
 
     await nowPlaying_playIndex(nowPlayingIndex);
+}
+
+async function startNowPlayingFromPlaylist(playlistName, startIndex) {
+    const playlists = await playlists_load();
+    const list = playlists[playlistName];
+    if (!list) return;
+    startNowPlayingFromPlaylistTable(list, startIndex, true);
 }
 
 async function playPrevious() {

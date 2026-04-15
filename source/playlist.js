@@ -248,15 +248,13 @@ async function showPlaylistItemMenu(playlistName, index, button) {
             const currentList = currentPlaylists[playlistName];
             const currentEntry = currentList?.[index];
 
-            if (action === "play") {
+            const actionisplay = action === "play";
+            if (actionisplay || action === "play-keep-open") {
                 await startNowPlayingFromPlaylist(playlistName, index);
-                closeActiveView();
-                closeMenu();
-                return;
-            }
-
-            if (action === "play-keep-open") {
-                await startNowPlayingFromPlaylist(playlistName, index);
+                if (actionisplay)
+                {
+                    closeActiveView();
+                }
                 closeMenu();
                 return;
             }
