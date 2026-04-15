@@ -2014,7 +2014,7 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
             const targetUrl = baseUrl;
 
             try {
-                const response = await fetch(targetUrl);
+                const response = await fetch(targetUrl, { cache: "no-store" });
                 if (response.ok) {
                     const htmlText = await response.text();
                     // parseRemoteDirectoryListing handles DOM parsing and filtering
