@@ -208,7 +208,7 @@ async function addIndexedDBFolderToPlaylist(folderName, tonowplaying) {
                 playlistName: f.folder
             }));
             await startNowPlayingFromPlaylistTable(items, 0, null, true);
-            return;
+            return true;
         }
 
         // Load playlists and prompt user
@@ -244,6 +244,7 @@ async function addIndexedDBFolderToPlaylist(folderName, tonowplaying) {
         await playlists_save(playlists);
         playlist_renderTree();
         alert(`${t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', items.length)} "${selectedName}".`);
+        return true;
     } catch (err) {
         console.error("Failed to add IndexedDB folder to playlist:", err);
         alert(t('failedToAddToPlaylist', "Failed to add files to playlist."));
@@ -526,6 +527,10 @@ function compareString(a,b)
 // Add all pointers from a directory (any root) to a playlist
 // ============================================================
 async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, playlistName) {
+    if (schema == "indexeddb")
+    {
+       return await addIndexedDBFolderToPlaylist(dirPath, !playlistName);
+    }
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     try {
         let targetDir;
@@ -581,6 +586,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
 
         if (playlistName == null) {
             await startNowPlayingFromPlaylistTable(pointers, 0, null, true);
+            return true;
         }
 
         const playlists = await playlists_load();
@@ -593,6 +599,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
         playlist_renderTree();
 
         alert(t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', pointers.length) + ` "${playlistName}".`);
+        return true;
     } catch (err) {
         console.error(err);
         alert(t('failedToAddToPlaylist', "Failed to add directory to playlist."));
@@ -883,24 +890,16 @@ function showStorageDirMenu(entry, dirName, button) {
 
             const isactionplay = action === "play";
             if (isactionplay || action === "play-keep-open" ) {
-                if (entry.schema === "indexeddb") {
-                    await addIndexedDBFolderToPlaylist(dirName, true);
-                } else {
-                    await addDirectoryToPlaylist(parent, entry.schema, entry.rootName, dirName, null);
+                const addsucceed = await addDirectoryToPlaylist(parent, entry.schema, entry.rootName, dirName, null);
+                if (isactionplay && addsucceed) {
+                    closeActiveView();
                 }
-                if (isactionplay) {
-                    closeMenu();
-                }
+                closeMenu();
                 return;
             }
 
             if (action === "add") {
-                if (entry.schema === "indexeddb") {
-                    // Add all files from IndexedDB folder to playlist
-                    await addIndexedDBFolderToPlaylist(dirName);
-                } else {
-                    await choosePlaylistAndAdd(parent, entry, dirName);
-                }
+                await addDirectoryToPlaylist(parent, entry.schema, entry.rootName, dirName, null);
             }
 
             if (action === "export") {
