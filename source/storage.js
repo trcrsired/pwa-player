@@ -513,7 +513,7 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
         // Handle Remote Recursion
         // remoteTargetUrl is the actual URL to fetch (e.g. http://127.0.0.1:8080/Movies/)
         try {
-            const response = await fetch(remoteTargetUrl);
+            const response = await fetch(remoteTargetUrl, { cache: "no-store" });
             if (!response.ok) return [];
             
             const htmlText = await response.text();
