@@ -188,8 +188,18 @@ async function getMediaMetadataFromSource(sourceobject) {
     mediasource.title = sourceobject.name || null;
   } else if (typeof sourceobject === "string") {
     blobURL = sourceobject;
-    const fileName = sourceobject.split("/").pop()?.split("?")[0] || null;
-    mediasource.title = fileName;
+    try {
+        // Use the URL constructor to parse the string safely
+        const urlObj = new URL(sourceobject);
+        // Get the last segment of the pathname
+        const rawFileName = urlObj.pathname.split("/").pop();
+        // Decode characters like %20, %E3... to human-readable text
+        mediasource.title = rawFileName ? decodeURIComponent(rawFileName) : "Remote File";
+    } catch (e) {
+        // Fallback for strings that aren't valid full URLs
+        const rawFileName = sourceobject.split("/").pop()?.split("?")[0] || "";
+        mediasource.title = decodeURIComponent(rawFileName) || "Unknown";
+    }
   } else {
     console.warn("Unsupported sourceobject type:", sourceobject);
     return null;
@@ -485,6 +495,23 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
   if (lastDot === -1) return;
 
   const basePath = entryPath.substring(0, lastDot);
+// 1. Handle REMOTE_STORAGE (HTTP/HTTPS URLs)
+  if (entryPath.startsWith('http://') || entryPath.startsWith('https://')) {
+    const vttUrl = basePath + '.vtt';
+    try {
+      // Use a HEAD request to check if the .vtt file actually exists
+      const response = await fetch(vttUrl, { method: 'HEAD' });
+      if (response.ok) {
+        // If it exists, pass the URL directly to loadSubtitle
+        // Note: loadSubtitle must be able to handle a string URL
+        await loadSubtitle(vttUrl);
+        return;
+      }
+    } catch (err) {
+      console.warn("Remote subtitle auto-load failed (likely CORS or 404):", err);
+    }
+    return;
+  }
 
   // Handle IndexedDB paths
   if (entryPath.startsWith('indexeddb://')) {
@@ -1132,41 +1159,68 @@ function setupSubtitleMediaSession(textTrack) {
 
 // Subtitle loader
 async function loadSubtitle(file) {
-  const blob = file instanceof FileSystemFileHandle ? await file.getFile() : file;
-  const url = URL.createObjectURL(blob);
+  let url;
+  let isBlob = false;
 
-  // Remove existing subtitles (keep button state since we're adding new ones)
-  for (let i = 0; i != video.textTracks.length; ++i) {
+  // 1. Handle the different input types
+  if (typeof file === 'string') {
+    // Remote storage: it's already a URL
+    url = file;
+  } else if (file instanceof FileSystemFileHandle) {
+    // Local storage (OPFS/External): get the File object, then create URL
+    const fileObj = await file.getFile();
+    url = URL.createObjectURL(fileObj);
+    isBlob = true;
+  } else if (file instanceof File || file instanceof Blob) {
+    // Direct File/Blob object
+    url = URL.createObjectURL(file);
+    isBlob = true;
+  } else {
+    throw new Error("Unsupported subtitle file type");
+  }
+
+  // 2. Remove existing subtitles
+  for (let i = 0; i < video.textTracks.length; ++i) {
     video.textTracks[i].mode = 'disabled';
   }
+  
   const existingTracks = video.querySelectorAll('track');
   existingTracks.forEach(t => {
-    if (t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+    // Only revoke if it was a local blob we created
+    if (t.src.startsWith('blob:')) {
+        URL.revokeObjectURL(t.src);
+    }
     t.remove();
   });
 
-  // Add new track
+  // 3. Add new track
   const track = document.createElement('track');
   track.kind = 'subtitles';
   track.label = 'Loaded Subtitles';
   track.srclang = 'en';
   track.src = url;
   track.default = true;
+  
+  // CORS Requirement: If it's a remote URL, the video element needs crossOrigin
+  if (typeof file === 'string') {
+    video.crossOrigin = "anonymous";
+  }
+
   video.appendChild(track);
 
-  // Enable the track
-  const textTrack = video.textTracks[0];
-  textTrack.mode = 'showing';
-
-  // Set up MediaSession subtitle updates
-  setupSubtitleMediaSession(textTrack);
-
-  // Update cue positions when track loads
-  track.addEventListener('load', () => {
-    if (!controls.classList.contains('hidden')) {
-      updateSubtitlePosition(true);
-    }
-  });
+  // 4. Enable the track
+  // Wait for the track to be added to the DOM properly
+  track.onload = () => {
+      const textTrack = Array.from(video.textTracks).find(t => t.label === 'Loaded Subtitles');
+      if (textTrack) {
+          textTrack.mode = 'showing';
+          setupSubtitleMediaSession(textTrack);
+      }
+      
+      if (!controls.classList.contains('hidden')) {
+        updateSubtitlePosition(true);
+      }
+  };
 
   subtitleBtn.textContent = '✅';
 }

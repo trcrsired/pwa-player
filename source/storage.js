@@ -54,6 +54,17 @@ const IMPORT_ROOTS = [
         allowFolderRename: false,
         allowFileRename: true,
         useRemoveLabel: false
+    },
+    {
+        schema: "remote_storage",
+        rootName: "remote",
+        dirName: "remote",
+        enabled: true,
+        showSubdirs: true,
+        allowModification: false,
+        allowFolderRename: false,
+        allowFileRename: false,
+        useRemoveLabel: true
     }
 ];
 
@@ -495,23 +506,54 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result 
 // ============================================================
 // Collect all file pointers recursively under a directory
 // ============================================================
-async function collectPointers(dirHandle, schema, basePath) {
+async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = null) {
     const result = [];
 
-    for await (const [name, handle] of dirHandle.entries()) {
-        if (handle.kind === "file") {
+    if (schema === "remote_storage") {
+        // Handle Remote Recursion
+        // remoteTargetUrl is the actual URL to fetch (e.g. http://127.0.0.1:8080/Movies/)
+        try {
+            const response = await fetch(remoteTargetUrl);
+            if (!response.ok) return [];
+            
+            const htmlText = await response.text();
+            const { dirs, files } = parseRemoteDirectoryListing(htmlText, remoteTargetUrl);
 
-            // Skip non-playlist files (media only, no subtitles)
-            if (!isPlaylistFile(name)) continue;
+            // Add files found in this directory
+            for (const f of files) {
+                const name = f.name;
+                if (!isPlaylistFile(name)) continue;
+                result.push({
+                    name: name,
+                    path: f.url // For remote, path is the direct URL
+                });
+            }
 
-            result.push({
-                name,
-                path: `${schema}://${basePath}/${name}`
-            });
-        } else if (handle.kind === "directory") {
-            const subPath = `${basePath}/${name}`;
-            const subPointers = await collectPointers(handle, schema, subPath);
-            result.push(...subPointers);
+            // Recurse into subdirectories
+            for (const d of dirs) {
+                if (d.name === ".." || d.name === "." || !d.name) continue;
+                // Ensure sub-URL ends with a slash
+                const subUrl = new URL(d.name + "/", remoteTargetUrl).href;
+                const subPointers = await collectPointers(null, schema, null, subUrl);
+                result.push(...subPointers);
+            }
+        } catch (e) {
+            console.warn("Failed to collect remote pointers from:", remoteTargetUrl, e);
+        }
+    } else {
+        // Standard FileSystemHandle Logic (navigator_storage / external_storage)
+        for await (const [name, handle] of dirHandle.entries()) {
+            if (handle.kind === "file") {
+                if (!isPlaylistFile(name)) continue;
+                result.push({
+                    name,
+                    path: `${schema}://${basePath}/${name}`
+                });
+            } else if (handle.kind === "directory") {
+                const subPath = `${basePath}/${name}`;
+                const subPointers = await collectPointers(handle, schema, subPath);
+                result.push(...subPointers);
+            }
         }
     }
 
@@ -527,29 +569,26 @@ function compareString(a,b)
 // Add all pointers from a directory (any root) to a playlist
 // ============================================================
 async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, playlistName) {
-    if (schema == "indexeddb")
-    {
+    if (schema == "indexeddb") {
        return await addIndexedDBFolderToPlaylist(dirPath, !playlistName);
     }
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+    
     try {
-        let targetDir;
+        let pointers = [];
+        let targetDir = null;
 
         if (schema === "navigator_storage") {
-            // navigator_storage: rootDirHandle is a real directory handle
-            // dirPath might be nested like "MyMusic/Album1"
             const parts = dirPath.split("/");
             targetDir = rootDirHandle;
             for (const part of parts) {
                 targetDir = await targetDir.getDirectoryHandle(part, { create: false });
             }
+            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`);
 
         } else if (schema === "external_storage") {
-            // external_storage: rootDirHandle is a map of name → handle
-            // dirPath might be nested like "Videos/kanojo"
             const parts = dirPath.split("/");
             const topLevelName = parts[0];
-
             targetDir = rootDirHandle[topLevelName];
 
             if (!targetDir) {
@@ -557,32 +596,43 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
                 return;
             }
 
-            // Ensure permission is granted
             const ok = await verifyPermission(targetDir);
-            if (!ok) {
-                alert(t('permissionDeniedExternal', "Permission denied for external directory."));
-                return;
-            }
+            if (!ok) return;
 
-            // Traverse nested path if any
             for (let i = 1; i < parts.length; ++i) {
                 targetDir = await targetDir.getDirectoryHandle(parts[i], { create: false });
             }
+            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`);
+
+        } else if (schema === "remote_storage") {
+            const parts = dirPath.split("/");
+            const serverName = parts[0];
+            baseUrl = rootDirHandle[serverName];
+            if (!baseUrl) {
+                alert(`Remote server "${serverName}" not found.`);
+                return;
+            }
+
+            // Construct the clean target URL
+            const relativePath = parts.slice(1).join("/");
+            const targetUrl = relativePath
+                ? new URL(relativePath + "/", baseUrl).href
+                : (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
+            // Call the new recursive remote collector
+            pointers = await collectPointers(null , schema, null, targetUrl);
 
         } else {
             alert(t('unknownStorageSchema', "Unknown storage schema."));
             return;
         }
 
-        const basePath = `${rootName}/${dirPath}`;
-        const pointers = await collectPointers(targetDir, schema, basePath);
-
+        // Shared Logic for all schemas:
         if (pointers.length === 0) {
             alert(`${t('noFilesInFolder', 'No files found in')} "${dirPath}".`);
             return;
         }
 
-        pointers.sort((a, b) => compareString(a.path,b.path));
+        pointers.sort((a, b) => compareString(a.path, b.path));
 
         if (playlistName == null) {
             await startNowPlayingFromPlaylistTable(pointers, 0, null, true);
@@ -590,16 +640,14 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
         }
 
         const playlists = await playlists_load();
-        if (!playlists[playlistName]) {
-            playlists[playlistName] = [];
-        }
-
+        if (!playlists[playlistName]) playlists[playlistName] = [];
         playlists[playlistName].push(...pointers);
         await playlists_save(playlists);
         playlist_renderTree();
 
         alert(t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', pointers.length) + ` "${playlistName}".`);
         return true;
+
     } catch (err) {
         console.error(err);
         alert(t('failedToAddToPlaylist', "Failed to add directory to playlist."));
@@ -609,7 +657,8 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
 // ============================================================
 // Choose playlist and add directory contents
 // ============================================================
-async function choosePlaylistAndAdd(rootDirHandle, entry, dirName, tonowplaying) {
+async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
+    console.log("661 here");
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const playlists = await playlists_load();
     const names = Object.keys(playlists);
@@ -883,6 +932,9 @@ function showStorageDirMenu(entry, dirName, button) {
                 // IndexedDB has no parent directory, use idb functions directly
                 parent = null;
             }
+            else if (entry.schema == "remote_storage") {
+                parent = await loadRemoteRoots();
+            }
             else {
                 alert(t('unknownStorageSchema', "Unknown storage schema."));
                 return;
@@ -899,7 +951,9 @@ function showStorageDirMenu(entry, dirName, button) {
             }
 
             if (action === "add") {
-                await addDirectoryToPlaylist(parent, entry.schema, entry.rootName, dirName, null);
+                await choosePlaylistAndAdd(parent, entry, dirName);
+                closeMenu();
+                return;
             }
 
             if (action === "export") {
@@ -908,6 +962,8 @@ function showStorageDirMenu(entry, dirName, button) {
                 } else {
                     await exportDirectory(entry, dirName, parent);
                 }
+                closeMenu();
+                return;
             }
 
             if (action === "share") {
@@ -918,6 +974,8 @@ function showStorageDirMenu(entry, dirName, button) {
                 } else {
                     await exportDirectory(entry, dirName, parent);
                 }
+                closeMenu();
+                return;
             }
 
             if (action === "rename") {
@@ -968,7 +1026,15 @@ function showStorageDirMenu(entry, dirName, button) {
                 }
 
                 if (confirm(confirmMsg)) {
-                    if (entry.schema === "indexeddb") {
+                    if (entry.schema === "remote_storage") {
+                        const roots = await loadRemoteRoots();
+                        if (isRoot) {
+                            await saveRemoteRoots({});
+                        } else {
+                            delete roots[dirName];
+                            await saveRemoteRoots(roots);
+                        }
+                    } else if (entry.schema === "indexeddb") {
                         if (dirName) {
                             // Delete a specific IndexedDB folder
                             await idb_deleteFolder(dirName);
@@ -1023,7 +1089,13 @@ function showStorageDirMenu(entry, dirName, button) {
                 let fileCount = 0;
                 let totalSize = 0;
                 try {
-                    if (entry.schema === "indexeddb") {
+                    if (entry.schema == "remote_storage") {
+                        info = [
+                            `${t('directoryName', 'Storage Name')}: ${displayName}`,
+                            `${t('fullPath', 'Full Path')}: ${await resolveRemoteDirToUrl(dirName)}`
+                        ];
+                    }
+                    else if (entry.schema === "indexeddb") {
                         // IndexedDB - list files and count
                         const idbFiles = await idb_listFiles();
                         fileCount = idbFiles.length;
@@ -1085,6 +1157,8 @@ function showStorageDirMenu(entry, dirName, button) {
                 }
 
                 alert(info.join('\n\n'));
+                closeMenu();
+                return;
             }
 
             closeMenu();
@@ -1155,24 +1229,26 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
     // Menu actions
     menu.querySelectorAll(".menu-item").forEach(item => {
         item.addEventListener("click", async () => {
+            const isRemote = entry.schema === "remote_storage";
+
             const action = item.dataset.action;
 
-            if (action === "play") {
+            const actionisplay = action === "play";
+            if (actionisplay || action === "play-keep-open") {
                 if (isPlaylistFile(name)) {
-                    const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                    let entryPath;
+                    if (isRemote)
+                    {
+                        entryPath = handle;
+                    }
+                    else
+                    {
+                        entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`
+                    }
                     await play_source(handle, { entryPath });
-                    closeActiveView();
-                } else {
-                    alert(t('fileCannotBePlayed', "This file type cannot be played directly."));
-                }
-                closeMenu();
-                return;
-            }
-
-            if (action === "play-keep-open") {
-                if (isPlaylistFile(name)) {
-                    const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
-                    await play_source(handle, { entryPath });
+                    if (actionisplay) {
+                        closeActiveView();
+                    }
                 } else {
                     alert(t('fileCannotBePlayed', "This file type cannot be played directly."));
                 }
@@ -1200,7 +1276,15 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                     const index = parseInt(choice, 10) - 1;
                     if (index >= 0 && index < names.length) {
                         const selectedName = names[index];
-                        const path = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                        let path;
+                        if (isRemote)
+                        {
+                            path = handle;
+                        }
+                        else
+                        {
+                            path = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                        }
                         playlists[selectedName].push({ name, path });
                         await playlists_save(playlists);
                         playlist_renderTree();
@@ -1228,63 +1312,10 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
             }
 
             if (action === "export") {
-                try {
-                    const file = await handle.getFile();
-                    const url = URL.createObjectURL(file);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = name;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                } catch (err) {
-                    console.error("Failed to export file:", err);
-                    alert(t('failedToExport', "Failed to export file."));
-                }
-            }
-
-            if (action === "share") {
-                // Share the file using Web Share API
-                if (navigator.share && navigator.canShare) {
-                    try {
-                        const file = await handle.getFile();
-
-                        // Build share text: name, path, optionally PWA Player URL
-                        let shareText = `${name}\n${fullPath || name}`;
-                        if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                            const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                            shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
-                        }
-
-                        const shareData = {
-                            title: name,
-                            text: shareText,
-                            files: [file]
-                        };
-
-                        if (navigator.canShare(shareData)) {
-                            await navigator.share(shareData);
-                        } else {
-                            alert(t('shareNotSupported', 'Sharing this file type is not supported'));
-                        }
-                    } catch (e) {
-                        if (e.name !== 'AbortError') {
-                            console.warn('Share failed:', e);
-                            // Fallback: export the file instead
-                            try {
-                                const file = await handle.getFile();
-                                const url = URL.createObjectURL(file);
-                                const a = document.createElement("a");
-                                a.href = url;
-                                a.download = name;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                            } catch (err) {
-                                console.error("Failed to export file:", err);
-                            }
-                        }
-                    }
+                if (isRemote) {
+                    // Just open the URL to download it
+                    window.open(handle, '_blank');
                 } else {
-                    // Web Share not available, export the file instead
                     try {
                         const file = await handle.getFile();
                         const url = URL.createObjectURL(file);
@@ -1300,25 +1331,115 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 }
             }
 
+            if (action === "share") {
+                try {
+                    let shareData = {
+                        title: name,
+                        text: `${name}\n${isRemote ? handle : (fullPath || name)}`
+                    };
+
+                    // Add PWA URL if enabled
+                    if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
+                        const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
+                        shareData.text += `\n\nPWA Player: ${pwaUrl}`;
+                    }
+
+                    if (!isRemote) {
+                        // Local file: Try to attach the actual file blob
+                        const file = await handle.getFile();
+                        shareData.files = [file];
+                    } else {
+                        // Remote file: Just share the link in the text
+                        shareData.url = handle;
+                    }
+
+                    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+                        await navigator.share(shareData);
+                    } else {
+                        // Fallback for sharing
+                        if (isRemote) {
+                            // For remote, just copy to clipboard or alert the URL
+                            await navigator.clipboard.writeText(handle);
+                            alert(t('linkCopied', "Link copied to clipboard: ") + handle);
+                        } else {
+                            throw new Error("Cannot share local file, falling back to export");
+                        }
+                    }
+                } catch (e) {
+                    if (e.name !== 'AbortError') {
+                        console.warn('Share failed:', e);
+                        // Fallback: trigger export logic
+                        if (isRemote) {
+                            window.open(handle, '_blank');
+                        } else {
+                            const file = await handle.getFile();
+                            const url = URL.createObjectURL(file);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = name;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }
+                    }
+                }
+            }
+
             if (action === "properties") {
-                const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                // 1. Fix the entryPath and Info for Remote
+                let entryPath;
+                if (isRemote) {
+                    // For remote, the "fullPath" is already the absolute URL stored in the handle
+                    entryPath = handle; 
+                } else {
+                    entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                }
+
                 let info = [
                     `${t('fileName', 'File Name')}: ${name}`,
                     `${t('fullPath', 'Full Path')}: ${entryPath}`
                 ];
+
+                // 2. Deal with handle.getFile()
                 try {
-                    const file = await handle.getFile();
-                    const size = file.size;
-                    const sizeKB = (size / 1024).toFixed(2);
-                    const sizeMB = (size / 1048576).toFixed(2);
-                    const lastModified = new Date(file.lastModified).toISOString();
-                    info.push(`${t('size', 'Size')}: ${size} bytes (${sizeKB} KB / ${sizeMB} MB)`);
-                    info.push(`${t('type', 'Type')}: ${file.type || 'Unknown'}`);
-                    info.push(`${t('lastModified', 'Last Modified')}: ${lastModified}`);
+                    if (isRemote) {
+                        // REMOTE: Fetch headers to get size and type
+                        const response = await fetch(handle, { method: 'HEAD' });
+                        if (response.ok) {
+                            const size = response.headers.get('content-length');
+                            const type = response.headers.get('content-type');
+                            const lastMod = response.headers.get('last-modified');
+
+                            if (size) {
+                                const sizeKB = (size / 1024).toFixed(2);
+                                const sizeMB = (size / 1048576).toFixed(2);
+                                info.push(`${t('size', 'Size')}: ${size} bytes (${sizeKB} KB / ${sizeMB} MB)`);
+                            }
+                            info.push(`${t('type', 'Type')}: ${type || 'Unknown'}`);
+                            if (lastMod) {
+                                info.push(`${t('lastModified', 'Last Modified')}: ${new Date(lastMod).toISOString()}`);
+                            }
+                        } else {
+                            info.push(`${t('status', 'Status')}: Remote file reachable but metadata hidden.`);
+                        }
+                    } else {
+                        // LOCAL (OPFS/External): Standard File System API
+                        const file = await handle.getFile();
+                        const size = file.size;
+                        const sizeKB = (size / 1024).toFixed(2);
+                        const sizeMB = (size / 1048576).toFixed(2);
+                        const lastModified = new Date(file.lastModified).toISOString();
+                        
+                        info.push(`${t('size', 'Size')}: ${size} bytes (${sizeKB} KB / ${sizeMB} MB)`);
+                        info.push(`${t('type', 'Type')}: ${file.type || 'Unknown'}`);
+                        info.push(`${t('lastModified', 'Last Modified')}: ${lastModified}`);
+                    }
+                    alert(info.join('\n\n'));
                 } catch (err) {
                     console.error("Failed to get file properties:", err);
+                    if (entry.schema === "remote") {
+                        info.push(`${t('error', 'Error')}: Could not connect to remote server for metadata.`);
+                    }
                 }
-                alert(info.join('\n\n'));
             }
 
             const canModify = entry.allowModification;
@@ -1427,9 +1548,19 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
     if (isPlayable) {
         li.querySelector(".file-play").addEventListener("click", async (e) => {
             e.stopPropagation();
-            // Build the proper path for subtitle auto-load
-            const entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+
+            // FIX: Handle remote_storage pathing
+            let entryPath;
+            if (entry.schema === "remote_storage") {
+                // For remote, the handle IS the full http(s) URL
+                entryPath = handle; 
+            } else {
+                // For local, use the internal URI schema
+                entryPath = `${entry.schema}://${entry.rootName}/${fullPath}`;
+            }
+
             await play_source(handle, { entryPath });
+
             if (typeof isAutoHidePanelEnabled === 'function' && isAutoHidePanelEnabled()) {
                 closeActiveView();
             }
@@ -1442,6 +1573,8 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
             e.stopPropagation();
             if (typeof window.loadSubtitle === 'function') {
                 try {
+                    // For remote, handle is a string URL. For local, it's a FileHandle.
+                    // window.loadSubtitle needs to be able to handle both.
                     await window.loadSubtitle(handle);
                     alert(`${t('subtitleLoaded', 'Subtitle')} "${name}" ${t('loaded', 'loaded.')}`);
                 } catch (err) {
@@ -1863,6 +1996,51 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
             dirs.push({ name, handle });
         }
     }
+    else if (entry.schema === "remote_storage") {
+// CASE A: Top-level listing of all imported remote servers
+        if (dirHandle && typeof dirHandle === "object" && !Array.isArray(dirHandle)) {
+            // Iterate through the object { "127.0.0.1": "http://127.0.0.1:8080/", ... }
+            for (const [serverName, serverUrl] of Object.entries(dirHandle)) {
+                dirs.push({
+                    name: serverName,
+                    handle: serverUrl,  // Pass the specific URL as the handle for the next level
+                    isRoot: true
+                });
+            }
+        }
+        // 2. Handle the case where we've selected a specific server (handle is now a string URL)
+        else if (dirHandle && typeof dirHandle === "string") {
+            const baseUrl = dirHandle.endsWith('/') ? dirHandle : dirHandle + '/';
+            // Construct the target URL for the current sub-directory
+            const targetUrl = baseUrl;
+
+            try {
+                const response = await fetch(targetUrl);
+                if (response.ok) {
+                    const htmlText = await response.text();
+                    // parseRemoteDirectoryListing handles DOM parsing and filtering
+                    const { dirs: remoteDirs, files: remoteFiles } = parseRemoteDirectoryListing(htmlText, targetUrl);
+
+                    for (const d of remoteDirs) {
+                        if (d.name === ".." || d.name === "." || !d.name) continue;
+                        dirs.push({
+                            name: d.name,
+                            handle: baseUrl ? `${baseUrl}${d.name}` : d.name
+                        });
+                    }
+
+                    for (const f of remoteFiles) {
+                        files.push({ 
+                            name: f.name,
+                            handle: f.url // Full URL for the media file
+                        });
+                    }
+                }
+            } catch (err) {
+                console.warn(`Failed to load remote directory ${targetUrl}:`, err);
+            }
+        }
+    }
     else {
         console.warn("Unknown dirHandle type in loadStorageSubdirs:", dirHandle);
         return;
@@ -1921,6 +2099,13 @@ async function renderStorage() {
                     continue;
                 }
                 rootDir = idbFolders; // Array of folder names
+            }
+            else if (entry.schema === "remote_storage") {
+                rootDir = await loadRemoteRoots();
+                // Skip if no remote servers added yet
+                if (!rootDir || Object.keys(rootDir).length === 0) {
+                    continue;
+                }
             }
             else
             {
@@ -2287,3 +2472,147 @@ window.idb_getFile = idb_getFile;
 window.idb_listFiles = idb_listFiles;
 window.idb_listFolders = idb_listFolders;
 window.idb_getFilesInFolder = idb_getFilesInFolder;
+
+// Remote (normal URL) storage
+let remoteStorageRoots = null;
+
+async function loadRemoteRoots() {
+    if (remoteStorageRoots === null) {
+        remoteStorageRoots = await kv_get("remote_roots") || {};
+    }
+    return remoteStorageRoots;
+}
+
+async function saveRemoteRoots(roots) {
+    remoteStorageRoots = roots;
+    await kv_set("remote_roots", roots);
+}
+
+document.getElementById("addRemoteBtn").addEventListener("click", async () => {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    let url = prompt(
+        "Enter remote server URL (must end with /):\n\n" +
+        "Examples:\n" +
+        "• http://192.168.1.100:8080/\n" +
+        "• https://myserver.com/",
+        "https://"
+    );
+
+    if (!url) return;
+
+    // Basic validation
+    try {
+        const u = new URL(url);
+        if (!u.protocol.startsWith('http') && !u.protocol.startsWith('ftp')) {
+            alert("Only http://, https:// and ftp:// URLs are supported.");
+            return;
+        }
+    } catch {
+        alert("Invalid URL. Please enter a valid http/https/ftp URL.");
+        return;
+    }
+
+    if (!url.endsWith('/')) url += '/';
+
+    const friendlyName = prompt("Friendly name for this server (optional):", 
+                               new URL(url).hostname || "Remote");
+
+    const displayName = friendlyName && friendlyName.trim() ? friendlyName.trim() : url;
+
+    let roots = await loadRemoteRoots();
+    if (roots[displayName]) {
+        alert(`"${displayName}" already exists.`);
+        return;
+    }
+
+    roots[displayName] = url;
+    await saveRemoteRoots(roots);
+
+    alert(`Remote server "${displayName}" imported successfully.`);
+    renderStorage();
+});
+
+// ============================================================
+// Remote Directory Listing Parser (supports http-server + nginx + generic)
+// ============================================================
+function parseRemoteDirectoryListing(htmlText, baseUrl) {
+    const dirs = [];
+    const files = [];
+
+    const doc = new DOMParser().parseFromString(htmlText, "text/html");
+    const links = doc.querySelectorAll('a[href]');
+
+    for (const link of links) {
+        let href = link.getAttribute('href') || '';
+        const name = link.textContent.trim();
+
+        if (!href || href === '../' || href === './' || href === '/') continue;
+
+        // Convert relative link to absolute URL
+        let fullUrl;
+        try {
+            fullUrl = new URL(href, baseUrl).href;
+        } catch (e) {
+            continue;
+        }
+
+        if (href.endsWith('/') || name.endsWith('/')) {
+            const folderName = name.replace(/\/$/, '');
+            if (folderName) {
+                dirs.push({ name: folderName });
+            }
+        } 
+        else if (isPlaylistFile(name) || isSubtitleFile(name)) {
+            files.push({ 
+                name: name, 
+                url: fullUrl 
+            });
+        }
+    }
+
+    // Sort
+    dirs.sort((a, b) => compareString(a.name, b.name));
+    files.sort((a, b) => compareString(a.name, b.name));
+
+    return { dirs, files };
+}
+
+/**
+ * Resolves a virtual dirName to a real HTTP URL for remote_storage.
+ * @param {string} dirName - The virtual path (e.g., "MyServer/Movies/Action")
+ * @returns {Promise<string|null>} - The actual URL (e.g., "http://1.2.3.4:8080/Movies/Action/")
+ */
+async function resolveRemoteDirToUrl(dirName) {
+    if (!dirName) return null;
+
+    // 1. Load the map of remote servers { "Alias": "BaseURL" }
+    const remoteRoots = await loadRemoteRoots();
+    
+    // 2. Split the path into parts
+    const parts = dirName.split("/");
+    const serverAlias = parts[0];
+    const baseUrl = remoteRoots[serverAlias];
+
+    if (!baseUrl) {
+        console.warn(`Remote server alias "${serverAlias}" not found in storage.`);
+        return null;
+    }
+
+    // 3. Extract the relative path (everything after the server alias)
+    const relativePath = parts.slice(1).join("/");
+
+    // 4. Construct the final URL
+    // We use the URL constructor to handle slashes correctly.
+    // We append a trailing slash because this is a directory.
+    try {
+        const urlObj = relativePath 
+            ? new URL(relativePath + "/", baseUrl) 
+            : new URL(baseUrl);
+            
+        return urlObj.href;
+    } catch (e) {
+        console.error("Failed to construct remote URL:", e);
+        return null;
+    }
+}
