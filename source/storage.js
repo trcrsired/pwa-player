@@ -658,7 +658,6 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
 // Choose playlist and add directory contents
 // ============================================================
 async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
-    console.log("661 here");
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const playlists = await playlists_load();
     const names = Object.keys(playlists);
