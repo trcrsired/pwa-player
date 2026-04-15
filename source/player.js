@@ -965,11 +965,12 @@ async function addDirectoryToExternalStorage(dirHandle) {
     // Update in-memory cache
     window.externalStorageRoot = dirs;
 
-    alert(`External directory "${name}" added.`);
-
     // Re-render storage if the function exists
     if (typeof renderStorage === 'function') {
         renderStorage();
+    }
+    if (confirm(`External directory "${name}" added.\nDo you want to play now`)) {
+      addDirectoryToPlaylist(await loadExternalDirs(), "external_storage", "external", name, null);
     }
 }
 
