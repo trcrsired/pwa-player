@@ -581,7 +581,6 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
 
         if (playlistName == null) {
             await startNowPlayingFromPlaylistTable(pointers, 0, null, true);
-            return;
         }
 
         const playlists = await playlists_load();
@@ -889,10 +888,10 @@ function showStorageDirMenu(entry, dirName, button) {
                 } else {
                     await addDirectoryToPlaylist(parent, entry.schema, entry.rootName, dirName, null);
                 }
-                if (isactionplay)
-                {
-                    return;
+                if (isactionplay) {
+                    closeMenu();
                 }
+                return;
             }
 
             if (action === "add") {
