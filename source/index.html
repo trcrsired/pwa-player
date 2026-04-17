@@ -114,8 +114,13 @@
             <main class="content">
                 <section class="actions">
                     <button id="addExternalBtn" class="btn primary"
-                            data-i18n="importExternal" data-i18n-title="importExternalHint">
-                        Import External
+                            data-i18n="mountExternal" data-i18n-title="mountExternalHint">
+                        Mount External
+                    </button>
+
+                    <button id="addRemoteBtn" class="btn primary"
+                            data-i18n="mountRemote" data-i18n-title="mountRemoteHint">
+                        Mount Remote
                     </button>
 
                     <button id="addImportBtn" class="btn primary"
@@ -135,14 +140,9 @@
 
                     <input id="filePicker" type="file" multiple webkitdirectory directory style="display:none">
 
-                    <button id="addRemoteBtn" class="btn primary"
-                            data-i18n="importRemoteDB" data-i18n-title="importRemoteHint">
-                        Import Remote
-                    </button>
-
                     <button id="clearImports" class="btn danger"
-                            data-i18n="clearAllImports" data-i18n-title="clearAllImportsHint">
-                        Clear All Imports
+                            data-i18n="clearAllImportMount" data-i18n-title="clearAllImportMountHint">
+                        Clear All Import & Mount
                     </button>
                 </section>
                 <ul id="storageList" class="list"></ul>

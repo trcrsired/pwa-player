@@ -53,10 +53,11 @@ const JA_TRANSLATIONS = {
 
     // Storage
     importDirectory: "ディレクトリをインポート",
-    importExternal: "外部をインポート",
+    mountExternal: "外部をマウント",
     importFiles: "ファイルをインポート",
     importIndexedDB: "IndexedDBにインポート",
-    clearAllImports: "すべてのインポートを削除",
+    clearAllImportMount: "すべてのインポートとマウントを削除",
+    clearAllImportMountHint: "すべてのインポートディレクトリとマウントされた外部/リモートストレージを削除します。",
     export: "エクスポート",
     rename: "名前変更",
     remove: "削除",
@@ -66,10 +67,9 @@ const JA_TRANSLATIONS = {
     add: "追加",
     playThis: "再生",
     importDirectoryHint: "フォルダ全体をアプリのプライベートストレージ(OPFS)にコピー。今後の権限確認は不要。",
-    importExternalHint: "外部フォルダをコピーせずにリンク。権限が必要で、再認証が必要な場合があります。",
+    mountExternalHint: "外部フォルダをコピーせずにマウント。権限が必要で、再認証が必要な場合があります。",
     importFilesHint: "標準ファイル選択機能を使用してメディアファイルをインポート。",
     importIndexedDBHint: "ファイルをIndexedDBストレージにインポート。OPFSをサポートしない古いブラウザで動作します。",
-    clearAllImportsHint: "すべてのインポート済みディレクトリを削除し、ストレージ設定をリセット。",
 
     // Playlist
     addToPlaylist: "プレイリストに追加",
@@ -289,8 +289,8 @@ const JA_TRANSLATIONS = {
     removeEntryNote: "注意：デバイス上の実際のフォルダは削除されません。",
     removeAllEntriesNote: "注意：デバイス上の実際のフォルダは削除されません。",
     deleteEntireStorage: "ストレージ全体を削除しますか？",
-    clearAllImportsConfirm: "これにより、すべてのインポートされたディレクトリが完全に削除されます：",
-    clearAllImportsNote: "IndexedDBストレージもクリアされます。\n\n続行してもよろしいですか？",
+    clearAllImportMountConfirm: "これにより、すべてのインポートディレクトリとマウントストレージが完全に削除されます：",
+    clearAllImportMountNote: "IndexedDBストレージもクリアされます。\n\n続行してもよろしいですか？",
     failedToImportFile: "ファイルのインポートに失敗しました",
     failedToImport: "インポートに失敗しました",
     importedFilesToIDB: "{count}個のファイルをIndexedDBにインポートしました。",
@@ -335,15 +335,22 @@ const JA_TRANSLATIONS = {
     skipIframesInBackgroundHint: "タブが非表示の時、YouTube/Spotifyなどをスキップしてブラウザの自動再生ポリシー問題を回避します。",
 
     // Remote Storage
-    importRemoteDB: "リモートストレージをインポート",
-    importRemoteHint: "リモートHTTP/HTTPSサーバーを追加して、ファイルを直接ブラウズ・再生します。",
+    mountRemote: "リモートをマウント",
+    mountRemoteHint: "リモートHTTP/HTTPSサーバーをマウントして、ファイルを直接ブラウズ・再生します。",
     enterRemoteUrl: "リモートサーバーURLを入力（末尾は/が必要）",
     examples: "例",
-    onlyHttpFtpSupported: "http://、https://、ftp:// URLのみサポートされています。",
-    invalidUrl: "無効なURL。有効な http/https/ftp URLを入力してください。",
+    onlyHttpSupported: "http://、https:// URLのみサポートされています。",
+    invalidUrl: "無効なURL。",
     friendlyNameOptional: "サーバーの表示名（オプション）：",
     remote: "リモート",
     remoteServerImported: "リモートサーバーが正常にインポートされました",
+    editUrl: "URLを編集",
+    editRemoteUrl: "リモートURLを編集：",
+    urlUpdated: "URLが更新されました",
+    newMountName: "新しい名前：",
+    invalidStorageName: "名前には . / \\ : * ? \" < > | を含めることができません。",
+    confirmRemoveExternal: "ディレクトリ名を入力して削除を確認",
+    confirmationMismatch: "確認名が一致しません。",
 
     // Copy/Paste
     paste: "貼り付け",
@@ -367,7 +374,6 @@ const JA_TRANSLATIONS = {
     newFolder: "新規フォルダ",
     failedToCreateFolder: "フォルダの作成に失敗",
     to: "へ",
-    empty: "空",
     copying: "コピー中",
     downloading: "ダウンロード中"
 };

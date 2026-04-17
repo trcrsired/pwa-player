@@ -56,10 +56,11 @@ const EN_TRANSLATIONS = {
 
     // Storage
     importDirectory: "Import Directory",
-    importExternal: "Import External",
+    mountExternal: "Mount External",
     importFiles: "Import Files",
     importIndexedDB: "Import Into IndexedDB",
-    clearAllImports: "Clear All Imports",
+    clearAllImportMount: "Clear All Import & Mount",
+    clearAllImportMountHint: "Remove all imported directories and mounted external/remote storages.",
     export: "Export",
     rename: "Rename",
     remove: "Remove",
@@ -69,10 +70,9 @@ const EN_TRANSLATIONS = {
     add: "Add",
     playThis: "Play",
     importDirectoryHint: "Copy an entire folder into private app storage (OPFS). No future permission prompts.",
-    importExternalHint: "Link an external folder without copying. Requires permission and may need re‑authorization.",
+    mountExternalHint: "Mount an external folder without copying. Requires permission and may need re‑authorization.",
     importFilesHint: "Import individual media files using the standard file picker.",
     importIndexedDBHint: "Import files into IndexedDB storage. Works on older browsers that do not support OPFS properly.",
-    clearAllImportsHint: "Remove all imported directories and reset storage configuration.",
 
     // Playlist
     addToPlaylist: "Add to Playlist",
@@ -292,8 +292,8 @@ const EN_TRANSLATIONS = {
     removeEntryNote: "Note: The actual folder on your device will NOT be deleted.",
     removeAllEntriesNote: "Note: The actual folders on your device will NOT be deleted.",
     deleteEntireStorage: "Delete entire storage?",
-    clearAllImportsConfirm: "This will permanently delete all imported directories:",
-    clearAllImportsNote: "This will also clear IndexedDB storage.\n\nAre you sure you want to proceed?",
+    clearAllImportMountConfirm: "This will permanently delete all imported directories and mounted storages:",
+    clearAllImportMountNote: "This will also clear IndexedDB storage.\n\nAre you sure you want to proceed?",
     failedToImportFile: "Failed to import a file",
     failedToImport: "Failed to import",
     importedFilesToIDB: "Imported {count} file(s) into IndexedDB.",
@@ -338,15 +338,22 @@ const EN_TRANSLATIONS = {
     skipIframesInBackgroundHint: "When tab is hidden, skip YouTube/Spotify/etc. entries to avoid browser autoplay policy issues.",
 
     // Remote Storage
-    importRemoteDB: "Import Remote",
-    importRemoteHint: "Add a remote HTTP/HTTPS server to browse and stream files directly.",
+    mountRemote: "Mount Remote",
+    mountRemoteHint: "Mount a remote HTTP/HTTPS server to browse and stream files directly.",
     enterRemoteUrl: "Enter remote server URL (must end with /)",
     examples: "Examples",
-    onlyHttpFtpSupported: "Only http://, https:// and ftp:// URLs are supported.",
-    invalidUrl: "Invalid URL. Please enter a valid http/https/ftp URL.",
+    onlyHttpSupported: "Only http:// and https:// URLs are supported.",
+    invalidUrl: "Invalid URL.",
     friendlyNameOptional: "Friendly name for this server (optional):",
     remote: "Remote",
     remoteServerImported: "Remote server imported successfully",
+    editUrl: "Edit URL",
+    editRemoteUrl: "Edit remote URL:",
+    urlUpdated: "URL updated",
+    newMountName: "New name:",
+    invalidStorageName: "Name cannot contain . / \\ : * ? \" < > | or be empty.",
+    confirmRemoveExternal: "Type the directory name to confirm removal",
+    confirmationMismatch: "Confirmation name does not match.",
 
     // Copy/Paste
     paste: "Paste",
@@ -370,7 +377,6 @@ const EN_TRANSLATIONS = {
     newFolder: "New Folder",
     failedToCreateFolder: "Failed to create folder",
     to: "to",
-    empty: "empty",
     copying: "Copying",
     downloading: "Downloading"
 };

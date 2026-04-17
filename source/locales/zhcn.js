@@ -56,10 +56,11 @@ const ZHCN_TRANSLATIONS = {
 
     // Storage
     importDirectory: "导入目录",
-    importExternal: "导入外部",
+    mountExternal: "挂载外部",
     importFiles: "导入文件",
     importIndexedDB: "导入到IndexedDB",
-    clearAllImports: "清除所有导入",
+    clearAllImportMount: "清除所有导入和挂载",
+    clearAllImportMountHint: "移除所有导入目录和挂载的外部/远程存储。",
     export: "导出",
     rename: "重命名",
     remove: "移除",
@@ -69,10 +70,9 @@ const ZHCN_TRANSLATIONS = {
     add: "添加",
     playThis: "播放",
     importDirectoryHint: "将整个文件夹复制到应用私有存储(OPFS)，无需再次请求权限",
-    importExternalHint: "链接外部文件夹而不复制，需要权限且可能需要重新授权",
+    mountExternalHint: "挂载外部文件夹而不复制，需要权限且可能需要重新授权",
     importFilesHint: "使用标准文件选择器导入单个媒体文件",
     importIndexedDBHint: "将文件导入到IndexedDB存储。适用于不支持OPFS的旧浏览器。",
-    clearAllImportsHint: "删除所有导入的目录并重置存储配置",
 
     // Playlist
     addToPlaylist: "添加到播放列表",
@@ -292,8 +292,8 @@ const ZHCN_TRANSLATIONS = {
     removeEntryNote: "注意：设备上的实际文件夹不会被删除。",
     removeAllEntriesNote: "注意：设备上的实际文件夹不会被删除。",
     deleteEntireStorage: "删除整个存储？",
-    clearAllImportsConfirm: "这将永久删除所有导入的目录：",
-    clearAllImportsNote: "这也会清除IndexedDB存储。\n\n确定要继续吗？",
+    clearAllImportMountConfirm: "这将永久删除所有导入目录和挂载存储：",
+    clearAllImportMountNote: "这也会清除IndexedDB存储。\n\n确定要继续吗？",
     failedToImportFile: "导入文件失败",
     failedToImport: "导入失败",
     importedFilesToIDB: "已导入 {count} 个文件到IndexedDB。",
@@ -338,15 +338,22 @@ const ZHCN_TRANSLATIONS = {
     skipIframesInBackgroundHint: "当标签页隐藏时，跳过YouTube/Spotify等内容，避免浏览器自动播放策略问题。",
 
     // Remote Storage
-    importRemoteDB: "导入远程存储",
-    importRemoteHint: "添加远程HTTP/HTTPS服务器，直接浏览和播放文件。",
+    mountRemote: "挂载远程",
+    mountRemoteHint: "挂载远程HTTP/HTTPS服务器，直接浏览和播放文件。",
     enterRemoteUrl: "输入远程服务器URL（必须以/结尾）",
     examples: "示例",
-    onlyHttpFtpSupported: "仅支持 http://、https:// 和 ftp:// URL。",
-    invalidUrl: "无效URL。请输入有效的 http/https/ftp URL。",
+    onlyHttpSupported: "仅支持 http:// 和 https:// URL。",
+    invalidUrl: "无效URL。",
     friendlyNameOptional: "服务器友好名称（可选）：",
     remote: "远程",
     remoteServerImported: "远程服务器导入成功",
+    editUrl: "编辑URL",
+    editRemoteUrl: "编辑远程URL：",
+    urlUpdated: "URL已更新",
+    newMountName: "新名称：",
+    invalidStorageName: "名称不能包含 . / \\ : * ? \" < > | 或为空。",
+    confirmRemoveExternal: "输入目录名称以确认删除",
+    confirmationMismatch: "确认名称不匹配。",
 
     // Copy/Paste
     paste: "粘贴",
@@ -370,7 +377,6 @@ const ZHCN_TRANSLATIONS = {
     newFolder: "新建文件夹",
     failedToCreateFolder: "创建文件夹失败",
     to: "到",
-    empty: "空",
     copying: "复制中",
     downloading: "下载中"
 };

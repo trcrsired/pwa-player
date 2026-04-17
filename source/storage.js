@@ -134,6 +134,16 @@ function updateToast(message) {
 }
 
 // ============================================================
+// Validate storage name - no special characters
+// ============================================================
+function isValidStorageName(name) {
+    if (!name || typeof name !== 'string') return false;
+    // Disallow: . / \ : * ? " < > | and control characters
+    const invalidChars = /[.\/\\:*?"<>|\x00-\x1f]/;
+    return !invalidChars.test(name) && name.trim().length > 0;
+}
+
+// ============================================================
 // IndexedDB Storage Backend
 // ============================================================
 const IDB_DB_NAME = "PWAPlayerIDB";
@@ -1303,6 +1313,12 @@ function showStorageDirMenu(entry, dirName, button) {
     const isTopLevel = dirName && !dirName.includes("/");
     const canPaste = storageClipboard && entry.canPaste;
     const canCreateFolder = entry.canCreateFolder;
+    // External and remote top-level entries can be renamed (mount name)
+    const canRenameMount = isTopLevel && (entry.schema === "external_storage" || entry.schema === "remote_storage");
+    // Remote top-level entries can have URL edited
+    const canEditUrl = isTopLevel && entry.schema === "remote_storage";
+    // External top-level entries can be removed with confirmation
+    const canRemoveExternal = isTopLevel && entry.schema === "external_storage";
 
     const menuItems = [];
 
@@ -1313,10 +1329,14 @@ function showStorageDirMenu(entry, dirName, button) {
         menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="copy">${t('copy', 'Copy')}</div>`);
-        // Only show rename if both allowModification and allowFolderRename are true
-        if (entry.allowModification && entry.allowFolderRename !== false) {
+        // Only show rename if both allowModification and allowFolderRename are true, OR for mount rename
+        if ((entry.allowModification && entry.allowFolderRename !== false) || canRenameMount) {
             menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
         }
+    }
+    // Edit URL for remote storage
+    if (canEditUrl) {
+        menuItems.push(`<div class="menu-item" data-action="edit-url">${t('editUrl', 'Edit URL')}</div>`);
     }
     // New Folder action - only for storages that support it
     if (canCreateFolder) {
@@ -1333,9 +1353,9 @@ function showStorageDirMenu(entry, dirName, button) {
     const canRemoveEntry = !dirName || isTopLevel;
     const canDeleteContent = entry.allowModification && !isRoot && !isTopLevel;
 
-    if (canRemoveEntry || canDeleteContent) {
+    if (canRemoveEntry || canDeleteContent || canRemoveExternal) {
         // Use "Remove entry" label when useRemoveLabel is true, otherwise "Delete"
-        const deleteLabel = canRemoveEntry && entry.useRemoveLabel
+        const deleteLabel = (canRemoveEntry && entry.useRemoveLabel) || canRemoveExternal
             ? (isRoot ? t('removeAllEntries', 'Remove all entries') : t('removeEntry', 'Remove entry'))
             : t('delete', 'Delete');
         menuItems.push(`<div class="menu-item danger" data-action="delete">${deleteLabel}</div>`);
@@ -1529,10 +1549,56 @@ function showStorageDirMenu(entry, dirName, button) {
             }
 
             if (action === "rename") {
+                const isTopLevel = dirName && !dirName.includes("/");
+                const canRenameMount = isTopLevel && (entry.schema === "external_storage" || entry.schema === "remote_storage");
+
                 if (entry.schema === "indexeddb") {
                     alert(t('renameNotAvailable', "Rename not available for IndexedDB."));
+                } else if (canRenameMount) {
+                    // Rename mount name for external or remote storage
+                    const oldName = dirName;
+                    const newName = prompt(t('newMountName', "New name:"), oldName);
+                    if (newName && newName.trim() && newName.trim() !== oldName) {
+                        const trimmed = newName.trim();
+
+                        // Validate name - no special characters
+                        if (!isValidStorageName(trimmed)) {
+                            alert(t('invalidStorageName', "Name cannot contain . / \\ : * ? \" < > | or be empty."));
+                            closeMenu();
+                            return;
+                        }
+
+                        try {
+                            if (entry.schema === "external_storage") {
+                                const dirs = await loadExternalDirs();
+                                if (dirs[trimmed]) {
+                                    alert(`${t('alreadyExists', 'Already exists')}: "${trimmed}"`);
+                                    closeMenu();
+                                    return;
+                                }
+                                dirs[trimmed] = dirs[oldName];
+                                delete dirs[oldName];
+                                await kv_set("external_dirs", dirs);
+                                window.externalStorageRoot = dirs;
+                            } else if (entry.schema === "remote_storage") {
+                                const roots = await loadRemoteRoots();
+                                if (roots[trimmed]) {
+                                    alert(`${t('alreadyExists', 'Already exists')}: "${trimmed}"`);
+                                    closeMenu();
+                                    return;
+                                }
+                                roots[trimmed] = roots[oldName];
+                                delete roots[oldName];
+                                await saveRemoteRoots(roots);
+                            }
+                            renderStorage();
+                        } catch (err) {
+                            console.error("Failed to rename:", err);
+                            alert(`${t('failedToRename', 'Failed to rename')}: ${err.message}`);
+                        }
+                    }
                 } else {
-                    // For nested paths, get just the folder name
+                    // Regular folder rename for navigator_storage
                     const parts = dirName.split("/");
                     const oldName = parts.pop();
                     const pathToParent = parts.join("/");
@@ -1551,19 +1617,68 @@ function showStorageDirMenu(entry, dirName, button) {
                         const destDir = await targetParent.getDirectoryHandle(trimmed, { create: true });
                         await copyDirectoryToPrivateStorage(sourceDir, destDir);
                         await targetParent.removeEntry(oldName, { recursive: true });
+                        renderStorage();
                     }
                 }
+                closeMenu();
+                return;
+            }
+
+            if (action === "edit-url") {
+                // Edit URL for remote storage
+                const roots = await loadRemoteRoots();
+                const oldUrl = roots[dirName];
+                const newUrl = prompt(t('editRemoteUrl', "Edit remote URL:"), oldUrl);
+
+                if (!newUrl) {
+                    closeMenu();
+                    return;
+                }
+
+                // Validate URL
+                try {
+                    const u = new URL(newUrl);
+                    if (!u.protocol.startsWith('http')) {
+                        alert(t('onlyHttpSupported', "Only http:// and https:// URLs are supported."));
+                        closeMenu();
+                        return;
+                    }
+                } catch {
+                    alert(t('invalidUrl', "Invalid URL."));
+                    closeMenu();
+                    return;
+                }
+
+                let finalUrl = newUrl;
+                if (!finalUrl.endsWith('/')) finalUrl += '/';
+
+                roots[dirName] = finalUrl;
+                await saveRemoteRoots(roots);
+                alert(`${t('urlUpdated', 'URL updated')}: "${dirName}"`);
+                renderStorage();
+                closeMenu();
+                return;
             }
 
             if (action === "delete") {
                 const isTopLevel = dirName && !dirName.includes("/");
                 const isEntryRemoval = entry.useRemoveLabel && (!dirName || isTopLevel);
+                const isExternalRemoval = isTopLevel && entry.schema === "external_storage";
 
                 let confirmMsg;
                 if (entry.schema === "indexeddb") {
                     confirmMsg = dirName
                         ? `${t('deleteFolderConfirm', 'Delete folder')} "${dirName}"?`
                         : t('deleteAllFilesConfirm', "Delete all files from storage?");
+                } else if (isExternalRemoval) {
+                    // External storage removal - require typing the name to confirm
+                    confirmMsg = `${t('confirmRemoveExternal', 'Type the directory name to confirm removal')}:\n"${dirName}"`;
+                    const userInput = prompt(confirmMsg);
+                    if (userInput !== dirName) {
+                        if (userInput) alert(t('confirmationMismatch', "Confirmation name does not match."));
+                        closeMenu();
+                        return;
+                    }
                 } else if (isEntryRemoval) {
                     // Entry removal - only remove reference, not actual files
                     confirmMsg = dirName
@@ -1575,56 +1690,62 @@ function showStorageDirMenu(entry, dirName, button) {
                         : `${t('deleteEntireStorage', 'Delete entire storage')} "${entry.rootName}"?`;
                 }
 
-                if (confirm(confirmMsg)) {
-                    if (entry.schema === "remote_storage") {
-                        const roots = await loadRemoteRoots();
-                        if (isRoot) {
-                            await saveRemoteRoots({});
-                        } else {
-                            delete roots[dirName];
-                            await saveRemoteRoots(roots);
-                        }
-                    } else if (entry.schema === "indexeddb") {
-                        if (dirName) {
-                            // Delete a specific IndexedDB folder
-                            await idb_deleteFolder(dirName);
-                        } else {
-                            // Delete all IndexedDB files
-                            await idb_clearAll();
-                        }
-                    } else if (isEntryRemoval && entry.schema === "external_storage") {
-                        if (dirName) {
-                            // Remove just this external directory reference
-                            const dirs = await loadExternalDirs();
-                            delete dirs[dirName];
-                            await kv_set("external_dirs", dirs);
-                            window.externalStorageRoot = dirs;
-                        } else {
-                            // Remove all external directory references
-                            await kv_delete("external_dirs");
-                            window.externalStorageRoot = {};
-                        }
+                // Skip confirm for external (already confirmed with typing)
+                const shouldProceed = isExternalRemoval || confirm(confirmMsg);
+                if (!shouldProceed) {
+                    closeMenu();
+                    return;
+                }
+
+                if (entry.schema === "remote_storage") {
+                    const roots = await loadRemoteRoots();
+                    if (isRoot) {
+                        await saveRemoteRoots({});
                     } else {
-                        // navigator_storage - delete actual folder from OPFS
-                        const root = await navigator.storage.getDirectory();
-                        if (dirName) {
-                            // Navigate through nested path to find the parent directory
-                            const parts = dirName.split("/");
-                            const folderToDelete = parts.pop();
-                            let targetParent = await root.getDirectoryHandle(entry.dirName);
+                        delete roots[dirName];
+                        await saveRemoteRoots(roots);
+                    }
+                } else if (entry.schema === "indexeddb") {
+                    if (dirName) {
+                        // Delete a specific IndexedDB folder
+                        await idb_deleteFolder(dirName);
+                    } else {
+                        // Delete all IndexedDB files
+                        await idb_clearAll();
+                    }
+                } else if (entry.schema === "external_storage") {
+                    if (dirName) {
+                        // Remove just this external directory reference
+                        const dirs = await loadExternalDirs();
+                        delete dirs[dirName];
+                        await kv_set("external_dirs", dirs);
+                        window.externalStorageRoot = dirs;
+                    } else {
+                        // Remove all external directory references
+                        await kv_delete("external_dirs");
+                        window.externalStorageRoot = {};
+                    }
+                } else {
+                    // navigator_storage - delete actual folder from OPFS
+                    const root = await navigator.storage.getDirectory();
+                    if (dirName) {
+                        // Navigate through nested path to find the parent directory
+                        const parts = dirName.split("/");
+                        const folderToDelete = parts.pop();
+                        let targetParent = await root.getDirectoryHandle(entry.dirName);
 
-                            // Traverse to the parent of the folder to delete
-                            for (const part of parts) {
-                                targetParent = await targetParent.getDirectoryHandle(part);
-                            }
-
-                            await targetParent.removeEntry(folderToDelete, { recursive: true });
-                        } else {
-                            // Delete the entire root folder (e.g., imports, files)
-                            await root.removeEntry(entry.dirName, { recursive: true });
+                        // Traverse to the parent of the folder to delete
+                        for (const part of parts) {
+                            targetParent = await targetParent.getDirectoryHandle(part);
                         }
+
+                        await targetParent.removeEntry(folderToDelete, { recursive: true });
+                    } else {
+                        // Delete the entire root folder (e.g., imports, files)
+                        await root.removeEntry(entry.dirName, { recursive: true });
                     }
                 }
+                renderStorage();
             }
 
             if (action === "properties") {
@@ -2636,7 +2757,6 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
 // Render all import roots and their subdirectories
 // ============================================================
 async function renderStorage() {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const list = document.getElementById("storageList");
     list.innerHTML = "";
 
@@ -2651,7 +2771,7 @@ async function renderStorage() {
         if (!entry.enabled) continue;
 
         let rootDir = null;
-        let isEmpty = false;
+        let entryCount = 0;
 
         try {
             if (entry.schema === "navigator_storage") {
@@ -2663,24 +2783,21 @@ async function renderStorage() {
                         rootDir = await root.getDirectoryHandle(entry.dirName, { create: true });
                     } else throw err;
                 }
-                // Check if empty
-                let hasContent = false;
+                // Count entries
                 for await (const _ of rootDir.entries()) {
-                    hasContent = true;
-                    break;
+                    ++entryCount;
                 }
-                isEmpty = !hasContent;
             } else if (entry.schema === "external_storage") {
                 rootDir = await loadExternalDirs();
-                isEmpty = !rootDir || Object.keys(rootDir).length === 0;
+                entryCount = rootDir ? Object.keys(rootDir).length : 0;
             } else if (entry.schema === "indexeddb") {
                 const idbFolders = await idb_listFolders();
                 rootDir = idbFolders || [];
-                isEmpty = idbFolders.length === 0;
+                entryCount = idbFolders.length;
             }
             else if (entry.schema === "remote_storage") {
                 rootDir = await loadRemoteRoots();
-                isEmpty = !rootDir || Object.keys(rootDir).length === 0;
+                entryCount = rootDir ? Object.keys(rootDir).length : 0;
             }
             else
             {
@@ -2692,14 +2809,14 @@ async function renderStorage() {
                 console.error(`Failed to load ${entry.rootName}:`, err);
             }
             // Still show the root even if error - user can create/paste
-            isEmpty = true;
+            entryCount = 0;
         }
 
         const li = document.createElement("li");
         li.className = "storage-node";
 
-        // Show empty indicator if storage is empty
-        const displayRootName = isEmpty ? `${entry.schema}://${entry.rootName} (${t('empty', 'empty')})` : `${entry.schema}://${entry.rootName}`;
+        // Show entry count
+        const displayRootName = `${entry.schema}://${entry.rootName} (${entryCount})`;
 
         li.innerHTML = `
             <div class="storage-header">
@@ -2774,9 +2891,9 @@ document.getElementById("addImportBtn").addEventListener("click", async () => {
 document.getElementById("clearImports").addEventListener("click", async () => {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const confirmed = confirm(
-        t('clearAllImportsConfirm', "This will permanently delete all imported directories:\n") +
+        t('clearAllImportMountConfirm', "This will permanently delete all imported directories and mounted storages:\n") +
         IMPORT_ROOTS.map(r => `• "${r.dirName}"`).join("\n") +
-        "\n\n" + t('clearAllImportsNote', "This will also clear IndexedDB storage.\n\nAre you sure you want to proceed?")
+        "\n\n" + t('clearAllImportMountNote', "This will also clear IndexedDB storage.\n\nAre you sure you want to proceed?")
     );
     if (!confirmed) return;
 
@@ -3087,12 +3204,12 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
     // Basic validation
     try {
         const u = new URL(url);
-        if (!u.protocol.startsWith('http') && !u.protocol.startsWith('ftp')) {
-            alert(t('onlyHttpFtpSupported', "Only http://, https:// and ftp:// URLs are supported."));
+        if (!u.protocol.startsWith('http')) {
+            alert(t('onlyHttpSupported', "Only http:// and https:// URLs are supported."));
             return;
         }
     } catch {
-        alert(t('invalidUrl', "Invalid URL. Please enter a valid http/https/ftp URL."));
+        alert(t('invalidUrl', "Invalid URL."));
         return;
     }
 
@@ -3102,6 +3219,12 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
                                new URL(url).hostname || t('remote', "Remote"));
 
     const displayName = friendlyName && friendlyName.trim() ? friendlyName.trim() : url;
+
+    // Validate storage name - no special characters
+    if (!isValidStorageName(displayName)) {
+        alert(t('invalidStorageName', "Name cannot contain . / \\ : * ? \" < > | or be empty."));
+        return;
+    }
 
     let roots = await loadRemoteRoots();
     if (roots[displayName]) {
