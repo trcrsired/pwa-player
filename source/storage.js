@@ -14,6 +14,32 @@
 //
 const IMPORT_ROOTS = [
     {
+        schema: "external_storage",
+        rootName: "external",
+        dirName: "external",
+        enabled: true,
+        showSubdirs: true,
+        allowModification: false,
+        allowFolderRename: true,
+        allowFileRename: false,
+        useRemoveLabel: true,
+        canPaste: true,  // External storage supports paste with permission
+        canCreateFolder: false  // Would need permission each time, impractical
+    },
+    {
+        schema: "remote_storage",
+        rootName: "remote",
+        dirName: "remote",
+        enabled: true,
+        showSubdirs: true,
+        allowModification: false,
+        allowFolderRename: false,
+        allowFileRename: false,
+        useRemoveLabel: true,
+        canPaste: false,  // Cannot upload to HTTP servers
+        canCreateFolder: false  // Cannot create folders on remote servers
+    },
+    {
         schema: "navigator_storage",
         rootName: "imports",
         dirName: "imports",
@@ -40,19 +66,6 @@ const IMPORT_ROOTS = [
         canCreateFolder: true
     },
     {
-        schema: "external_storage",
-        rootName: "external",
-        dirName: "external",
-        enabled: true,
-        showSubdirs: true,
-        allowModification: false,
-        allowFolderRename: true,
-        allowFileRename: false,
-        useRemoveLabel: true,
-        canPaste: true,  // External storage supports paste with permission
-        canCreateFolder: false  // Would need permission each time, impractical
-    },
-    {
         schema: "indexeddb",
         rootName: "idb",
         dirName: "idb",
@@ -64,19 +77,6 @@ const IMPORT_ROOTS = [
         useRemoveLabel: false,
         canPaste: true,
         canCreateFolder: true
-    },
-    {
-        schema: "remote_storage",
-        rootName: "remote",
-        dirName: "remote",
-        enabled: true,
-        showSubdirs: true,
-        allowModification: false,
-        allowFolderRename: false,
-        allowFileRename: false,
-        useRemoveLabel: true,
-        canPaste: false,  // Cannot upload to HTTP servers
-        canCreateFolder: false  // Cannot create folders on remote servers
     }
 ];
 
