@@ -310,6 +310,7 @@ const EN_TRANSLATIONS = {
     screenCapture: "Screen Capture",
     microphone: "Microphone",
     switchSource: "Switch Source",
+    enableMicrophonePrompt: "Enable microphone for this recording?",
 
     // Video status
     videoLoading: "Loading...",

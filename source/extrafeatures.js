@@ -190,6 +190,12 @@ screenCaptureBtn.addEventListener("click", async () => {
         if (switchBtn) switchBtn.style.display = "";
         screenCaptureBtn.textContent = "⏹️";
 
+        // Ask user if they want to enable microphone
+        const t = (key) => window.i18n ? window.i18n.t(key) : key;
+        if (confirm(t("enableMicrophonePrompt") || "Enable microphone for this recording?")) {
+            toggleMicInRecording();
+        }
+
         // Handle track ended
         screenCaptureStream.getVideoTracks()[0].onended = () => {
             stopScreenRecording();
@@ -361,7 +367,8 @@ function saveScreenRecording() {
     a.download = `screen-recording-${Date.now()}.webm`;
     a.click();
 
-    URL.revokeObjectURL(url);
+    // Keep URL valid for a bit longer to ensure download completes
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 function startScreenRecording(stream) {
