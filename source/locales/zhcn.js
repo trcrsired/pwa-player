@@ -335,5 +335,42 @@ const ZHCN_TRANSLATIONS = {
 
     // Skip iframes in background
     skipIframesInBackground: "后台播放时跳过嵌入式内容",
-    skipIframesInBackgroundHint: "当标签页隐藏时，跳过YouTube/Spotify等内容，避免浏览器自动播放策略问题。"
+    skipIframesInBackgroundHint: "当标签页隐藏时，跳过YouTube/Spotify等内容，避免浏览器自动播放策略问题。",
+
+    // Remote Storage
+    importRemoteDB: "导入远程存储",
+    importRemoteHint: "添加远程HTTP/HTTPS服务器，直接浏览和播放文件。",
+    enterRemoteUrl: "输入远程服务器URL（必须以/结尾）",
+    examples: "示例",
+    onlyHttpFtpSupported: "仅支持 http://、https:// 和 ftp:// URL。",
+    invalidUrl: "无效URL。请输入有效的 http/https/ftp URL。",
+    friendlyNameOptional: "服务器友好名称（可选）：",
+    remote: "远程",
+    remoteServerImported: "远程服务器导入成功",
+
+    // Copy/Paste
+    paste: "粘贴",
+    copied: "已复制",
+    clipboardEmpty: "剪贴板为空。请先复制文件或目录。",
+    cannotCopy: "无法复制此项目。",
+    cannotPasteHere: "无法粘贴到此存储类型。",
+    selectDirectoryFirst: "请先选择外部存储中的具体目录。",
+    pasteSuccess: "已粘贴",
+    pasteFailed: "粘贴失败",
+    failedToGetDestination: "获取目标失败",
+    failedToFetch: "获取远程文件失败",
+    fileNotFound: "文件未找到",
+    unknownSourceSchema: "未知源存储类型。",
+    failedToGetSource: "获取源文件失败",
+    fileExistsSkipped: "文件已存在，已跳过",
+    files: "个文件",
+    skipped: "已跳过",
+    errors: "错误",
+    allFilesSkipped: "所有文件已跳过（已存在）",
+    newFolder: "新建文件夹",
+    failedToCreateFolder: "创建文件夹失败",
+    to: "到",
+    empty: "空",
+    copying: "复制中",
+    downloading: "下载中"
 };

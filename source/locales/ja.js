@@ -332,5 +332,42 @@ const JA_TRANSLATIONS = {
 
     // Skip iframes in background
     skipIframesInBackground: "バックグラウンド再生時に埋め込みコンテンツをスキップ",
-    skipIframesInBackgroundHint: "タブが非表示の時、YouTube/Spotifyなどをスキップしてブラウザの自動再生ポリシー問題を回避します。"
+    skipIframesInBackgroundHint: "タブが非表示の時、YouTube/Spotifyなどをスキップしてブラウザの自動再生ポリシー問題を回避します。",
+
+    // Remote Storage
+    importRemoteDB: "リモートストレージをインポート",
+    importRemoteHint: "リモートHTTP/HTTPSサーバーを追加して、ファイルを直接ブラウズ・再生します。",
+    enterRemoteUrl: "リモートサーバーURLを入力（末尾は/が必要）",
+    examples: "例",
+    onlyHttpFtpSupported: "http://、https://、ftp:// URLのみサポートされています。",
+    invalidUrl: "無効なURL。有効な http/https/ftp URLを入力してください。",
+    friendlyNameOptional: "サーバーの表示名（オプション）：",
+    remote: "リモート",
+    remoteServerImported: "リモートサーバーが正常にインポートされました",
+
+    // Copy/Paste
+    paste: "貼り付け",
+    copied: "コピー済み",
+    clipboardEmpty: "クリップボードが空です。ファイルまたはディレクトリを先にコピーしてください。",
+    cannotCopy: "このアイテムはコピーできません。",
+    cannotPasteHere: "このストレージタイプには貼り付けできません。",
+    selectDirectoryFirst: "外部ストレージで具体的なディレクトリを選択してください。",
+    pasteSuccess: "貼り付け完了",
+    pasteFailed: "貼り付け失敗",
+    failedToGetDestination: "宛先の取得に失敗",
+    failedToFetch: "リモートファイルの取得に失敗",
+    fileNotFound: "ファイルが見つかりません",
+    unknownSourceSchema: "不明なソースストレージスキーマ。",
+    failedToGetSource: "ソースファイルの取得に失敗",
+    fileExistsSkipped: "ファイルは既に存在、スキップしました",
+    files: "ファイル",
+    skipped: "スキップ済み",
+    errors: "エラー",
+    allFilesSkipped: "すべてのファイルがスキップされました（既に存在）",
+    newFolder: "新規フォルダ",
+    failedToCreateFolder: "フォルダの作成に失敗",
+    to: "へ",
+    empty: "空",
+    copying: "コピー中",
+    downloading: "ダウンロード中"
 };

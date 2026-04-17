@@ -3,12 +3,14 @@
 // ============================================================
 //
 // Each entry defines:
-// - schema: storage backend (navigator_storage, external_storage, indexeddb)
+// - schema: storage backend (navigator_storage, external_storage, indexeddb, remote_storage)
 // - rootName: logical name used in pointer paths
 // - dirName: actual directory name inside private storage
 // - enabled: allows future toggling or feature flags
 // - allowModification: if true, allows delete/rename operations on content
 // - useRemoveLabel: if true, use "Remove entry" label instead of "Delete"
+// - canPaste: if true, allows pasting files/directories from clipboard
+// - canCreateFolder: if true, allows creating new empty folders
 //
 const IMPORT_ROOTS = [
     {
@@ -20,7 +22,9 @@ const IMPORT_ROOTS = [
         allowModification: true,
         allowFolderRename: true,
         allowFileRename: true,
-        useRemoveLabel: false
+        useRemoveLabel: false,
+        canPaste: true,
+        canCreateFolder: true
     },
     {
         schema: "navigator_storage",
@@ -31,7 +35,9 @@ const IMPORT_ROOTS = [
         allowModification: true,
         allowFolderRename: false,
         allowFileRename: true,
-        useRemoveLabel: false
+        useRemoveLabel: false,
+        canPaste: true,
+        canCreateFolder: true
     },
     {
         schema: "external_storage",
@@ -42,7 +48,9 @@ const IMPORT_ROOTS = [
         allowModification: false,
         allowFolderRename: true,
         allowFileRename: false,
-        useRemoveLabel: true
+        useRemoveLabel: true,
+        canPaste: true,  // External storage supports paste with permission
+        canCreateFolder: false  // Would need permission each time, impractical
     },
     {
         schema: "indexeddb",
@@ -53,7 +61,9 @@ const IMPORT_ROOTS = [
         allowModification: true,
         allowFolderRename: false,
         allowFileRename: true,
-        useRemoveLabel: false
+        useRemoveLabel: false,
+        canPaste: true,
+        canCreateFolder: true
     },
     {
         schema: "remote_storage",
@@ -64,9 +74,64 @@ const IMPORT_ROOTS = [
         allowModification: false,
         allowFolderRename: false,
         allowFileRename: false,
-        useRemoveLabel: true
+        useRemoveLabel: true,
+        canPaste: false,  // Cannot upload to HTTP servers
+        canCreateFolder: false  // Cannot create folders on remote servers
     }
 ];
+
+// ============================================================
+// Clipboard for Copy/Paste between storage types
+// ============================================================
+let storageClipboard = null; // Stores: { type: 'file'|'dir', source: {...}, name, path/schema }
+
+// ============================================================
+// Toast notification for status display
+// ============================================================
+let toastElement = null;
+
+function showToast(message, duration = 0) {
+    if (!toastElement) {
+        toastElement = document.createElement("div");
+        toastElement.id = "storage-toast";
+        toastElement.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 8px;
+            z-index: 10000;
+            font-size: 14px;
+            max-width: 80vw;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        `;
+        document.body.appendChild(toastElement);
+    }
+    toastElement.textContent = message;
+    toastElement.style.display = "block";
+
+    if (duration > 0) {
+        setTimeout(() => hideToast(), duration);
+    }
+}
+
+function hideToast() {
+    if (toastElement) {
+        toastElement.style.display = "none";
+    }
+}
+
+function updateToast(message) {
+    if (toastElement && toastElement.style.display === "block") {
+        toastElement.textContent = message;
+    } else {
+        showToast(message);
+    }
+}
 
 // ============================================================
 // IndexedDB Storage Backend
@@ -504,6 +569,366 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result 
 }
 
 // ============================================================
+// Paste a file or directory from clipboard to a destination
+// ============================================================
+async function pasteToDestination(entry, dirName, parent) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    if (!storageClipboard) {
+        alert(t('clipboardEmpty', "Clipboard is empty. Copy a file or directory first."));
+        return;
+    }
+
+    const { type, name, source } = storageClipboard;
+
+    // Show status toast
+    const actionLabel = source.schema === "remote_storage"
+        ? t('downloading', 'Downloading')
+        : t('copying', 'Copying');
+    showToast(`${actionLabel} "${name}"...`);
+
+    // Get destination directory handle based on schema
+    let targetDirHandle = null;
+    let targetFolderName = null; // For IndexedDB
+
+    try {
+        if (entry.schema === "indexeddb") {
+            targetFolderName = dirName || `idb_${Date.now()}`;
+        } else if (entry.schema === "navigator_storage") {
+            const root = await navigator.storage.getDirectory();
+            targetDirHandle = await root.getDirectoryHandle(entry.dirName);
+            if (dirName) {
+                for (const part of dirName.split("/").filter(p => p)) {
+                    targetDirHandle = await targetDirHandle.getDirectoryHandle(part, { create: true });
+                }
+            }
+        } else if (entry.schema === "external_storage") {
+            const externalDirs = await loadExternalDirs();
+            if (!dirName) {
+                hideToast();
+                alert(t('selectDirectoryFirst', "Please select a specific directory in external storage to paste."));
+                return;
+            }
+            const parts = dirName.split("/");
+            const topLevelName = parts[0];
+            targetDirHandle = externalDirs[topLevelName];
+
+            if (!targetDirHandle) {
+                hideToast();
+                alert(`${t('externalDirNotFound', 'External directory not found')}: ${topLevelName}`);
+                return;
+            }
+
+            // Request permission before pasting
+            const hasPermission = await verifyPermission(targetDirHandle);
+            if (!hasPermission) {
+                hideToast();
+                alert(t('permissionDenied', "Permission denied for external directory."));
+                return;
+            }
+
+            // Navigate to subdirectory
+            for (let i = 1; i < parts.length; i++) {
+                targetDirHandle = await targetDirHandle.getDirectoryHandle(parts[i], { create: true });
+            }
+        } else {
+            hideToast();
+            alert(t('cannotPasteHere', "Cannot paste to this storage type."));
+            return;
+        }
+    } catch (err) {
+        hideToast();
+        console.error("Failed to get destination:", err);
+        alert(`${t('failedToGetDestination', 'Failed to get destination')}: ${err.message}`);
+        return;
+    }
+
+    // Perform paste based on type
+    const result = { count: 0, errors: [], skipped: 0 };
+
+    if (type === 'file') {
+        await pasteSingleFile(source, name, entry.schema, targetDirHandle, targetFolderName, result, updateToast);
+    } else if (type === 'dir') {
+        await pasteDirectory(source, name, entry.schema, targetDirHandle, targetFolderName, result, updateToast);
+    }
+
+    // Hide toast and report result
+    hideToast();
+    if (result.count > 0) {
+        let msg = `${t('pasteSuccess', 'Pasted')} ${result.count} ${t('files', 'file(s)')}`;
+        if (result.skipped > 0) {
+            msg += `, ${result.skipped} ${t('skipped', 'skipped')}`;
+        }
+        if (result.errors.length > 0) {
+            msg += `\n${t('errors', 'Errors')}: ${result.errors.length}`;
+        }
+        alert(msg);
+        renderStorage();
+    } else if (result.skipped > 0) {
+        alert(`${t('allFilesSkipped', 'All files skipped (already exist)')}: ${result.skipped}`);
+    } else if (result.errors.length > 0) {
+        alert(`${t('pasteFailed', 'Paste failed')}: ${result.errors[0]}`);
+    }
+}
+
+// Paste a single file
+async function pasteSingleFile(source, fileName, destSchema, targetDirHandle, targetFolderName, result, statusCallback) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    // Update status
+    if (statusCallback) {
+        const actionLabel = source.schema === "remote_storage"
+            ? t('downloading', 'Downloading')
+            : t('copying', 'Copying');
+        statusCallback(`${actionLabel}: ${fileName}`);
+    }
+
+    // Get source file data
+    let sourceFile = null;
+
+    try {
+        if (source.schema === "remote_storage") {
+            // Download from remote URL
+            const response = await fetch(source.handle, { cache: "no-store" });
+            if (!response.ok) {
+                result.errors.push(`Failed to fetch: ${fileName}`);
+                return;
+            }
+            const blob = await response.blob();
+            sourceFile = new File([blob], fileName, { type: blob.type || 'application/octet-stream' });
+        } else if (source.schema === "indexeddb") {
+            const fileEntry = await idb_getFile(source.fullPath);
+            if (!fileEntry) {
+                result.errors.push(`File not found: ${fileName}`);
+                return;
+            }
+            sourceFile = new File([fileEntry.blob], fileName, { type: fileEntry.type || 'application/octet-stream' });
+        } else if (source.schema === "navigator_storage" || source.schema === "external_storage") {
+            sourceFile = await source.handle.getFile();
+        } else {
+            result.errors.push(`Unknown source schema: ${source.schema}`);
+            return;
+        }
+    } catch (err) {
+        result.errors.push(`Failed to get source: ${err.message}`);
+        return;
+    }
+
+    // Write to destination
+    try {
+        if (destSchema === "indexeddb") {
+            // Check if exists
+            const existingFiles = await idb_getFilesInFolder(targetFolderName);
+            if (existingFiles.some(f => f.name === fileName)) {
+                ++result.skipped;
+                return;
+            }
+            await idb_putFile(targetFolderName, fileName, sourceFile, sourceFile.type);
+            ++result.count;
+        } else {
+            // OPFS or External
+            // Check if exists (TOCTOU-safe: check then create)
+            try {
+                await targetDirHandle.getFileHandle(fileName, { create: false });
+                ++result.skipped;
+                return;
+            } catch (e) {
+                if (e.name !== 'NotFoundError') throw e;
+            }
+
+            const fileHandle = await targetDirHandle.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(sourceFile);
+            await writable.close();
+            ++result.count;
+        }
+    } catch (err) {
+        result.errors.push(`Failed to write ${fileName}: ${err.message}`);
+    }
+}
+
+// Paste a directory recursively
+async function pasteDirectory(source, dirName, destSchema, targetDirHandle, targetFolderName, result, statusCallback) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    // Update status
+    if (statusCallback) {
+        const actionLabel = source.schema === "remote_storage"
+            ? t('downloading', 'Downloading')
+            : t('copying', 'Copying');
+        statusCallback(`${actionLabel}: ${dirName}/`);
+    }
+
+    // Create destination subdirectory
+    let subDirHandle = null;
+    let subFolderName = null;
+
+    try {
+        if (destSchema === "indexeddb") {
+            subFolderName = `${targetFolderName}/${dirName}`;
+        } else {
+            // Check if subdirectory exists
+            try {
+                subDirHandle = await targetDirHandle.getDirectoryHandle(dirName, { create: false });
+                // Directory exists - we'll paste into it (files will be skipped if exist)
+            } catch (e) {
+                if (e.name === 'NotFoundError') {
+                    subDirHandle = await targetDirHandle.getDirectoryHandle(dirName, { create: true });
+                } else throw e;
+            }
+        }
+    } catch (err) {
+        result.errors.push(`Failed to create directory ${dirName}: ${err.message}`);
+        return;
+    }
+
+    // Collect and paste all files from source directory
+    if (source.schema === "remote_storage") {
+        // Download from remote - recursive
+        await downloadRemoteDirectory(source.remoteUrl, destSchema, subDirHandle, subFolderName || `${targetFolderName}/${dirName}`, result, statusCallback);
+    } else if (source.schema === "indexeddb") {
+        // Copy from IndexedDB folder
+        const files = await idb_getFilesInFolder(source.handle);
+        for (const f of files) {
+            if (!isAllowedFile(f.name)) continue;
+            if (statusCallback) statusCallback(`${t('copying', 'Copying')}: ${f.name}`);
+            const file = new File([f.blob], f.name, { type: f.type || 'application/octet-stream' });
+            await pasteFileToDest(file, f.name, destSchema, subDirHandle, subFolderName || `${targetFolderName}/${dirName}`, result);
+        }
+    } else if (source.schema === "navigator_storage" || source.schema === "external_storage") {
+        // Copy from FileSystem directory
+        await copyFileSystemDirToDest(source.handle, destSchema, subDirHandle, subFolderName || `${targetFolderName}/${dirName}`, result, statusCallback);
+    }
+}
+
+// Download remote directory recursively
+async function downloadRemoteDirectory(remoteUrl, destSchema, targetDirHandle, targetFolderName, result, statusCallback) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    try {
+        const response = await fetch(remoteUrl, { cache: "no-store" });
+        if (!response.ok) {
+            result.errors.push(`Failed to fetch directory: ${remoteUrl}`);
+            return;
+        }
+
+        const htmlText = await response.text();
+        const { dirs, files } = parseRemoteDirectoryListing(htmlText, remoteUrl);
+
+        // Download files
+        for (const f of files) {
+            if (!isAllowedFile(f.name)) continue;
+
+            if (statusCallback) statusCallback(`${t('downloading', 'Downloading')}: ${f.name}`);
+
+            try {
+                const fileResponse = await fetch(f.url, { cache: "no-store" });
+                if (!fileResponse.ok) {
+                    result.errors.push(`Failed to download: ${f.name}`);
+                    continue;
+                }
+                const blob = await fileResponse.blob();
+                const file = new File([blob], f.name, { type: blob.type || 'application/octet-stream' });
+                await pasteFileToDest(file, f.name, destSchema, targetDirHandle, targetFolderName, result);
+            } catch (err) {
+                result.errors.push(`Failed to download ${f.name}: ${err.message}`);
+            }
+        }
+
+        // Recursively download subdirectories
+        for (const d of dirs) {
+            if (d.name === ".." || d.name === "." || !d.name) continue;
+
+            let subDirHandle = null;
+            let subFolderName = null;
+
+            if (destSchema === "indexeddb") {
+                subFolderName = `${targetFolderName}/${d.name}`;
+            } else {
+                try {
+                    subDirHandle = await targetDirHandle.getDirectoryHandle(d.name, { create: false });
+                } catch (e) {
+                    if (e.name === 'NotFoundError') {
+                        subDirHandle = await targetDirHandle.getDirectoryHandle(d.name, { create: true });
+                    } else throw e;
+                }
+            }
+
+            const subUrl = new URL(d.name + "/", remoteUrl).href;
+            await downloadRemoteDirectory(subUrl, destSchema, subDirHandle, subFolderName || `${targetFolderName}/${d.name}`, result, statusCallback);
+        }
+    } catch (err) {
+        result.errors.push(`Failed to process remote directory: ${err.message}`);
+    }
+}
+
+// Copy FileSystem directory to destination recursively
+async function copyFileSystemDirToDest(sourceDirHandle, destSchema, targetDirHandle, targetFolderName, result, statusCallback) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    for await (const [name, handle] of sourceDirHandle.entries()) {
+        if (handle.kind === "file") {
+            if (!isAllowedFile(name)) continue;
+            if (statusCallback) statusCallback(`${t('copying', 'Copying')}: ${name}`);
+            try {
+                const file = await handle.getFile();
+                await pasteFileToDest(file, name, destSchema, targetDirHandle, targetFolderName, result);
+            } catch (err) {
+                result.errors.push(`Failed to copy ${name}: ${err.message}`);
+            }
+        } else if (handle.kind === "directory") {
+            let subDirHandle = null;
+            let subFolderName = null;
+
+            if (destSchema === "indexeddb") {
+                subFolderName = `${targetFolderName}/${name}`;
+            } else {
+                try {
+                    subDirHandle = await targetDirHandle.getDirectoryHandle(name, { create: false });
+                } catch (e) {
+                    if (e.name === 'NotFoundError') {
+                        subDirHandle = await targetDirHandle.getDirectoryHandle(name, { create: true });
+                    } else throw e;
+                }
+            }
+
+            await copyFileSystemDirToDest(handle, destSchema, subDirHandle, subFolderName || `${targetFolderName}/${name}`, result, statusCallback);
+        }
+    }
+}
+
+// Helper: paste a file object to destination
+async function pasteFileToDest(file, fileName, destSchema, targetDirHandle, targetFolderName, result) {
+    try {
+        if (destSchema === "indexeddb") {
+            const existingFiles = await idb_getFilesInFolder(targetFolderName);
+            if (existingFiles.some(f => f.name === fileName)) {
+                ++result.skipped;
+                return;
+            }
+            await idb_putFile(targetFolderName, fileName, file, file.type);
+            ++result.count;
+        } else {
+            try {
+                await targetDirHandle.getFileHandle(fileName, { create: false });
+                ++result.skipped;
+                return;
+            } catch (e) {
+                if (e.name !== 'NotFoundError') throw e;
+            }
+
+            const fileHandle = await targetDirHandle.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(file);
+            await writable.close();
+            ++result.count;
+        }
+    } catch (err) {
+        result.errors.push(`Failed to write ${fileName}: ${err.message}`);
+    }
+}
+
+// ============================================================
 // Collect all file pointers recursively under a directory
 // ============================================================
 async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = null) {
@@ -876,6 +1301,8 @@ function showStorageDirMenu(entry, dirName, button) {
     // Determine which menu items to show
     const isRoot = !dirName;
     const isTopLevel = dirName && !dirName.includes("/");
+    const canPaste = storageClipboard && entry.canPaste;
+    const canCreateFolder = entry.canCreateFolder;
 
     const menuItems = [];
 
@@ -885,10 +1312,22 @@ function showStorageDirMenu(entry, dirName, button) {
         menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
         menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="copy">${t('copy', 'Copy')}</div>`);
         // Only show rename if both allowModification and allowFolderRename are true
         if (entry.allowModification && entry.allowFolderRename !== false) {
             menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
         }
+    }
+    // New Folder action - only for storages that support it
+    if (canCreateFolder) {
+        menuItems.push(`<div class="menu-item" data-action="new-folder">${t('newFolder', 'New Folder')}</div>`);
+    }
+    // Paste action - shown when clipboard has content and destination supports it
+    if (canPaste) {
+        const pasteLabel = storageClipboard.type === 'file'
+            ? `${t('paste', 'Paste')}: ${storageClipboard.name}`
+            : `${t('paste', 'Paste')}: ${storageClipboard.name}/`;
+        menuItems.push(`<div class="menu-item" data-action="paste">${pasteLabel}</div>`);
     }
     // Show delete/remove for root or top-level (always allowed), or nested folders with allowModification
     const canRemoveEntry = !dirName || isTopLevel;
@@ -972,6 +1411,118 @@ function showStorageDirMenu(entry, dirName, button) {
                     await exportIndexedDBFolder(dirName);
                 } else {
                     await exportDirectory(entry, dirName, parent);
+                }
+                closeMenu();
+                return;
+            }
+
+            if (action === "copy") {
+                // Store directory info in clipboard for paste operation
+                // Need to get the actual directory handle
+                let dirHandle = null;
+                let remoteUrl = null;
+
+                if (entry.schema === "navigator_storage") {
+                    const root = await navigator.storage.getDirectory();
+                    dirHandle = await root.getDirectoryHandle(entry.dirName);
+                    for (const part of dirName.split("/").filter(p => p)) {
+                        dirHandle = await dirHandle.getDirectoryHandle(part, { create: false });
+                    }
+                } else if (entry.schema === "external_storage") {
+                    const externalDirs = await loadExternalDirs();
+                    const parts = dirName.split("/");
+                    const topLevelName = parts[0];
+                    dirHandle = externalDirs[topLevelName];
+
+                    if (dirHandle) {
+                        // Request permission before copying
+                        const hasPermission = await verifyPermission(dirHandle);
+                        if (!hasPermission) {
+                            alert(t('permissionDenied', "Permission denied for external directory."));
+                            closeMenu();
+                            return;
+                        }
+                        // Navigate to the actual directory
+                        for (let i = 1; i < parts.length; i++) {
+                            dirHandle = await dirHandle.getDirectoryHandle(parts[i], { create: false });
+                        }
+                    }
+                } else if (entry.schema === "remote_storage") {
+                    // For remote, store the URL
+                    const remoteRoots = await loadRemoteRoots();
+                    const parts = dirName.split("/");
+                    const serverName = parts[0];
+                    const baseUrl = remoteRoots[serverName];
+                    if (baseUrl) {
+                        const relativePath = parts.slice(1).join("/");
+                        remoteUrl = relativePath
+                            ? new URL(relativePath + "/", baseUrl).href
+                            : (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
+                    }
+                } else if (entry.schema === "indexeddb") {
+                    // For IndexedDB, just store the folder name
+                    dirHandle = dirName; // Just the folder name string
+                }
+
+                if (!dirHandle && !remoteUrl) {
+                    alert(t('cannotCopy', "Cannot copy this directory."));
+                    closeMenu();
+                    return;
+                }
+
+                const dirNameOnly = dirName.split("/").pop();
+                storageClipboard = {
+                    type: 'dir',
+                    name: dirNameOnly,
+                    source: {
+                        schema: entry.schema,
+                        handle: dirHandle,
+                        remoteUrl: remoteUrl,
+                        fullPath: dirName,
+                        rootName: entry.rootName,
+                        dirName: entry.dirName
+                    }
+                };
+                alert(`${t('copied', 'Copied')}: "${dirNameOnly}/"`);
+                closeMenu();
+                return;
+            }
+
+            if (action === "paste") {
+                pasteToDestination(entry, dirName, parent);
+                closeMenu();
+                return;
+            }
+
+            if (action === "new-folder") {
+                const folderName = prompt(t('newFolderName', "New folder name:"));
+                if (!folderName || !folderName.trim()) {
+                    closeMenu();
+                    return;
+                }
+                const trimmed = folderName.trim();
+
+                try {
+                    if (entry.schema === "navigator_storage") {
+                        const root = await navigator.storage.getDirectory();
+                        let targetDir = await root.getDirectoryHandle(entry.dirName);
+                        if (dirName) {
+                            for (const part of dirName.split("/").filter(p => p)) {
+                                targetDir = await targetDir.getDirectoryHandle(part);
+                            }
+                        }
+                        await targetDir.getDirectoryHandle(trimmed, { create: true });
+                        renderStorage();
+                    } else if (entry.schema === "indexeddb") {
+                        // For IndexedDB, create a new virtual folder
+                        const folderPath = dirName ? `${dirName}/${trimmed}` : trimmed;
+                        // Just create an empty marker file to ensure folder exists
+                        await idb_putFile(folderPath, ".folder_marker", new Blob([]), "application/octet-stream");
+                        renderStorage();
+                    }
+                } catch (err) {
+                    console.error("Failed to create folder:", err);
+                    alert(`${t('failedToCreateFolder', 'Failed to create folder')}: ${err.message}`);
                 }
                 closeMenu();
                 return;
@@ -1207,6 +1758,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
     }
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
+    menuItems.push(`<div class="menu-item" data-action="copy">${t('copy', 'Copy')}</div>`);
     if (entry.allowFileRename !== false) {
         menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
     }
@@ -1515,6 +2067,22 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                         alert(t('failedToDelete', "Failed to delete file."));
                     }
                 }
+            }
+
+            if (action === "copy") {
+                // Store file info in clipboard for paste operation
+                storageClipboard = {
+                    type: 'file',
+                    name: name,
+                    source: {
+                        schema: entry.schema,
+                        handle: handle,
+                        fullPath: fullPath,
+                        rootName: entry.rootName,
+                        dirName: entry.dirName
+                    }
+                };
+                alert(`${t('copied', 'Copied')}: "${name}"`);
             }
 
             closeMenu();
@@ -2068,6 +2636,7 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
 // Render all import roots and their subdirectories
 // ============================================================
 async function renderStorage() {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const list = document.getElementById("storageList");
     list.innerHTML = "";
 
@@ -2081,30 +2650,37 @@ async function renderStorage() {
     for (const entry of IMPORT_ROOTS) {
         if (!entry.enabled) continue;
 
-        let rootDir;
+        let rootDir = null;
+        let isEmpty = false;
+
         try {
             if (entry.schema === "navigator_storage") {
-                rootDir = await root.getDirectoryHandle(entry.dirName);
+                // Create directory if it doesn't exist so we can use it
+                try {
+                    rootDir = await root.getDirectoryHandle(entry.dirName, { create: true });
+                } catch (err) {
+                    if (err.name === 'NotFoundError') {
+                        rootDir = await root.getDirectoryHandle(entry.dirName, { create: true });
+                    } else throw err;
+                }
+                // Check if empty
+                let hasContent = false;
+                for await (const _ of rootDir.entries()) {
+                    hasContent = true;
+                    break;
+                }
+                isEmpty = !hasContent;
             } else if (entry.schema === "external_storage") {
                 rootDir = await loadExternalDirs();
-                // Skip if no external directories exist
-                if (!rootDir || Object.keys(rootDir).length === 0) {
-                    continue;
-                }
+                isEmpty = !rootDir || Object.keys(rootDir).length === 0;
             } else if (entry.schema === "indexeddb") {
-                // Check if IndexedDB has any files
                 const idbFolders = await idb_listFolders();
-                if (!idbFolders || idbFolders.length === 0) {
-                    continue;
-                }
-                rootDir = idbFolders; // Array of folder names
+                rootDir = idbFolders || [];
+                isEmpty = idbFolders.length === 0;
             }
             else if (entry.schema === "remote_storage") {
                 rootDir = await loadRemoteRoots();
-                // Skip if no remote servers added yet
-                if (!rootDir || Object.keys(rootDir).length === 0) {
-                    continue;
-                }
+                isEmpty = !rootDir || Object.keys(rootDir).length === 0;
             }
             else
             {
@@ -2115,15 +2691,20 @@ async function renderStorage() {
             if (err.name !== 'NotFoundError') {
                 console.error(`Failed to load ${entry.rootName}:`, err);
             }
-            continue; // Skip missing roots
+            // Still show the root even if error - user can create/paste
+            isEmpty = true;
         }
+
         const li = document.createElement("li");
         li.className = "storage-node";
+
+        // Show empty indicator if storage is empty
+        const displayRootName = isEmpty ? `${entry.schema}://${entry.rootName} (${t('empty', 'empty')})` : `${entry.schema}://${entry.rootName}`;
 
         li.innerHTML = `
             <div class="storage-header">
                 <button class="toggle">+</button>
-                <span class="storage-name">${entry.schema}://${entry.rootName}</span>
+                <span class="storage-name">${displayRootName}</span>
                 <button class="storage-menu" title="Menu">⋮</button>
             </div>
             <ul class="storage-sub hidden"></ul>
@@ -2487,14 +3068,17 @@ async function saveRemoteRoots(roots) {
     await kv_set("remote_roots", roots);
 }
 
+// Expose loadRemoteRoots globally for use by playlist.js
+window.loadRemoteRoots = loadRemoteRoots;
+
 document.getElementById("addRemoteBtn").addEventListener("click", async () => {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     let url = prompt(
-        "Enter remote server URL (must end with /):\n\n" +
-        "Examples:\n" +
-        "• http://192.168.1.100:8080/\n" +
-        "• https://myserver.com/",
+        `${t('enterRemoteUrl', 'Enter remote server URL (must end with /)')}:\n\n` +
+        `${t('examples', 'Examples')}:\n` +
+        `• http://192.168.1.100:8080/\n` +
+        `• https://myserver.com/`,
         "https://"
     );
 
@@ -2504,31 +3088,31 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
     try {
         const u = new URL(url);
         if (!u.protocol.startsWith('http') && !u.protocol.startsWith('ftp')) {
-            alert("Only http://, https:// and ftp:// URLs are supported.");
+            alert(t('onlyHttpFtpSupported', "Only http://, https:// and ftp:// URLs are supported."));
             return;
         }
     } catch {
-        alert("Invalid URL. Please enter a valid http/https/ftp URL.");
+        alert(t('invalidUrl', "Invalid URL. Please enter a valid http/https/ftp URL."));
         return;
     }
 
     if (!url.endsWith('/')) url += '/';
 
-    const friendlyName = prompt("Friendly name for this server (optional):", 
-                               new URL(url).hostname || "Remote");
+    const friendlyName = prompt(t('friendlyNameOptional', "Friendly name for this server (optional):"),
+                               new URL(url).hostname || t('remote', "Remote"));
 
     const displayName = friendlyName && friendlyName.trim() ? friendlyName.trim() : url;
 
     let roots = await loadRemoteRoots();
     if (roots[displayName]) {
-        alert(`"${displayName}" already exists.`);
+        alert(`${t('alreadyExists', 'Already exists')}: "${displayName}"`);
         return;
     }
 
     roots[displayName] = url;
     await saveRemoteRoots(roots);
 
-    alert(`Remote server "${displayName}" imported successfully.`);
+    alert(`${t('remoteServerImported', 'Remote server imported successfully')}: "${displayName}"`);
     renderStorage();
 });
 

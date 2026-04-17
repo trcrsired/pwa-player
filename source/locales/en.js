@@ -335,5 +335,42 @@ const EN_TRANSLATIONS = {
 
     // Skip iframes in background
     skipIframesInBackground: "Skip embedded content when playing in background",
-    skipIframesInBackgroundHint: "When tab is hidden, skip YouTube/Spotify/etc. entries to avoid browser autoplay policy issues."
+    skipIframesInBackgroundHint: "When tab is hidden, skip YouTube/Spotify/etc. entries to avoid browser autoplay policy issues.",
+
+    // Remote Storage
+    importRemoteDB: "Import Remote",
+    importRemoteHint: "Add a remote HTTP/HTTPS server to browse and stream files directly.",
+    enterRemoteUrl: "Enter remote server URL (must end with /)",
+    examples: "Examples",
+    onlyHttpFtpSupported: "Only http://, https:// and ftp:// URLs are supported.",
+    invalidUrl: "Invalid URL. Please enter a valid http/https/ftp URL.",
+    friendlyNameOptional: "Friendly name for this server (optional):",
+    remote: "Remote",
+    remoteServerImported: "Remote server imported successfully",
+
+    // Copy/Paste
+    paste: "Paste",
+    copied: "Copied",
+    clipboardEmpty: "Clipboard is empty. Copy a file or directory first.",
+    cannotCopy: "Cannot copy this item.",
+    cannotPasteHere: "Cannot paste to this storage type.",
+    selectDirectoryFirst: "Please select a specific directory in external storage to paste.",
+    pasteSuccess: "Pasted",
+    pasteFailed: "Paste failed",
+    failedToGetDestination: "Failed to get destination",
+    failedToFetch: "Failed to fetch remote file",
+    fileNotFound: "File not found",
+    unknownSourceSchema: "Unknown source storage schema.",
+    failedToGetSource: "Failed to get source file",
+    fileExistsSkipped: "File already exists, skipped",
+    files: "files",
+    skipped: "skipped",
+    errors: "Errors",
+    allFilesSkipped: "All files skipped (already exist)",
+    newFolder: "New Folder",
+    failedToCreateFolder: "Failed to create folder",
+    to: "to",
+    empty: "empty",
+    copying: "Copying",
+    downloading: "Downloading"
 };

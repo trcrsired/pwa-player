@@ -199,6 +199,35 @@ async function storage_resolvePath(pointer) {
         return pointer;
     }
 
+    // remote_storage://
+    if (pointer.startsWith("remote_storage://")) {
+        // remote_storage://ServerName/path/file.ext
+        // Resolve to the actual HTTP URL
+        const path = pointer.slice("remote_storage://".length);
+        const parts = path.split("/");
+        const serverName = parts[0];
+
+        // Load remote roots from IndexedDB
+        const remoteRoots = await loadRemoteRoots();
+        const baseUrl = remoteRoots[serverName];
+
+        if (!baseUrl) {
+            throw new Error(`Remote server "${serverName}" not found`);
+        }
+
+        // Construct the full URL
+        const relativePath = parts.slice(1).join("/");
+        if (relativePath) {
+            return new URL(relativePath, baseUrl).href;
+        }
+        return baseUrl;
+    }
+
+    // http:// or https:// URLs - return as-is for remote storage files
+    if (pointer.startsWith("http://") || pointer.startsWith("https://") || pointer.startsWith("ftp://")) {
+        return pointer;
+    }
+
     // Unknown schema → return as-is
     return pointer;
 }
