@@ -1463,7 +1463,7 @@ function showStorageDirMenu(entry, dirName, button) {
                             return;
                         }
                         // Navigate to the actual directory
-                        for (let i = 1; i < parts.length; i++) {
+                        for (let i = 1; i < parts.length; ++i) {
                             dirHandle = await dirHandle.getDirectoryHandle(parts[i], { create: false });
                         }
                     }
@@ -1663,14 +1663,14 @@ function showStorageDirMenu(entry, dirName, button) {
             if (action === "delete") {
                 const isTopLevel = dirName && !dirName.includes("/");
                 const isEntryRemoval = entry.useRemoveLabel && (!dirName || isTopLevel);
-                const isExternalRemoval = isTopLevel && entry.schema === "external_storage";
+                const isExternalNotTopRemoval = !isTopLevel && entry.schema === "external_storage";
 
                 let confirmMsg;
                 if (entry.schema === "indexeddb") {
                     confirmMsg = dirName
                         ? `${t('deleteFolderConfirm', 'Delete folder')} "${dirName}"?`
                         : t('deleteAllFilesConfirm', "Delete all files from storage?");
-                } else if (isExternalRemoval) {
+                } else if (isExternalNotTopRemoval) {
                     // External storage removal - require typing the name to confirm
                     confirmMsg = `${t('confirmRemoveExternal', 'Type the directory name to confirm removal')}:\n"${dirName}"`;
                     const userInput = prompt(confirmMsg);
@@ -1691,7 +1691,7 @@ function showStorageDirMenu(entry, dirName, button) {
                 }
 
                 // Skip confirm for external (already confirmed with typing)
-                const shouldProceed = isExternalRemoval || confirm(confirmMsg);
+                const shouldProceed = isExternalNotTopRemoval || confirm(confirmMsg);
                 if (!shouldProceed) {
                     closeMenu();
                     return;
@@ -1745,7 +1745,9 @@ function showStorageDirMenu(entry, dirName, button) {
                         await root.removeEntry(entry.dirName, { recursive: true });
                     }
                 }
+                closeMenu();
                 renderStorage();
+                return;
             }
 
             if (action === "properties") {
