@@ -551,6 +551,12 @@ button:hover,
   background: black;
 }
 
+@media (prefers-color-scheme: light) {
+  #playerWrapper {
+    background: white;
+  }
+}
+
 #embeddedPlayer {
   width: 100vw;
   height: 100vh;
