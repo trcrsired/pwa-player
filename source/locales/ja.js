@@ -346,6 +346,8 @@ const JA_TRANSLATIONS = {
     clickRightForNext: "右側をクリックで次の画像",
     clickCenterToZoom: "中央をクリックでズーム切替",
     loopToFirstImage: "最後の画像です。最初の画像に戻りますか？",
+    disableImageToPlaylist: "画像をプレイリスト/再生中に追加しない",
+    disableImageToPlaylistHint: "有効時、ストレージマネージャーやドロップしたディレクトリからの画像はプレイリストや再生中キューに追加されません。画像は個別に閲覧可能です。",
 
     // Video status
     videoLoading: "読み込み中...",

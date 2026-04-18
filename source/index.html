@@ -99,6 +99,7 @@
                         <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" style="width:100%;" />
                         <div id="videoPreview" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:10px;background:#000;border-radius:4px;overflow:hidden;pointer-events:none;">
                             <video id="previewVideo" muted style="width:160px;height:90px;object-fit:contain;"></video>
+                            <img id="previewImage" style="width:160px;height:90px;object-fit:contain;display:none;">
                             <div id="previewTime" style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;font-family:monospace;"></div>
                         </div>
                     </div>
@@ -376,6 +377,12 @@
                     <input type="number" id="slideshowIntervalInput" class="setting-input-small" min="100" max="60000" value="5000">
                 </label>
                 <p class="setting-hint" data-i18n="slideshowIntervalHint">Time in milliseconds between images in slideshow mode. Default 5000ms (5 seconds).</p>
+
+                <label class="setting-label checkbox-label">
+                    <input type="checkbox" id="disableImageToPlaylistInput">
+                    <span data-i18n="disableImageToPlaylist">Disable adding images to playlist/Now Playing</span>
+                </label>
+                <p class="setting-hint" data-i18n="disableImageToPlaylistHint">When enabled, images from storage manager or dropped directories will not be added to playlist or Now Playing queue. Images can still be viewed individually.</p>
 
                 <h3 data-i18n="profiles">Profiles</h3>
                 <p class="setting-hint" data-i18n="profilesHint">Save and restore all settings, playlists, and custom IPTV channels.</p>

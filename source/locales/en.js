@@ -349,6 +349,8 @@ const EN_TRANSLATIONS = {
     clickRightForNext: "Click right side for next image",
     clickCenterToZoom: "Click center to toggle zoom",
     loopToFirstImage: "You are at the last image. Jump back to the first one?",
+    disableImageToPlaylist: "Disable adding images to playlist/Now Playing",
+    disableImageToPlaylistHint: "When enabled, images from storage manager or dropped directories will not be added to playlist or Now Playing queue. Images can still be viewed individually.",
 
     // Video status
     videoLoading: "Loading...",

@@ -1452,6 +1452,26 @@ if (slideshowIntervalInput) {
 }
 
 // =====================================================
+// Disable Image to Playlist/Now Playing Setting
+// =====================================================
+const disableImageToPlaylistInput = document.getElementById("disableImageToPlaylistInput");
+
+// Load saved setting (default: false - images can be added)
+if (disableImageToPlaylistInput) {
+    disableImageToPlaylistInput.checked = localStorage.getItem("disableImageToPlaylist") === "true";
+
+    disableImageToPlaylistInput.addEventListener("change", () => {
+        localStorage.setItem("disableImageToPlaylist", disableImageToPlaylistInput.checked.toString());
+    });
+}
+
+// Helper function to check if images are disabled from being added to playlist/now playing
+function isImageToPlaylistDisabled() {
+    return localStorage.getItem("disableImageToPlaylist") === "true";
+}
+window.isImageToPlaylistDisabled = isImageToPlaylistDisabled;
+
+// =====================================================
 // Share PWA Player URL Setting
 // =====================================================
 const sharePwaPlayerUrlCheckbox = document.getElementById("sharePwaPlayerUrl");

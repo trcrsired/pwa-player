@@ -299,6 +299,7 @@ const npProgressBar = document.getElementById("npProgressBar");
 const progressContainer = document.getElementById("progressContainer");
 const videoPreview = document.getElementById("videoPreview");
 const previewVideo = document.getElementById("previewVideo");
+const previewImage = document.getElementById("previewImage");
 const previewTime = document.getElementById("previewTime");
 const rotationBtn = document.getElementById("rotationBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
@@ -1029,19 +1030,30 @@ window.addEventListener("drop", async e => {
     // Handle multiple files (images and media)
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
+        // Check if images are disabled from being added to playlist
+        const imagesDisabled = typeof window.isImageToPlaylistDisabled === 'function' && window.isImageToPlaylistDisabled();
+
         // Check if all are images
         const imageFiles = Array.from(files).filter(f => window.isImageFile && window.isImageFile(f.name));
         const mediaFiles = Array.from(files).filter(f => f.type.startsWith("video/") || f.type.startsWith("audio/"));
 
         if (imageFiles.length > 0 && mediaFiles.length === 0) {
-            // Only images - add to now playing queue and play first (temporary entries)
-            const queue = imageFiles.map(f => ({
-                name: f.name,
-                file: f, // File object from drop
-                isTemporary: true // Mark as temporary - cannot be saved to playlists
-            }));
-            if (typeof startNowPlayingFromPlaylistTable === 'function') {
-                startNowPlayingFromPlaylistTable(queue, 0, null, true);
+            // Only images
+            if (imagesDisabled) {
+                // Images disabled - just view the first image without adding to queue
+                if (typeof window.viewImage === 'function') {
+                    window.viewImage(imageFiles[0], imageFiles[0].name);
+                }
+            } else {
+                // Add to now playing queue and play first (temporary entries)
+                const queue = imageFiles.map(f => ({
+                    name: f.name,
+                    file: f, // File object from drop
+                    isTemporary: true // Mark as temporary - cannot be saved to playlists
+                }));
+                if (typeof startNowPlayingFromPlaylistTable === 'function') {
+                    startNowPlayingFromPlaylistTable(queue, 0, null, true);
+                }
             }
             return;
         }
@@ -1072,10 +1084,15 @@ async function playTemporaryDirectory(dirHandle) {
         return;
     }
 
+    // Check if images are disabled from being added to playlist
+    const imagesDisabled = typeof window.isImageToPlaylistDisabled === 'function' && window.isImageToPlaylistDisabled();
+
     // Collect playable files from directory
     const files = [];
     for await (const [name, handle] of dirHandle.entries()) {
         if (handle.kind === "file" && window.isPlayableOrImageFile && window.isPlayableOrImageFile(name)) {
+            // Skip images if disabled
+            if (imagesDisabled && window.isImageFile && window.isImageFile(name)) continue;
             files.push({ name, handle });
         }
     }
@@ -1626,9 +1643,10 @@ npProgressBar.onchange = () => {
 };
 
 // =====================================================
-// Video Preview on Progress Bar
+// Video/Image Preview on Progress Bar
 // =====================================================
 let previewLoadedSrc = null;
+let previewLoadedImageQueue = null; // For image preview, store the queue
 
 function formatPreviewTime(seconds) {
   const mins = Math.floor(seconds / 60);
@@ -1637,12 +1655,22 @@ function formatPreviewTime(seconds) {
 }
 
 function showVideoPreview(time, xPos) {
+  // Skip if image viewer is active
+  if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+    showImagePreview(time, xPos);
+    return;
+  }
+
   if (!videoPreview || !previewVideo || !hasActiveSource) return;
   if (!isFinite(video.duration) || video.duration === Infinity) return;
   // Check if video preview is enabled
   if (typeof isVideoPreviewEnabled === 'function' && !isVideoPreviewEnabled()) return;
   // Only show preview for videos (has width/height), not audio
   if (!video.videoWidth || !video.videoHeight || video.videoWidth === 0 || video.videoHeight === 0) return;
+
+  // Hide image preview, show video preview
+  if (previewImage) previewImage.style.display = "none";
+  previewVideo.style.display = "block";
 
   // Set source if not already set
   if (previewLoadedSrc !== video.src) {
@@ -1665,19 +1693,86 @@ function showVideoPreview(time, xPos) {
   previewVideo.currentTime = time;
 }
 
+// Image preview when viewing images in queue
+async function showImagePreview(index, xPos) {
+  if (!videoPreview || !previewImage) return;
+
+  // Get the queue
+  const queue = typeof getActiveQueue === 'function' ? getActiveQueue() : null;
+  if (!queue || queue.length === 0) return;
+
+  // Calculate image index from progress bar position
+  const pos = typeof window.getImageQueuePosition === 'function' ? window.getImageQueuePosition() : null;
+  if (!pos) return;
+
+  // Hide video preview, show image preview
+  previewVideo.style.display = "none";
+  previewImage.style.display = "block";
+
+  // Get the target image entry
+  const targetIndex = Math.max(0, Math.min(Math.floor(index), queue.length - 1));
+  const entry = queue[targetIndex];
+
+  if (!entry) return;
+
+  // Try to load preview image
+  try {
+    let blobURL = null;
+
+    // Handle different entry types
+    if (entry.handle && typeof entry.handle.getFile === 'function') {
+      const file = await entry.handle.getFile();
+      blobURL = URL.createObjectURL(file);
+    } else if (entry.file && (entry.file instanceof File || entry.file instanceof Blob)) {
+      blobURL = URL.createObjectURL(entry.file);
+    } else if (entry.path && entry.path.startsWith('blob:')) {
+      blobURL = entry.path;
+    } else if (typeof storage_resolvePath === 'function' && entry.path) {
+      // Try to resolve from storage
+      const handle = await storage_resolvePath(entry.path);
+      if (handle && typeof handle.getFile === 'function') {
+        const file = await handle.getFile();
+        blobURL = URL.createObjectURL(file);
+      }
+    }
+
+    if (blobURL && previewLoadedImageQueue !== blobURL) {
+      previewImage.src = blobURL;
+      previewLoadedImageQueue = blobURL;
+    }
+
+    // Show preview
+    videoPreview.style.display = "block";
+    previewTime.textContent = `${targetIndex + 1}/${queue.length}`;
+
+    // Position preview
+    const containerRect = progressContainer.getBoundingClientRect();
+    const previewWidth = 160;
+    let left = xPos - previewWidth / 2;
+    left = Math.max(0, Math.min(left, containerRect.width - previewWidth));
+    videoPreview.style.left = left + "px";
+  } catch (err) {
+    console.warn('Failed to load image preview:', err);
+  }
+}
+
 function hideVideoPreview() {
   if (videoPreview) {
     videoPreview.style.display = "none";
   }
 }
 
-// Clear preview video resources
+// Clear preview video/image resources
 function clearVideoPreview() {
   if (previewVideo) {
     previewVideo.removeAttribute("src");
     previewVideo.load();
   }
+  if (previewImage) {
+    previewImage.removeAttribute("src");
+  }
   previewLoadedSrc = null;
+  previewLoadedImageQueue = null;
   hideVideoPreview();
 }
 
@@ -1692,6 +1787,21 @@ function setupProgressBarPointerEvents(progressBarEl, containerEl) {
 
   // pointermove: show preview and update visual position
   container.addEventListener("pointermove", (e) => {
+    // Check if image viewer is active - use image preview logic
+    if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+      const pos = typeof window.getImageQueuePosition === 'function' ? window.getImageQueuePosition() : null;
+      if (pos) {
+        const rect = progressBarEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percent = Math.max(0, Math.min(1, x / rect.width));
+        const index = percent * (pos.total - 1);
+        if (containerEl === progressContainer) {
+          showImagePreview(index, x);
+        }
+      }
+      return;
+    }
+
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
     // Show controls without auto-hide while hovering (only for main player)
@@ -1724,6 +1834,12 @@ function setupProgressBarPointerEvents(progressBarEl, containerEl) {
 
   // pointerdown: start dragging
   progressBarEl.addEventListener("pointerdown", (e) => {
+    // Check if image viewer is active
+    if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+      window.isDraggingProgressBar = true;
+      return;
+    }
+
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
     window.isDraggingProgressBar = true;

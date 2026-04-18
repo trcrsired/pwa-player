@@ -349,6 +349,8 @@ const ZHCN_TRANSLATIONS = {
     clickRightForNext: "点击右侧查看下一张图片",
     clickCenterToZoom: "点击中间切换缩放",
     loopToFirstImage: "您已到达最后一张图片。是否跳回第一张？",
+    disableImageToPlaylist: "禁用添加图片到播放列表/正在播放",
+    disableImageToPlaylistHint: "启用后，存储管理器或拖放目录中的图片不会被添加到播放列表或正在播放队列。图片仍可单独查看。",
 
     // Video status
     videoLoading: "加载中...",

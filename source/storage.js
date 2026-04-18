@@ -978,7 +978,7 @@ async function pasteFileToDest(file, fileName, destSchema, targetDirHandle, targ
 // ============================================================
 // Collect all file pointers recursively under a directory
 // ============================================================
-async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = null) {
+async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = null, excludeImages = false) {
     const result = [];
 
     if (schema === "remote_storage") {
@@ -987,13 +987,15 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
         try {
             const response = await fetch(remoteTargetUrl, { cache: "no-store" });
             if (!response.ok) return [];
-            
+
             const htmlText = await response.text();
             const { dirs, files } = parseRemoteDirectoryListing(htmlText, remoteTargetUrl);
 
             // Add files found in this directory
             for (const f of files) {
                 const name = f.name;
+                // Skip images if excludeImages is true
+                if (excludeImages && isImageFile(name)) continue;
                 if (!isPlayableOrImageFile(name)) continue;
                 result.push({
                     name: name,
@@ -1006,7 +1008,7 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
                 if (d.name === ".." || d.name === "." || !d.name) continue;
                 // Ensure sub-URL ends with a slash
                 const subUrl = new URL(d.name + "/", remoteTargetUrl).href;
-                const subPointers = await collectPointers(null, schema, null, subUrl);
+                const subPointers = await collectPointers(null, schema, null, subUrl, excludeImages);
                 result.push(...subPointers);
             }
         } catch (e) {
@@ -1016,6 +1018,8 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
         // Standard FileSystemHandle Logic (navigator_storage / external_storage)
         for await (const [name, handle] of dirHandle.entries()) {
             if (handle.kind === "file") {
+                // Skip images if excludeImages is true
+                if (excludeImages && isImageFile(name)) continue;
                 if (!isPlayableOrImageFile(name)) continue;
                 result.push({
                     name,
@@ -1023,7 +1027,7 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
                 });
             } else if (handle.kind === "directory") {
                 const subPath = `${basePath}/${name}`;
-                const subPointers = await collectPointers(handle, schema, subPath);
+                const subPointers = await collectPointers(handle, schema, subPath, null, excludeImages);
                 result.push(...subPointers);
             }
         }
@@ -1045,7 +1049,10 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
        return await addIndexedDBFolderToPlaylist(dirPath, !playlistName);
     }
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-    
+
+    // Check if images should be excluded from playlist/now playing
+    const excludeImages = typeof window.isImageToPlaylistDisabled === 'function' && window.isImageToPlaylistDisabled();
+
     try {
         let pointers = [];
         let targetDir = null;
@@ -1056,7 +1063,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
             for (const part of parts) {
                 targetDir = await targetDir.getDirectoryHandle(part, { create: false });
             }
-            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`);
+            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`, null, excludeImages);
 
         } else if (schema === "external_storage") {
             const parts = dirPath.split("/");
@@ -1074,7 +1081,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
             for (let i = 1; i < parts.length; ++i) {
                 targetDir = await targetDir.getDirectoryHandle(parts[i], { create: false });
             }
-            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`);
+            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`, null, excludeImages);
 
         } else if (schema === "remote_storage") {
             const parts = dirPath.split("/");
@@ -1091,7 +1098,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
                 ? new URL(relativePath + "/", baseUrl).href
                 : (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
             // Call the new recursive remote collector
-            pointers = await collectPointers(null , schema, null, targetUrl);
+            pointers = await collectPointers(null , schema, null, targetUrl, excludeImages);
 
         } else {
             alert(t('unknownStorageSchema', "Unknown storage schema."));
