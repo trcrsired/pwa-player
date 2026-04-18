@@ -360,22 +360,27 @@ if (switchBtnImmediate) {
 
 function saveScreenRecording() {
     const blob = new Blob(screenChunks, { type: "video/webm" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `screen-recording-${Date.now()}.webm`;
-    a.click();
-
-    // Keep URL valid for a bit longer to ensure download completes
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    const filename = `screen-recording-${Date.now()}.webm`;
+    if (typeof saveFileToConfiguredLocation === 'function') {
+        saveFileToConfiguredLocation('screenRecording', blob, filename);
+    } else {
+        fallbackDownload(blob, filename);
+    }
 }
 
 function startScreenRecording(stream) {
     screenChunks = [];
-    screenRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm; codecs=vp9"
-    });
+
+    // Try VP9 first, fallback to VP8 or default if not supported
+    let mimeType = "video/webm; codecs=vp9";
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "video/webm; codecs=vp8";
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = "video/webm";
+        }
+    }
+
+    screenRecorder = new MediaRecorder(stream, { mimeType });
 
     screenRecorder.ondataavailable = e => {
         if (e.data.size > 0) screenChunks.push(e.data);
@@ -383,11 +388,14 @@ function startScreenRecording(stream) {
 
     screenRecorder.onstop = saveScreenRecording;
 
-    screenRecorder.start();
+    // Use timeslice for better file integrity
+    screenRecorder.start(1000);
 }
 
 function stopScreenRecording() {
     if (screenRecorder && screenRecorder.state === "recording") {
+        // Request final data flush before stopping
+        screenRecorder.requestData();
         screenRecorder.stop();
     }
 
@@ -443,6 +451,16 @@ let mediaRecorder = null;
 let recordedChunks = [];
 let videoStream = null;
 
+// Fallback download when storage save fails
+function fallbackDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 // Start recording the <video> element
 function startVideoRecording() {
 
@@ -468,9 +486,17 @@ function startVideoRecording() {
     }
 
     recordedChunks = [];
-    mediaRecorder = new MediaRecorder(videoStream, {
-        mimeType: "video/webm; codecs=vp9"
-    });
+
+    // Try VP9 first, fallback to VP8 or default if not supported
+    let mimeType = "video/webm; codecs=vp9";
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "video/webm; codecs=vp8";
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = "video/webm";
+        }
+    }
+
+    mediaRecorder = new MediaRecorder(videoStream, { mimeType });
 
     mediaRecorder.ondataavailable = e => {
         if (e.data.size > 0) recordedChunks.push(e.data);
@@ -478,7 +504,8 @@ function startVideoRecording() {
 
     mediaRecorder.onstop = saveVideoRecording;
 
-    mediaRecorder.start();
+    // Use timeslice for better file integrity
+    mediaRecorder.start(1000);
     mediaRecordBtn.textContent = "⏹️";
     alert("Recording started.");
 }
@@ -486,15 +513,12 @@ function startVideoRecording() {
 // Save the recorded file
 function saveVideoRecording() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `video-recording-${Date.now()}.webm`;
-    a.click();
-
-    URL.revokeObjectURL(url);
-// Reset recorder state
+    const filename = `video-recording-${Date.now()}.webm`;
+    if (typeof saveFileToConfiguredLocation === 'function') {
+        saveFileToConfiguredLocation('videoRecording', blob, filename);
+    } else {
+        fallbackDownload(blob, filename);
+    }
     mediaRecorder = null;
     videoStream = null;
     recordedChunks = [];
@@ -503,6 +527,8 @@ function saveVideoRecording() {
 // Stop recording
 function stopVideoRecording() {
     if (mediaRecorder && mediaRecorder.state === "recording") {
+        // Request final data flush before stopping
+        mediaRecorder.requestData();
         mediaRecorder.stop();
     }
     mediaRecordBtn.textContent = "⏺️";
@@ -560,14 +586,12 @@ screenshotBtn.addEventListener("click", async () => {
             alert("Screenshot failed. The video source may not allow capturing.");
             return;
         }
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `screenshot-${Date.now()}.webp`;
-        a.click();
-        URL.revokeObjectURL(url);
-
+        const filename = `screenshot-${Date.now()}.webp`;
+        if (typeof saveFileToConfiguredLocation === 'function') {
+            saveFileToConfiguredLocation('screenshot', blob, filename);
+        } else {
+            fallbackDownload(blob, filename);
+        }
     }, "image/webp");
 });
 

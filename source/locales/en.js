@@ -311,6 +311,11 @@ const EN_TRANSLATIONS = {
     microphone: "Microphone",
     switchSource: "Switch Source",
     enableMicrophonePrompt: "Enable microphone for this recording?",
+    screenRecordingSaveLocation: "Screen Recording",
+    videoRecordingSaveLocation: "Video Recording",
+    screenshotSaveLocation: "Screenshot",
+    setAsSaveLocation: "Set as Save Location",
+    saveLocationSet: "save location set to",
 
     // Video status
     videoLoading: "Loading...",

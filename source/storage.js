@@ -1319,6 +1319,8 @@ function showStorageDirMenu(entry, dirName, button) {
     const canEditUrl = isTopLevel && entry.schema === "remote_storage";
     // External top-level entries can be removed with confirmation
     const canRemoveExternal = isTopLevel && entry.schema === "external_storage";
+    // Can set as save location for non-remote storage that supports writing
+    const canSetSaveLocation = entry.schema !== "remote_storage" && !isRoot;
 
     const menuItems = [];
 
@@ -1333,6 +1335,10 @@ function showStorageDirMenu(entry, dirName, button) {
         if ((entry.allowModification && entry.allowFolderRename !== false) || canRenameMount) {
             menuItems.push(`<div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>`);
         }
+    }
+    // Set as save location submenu
+    if (canSetSaveLocation) {
+        menuItems.push(`<div class="menu-item" data-action="save-location">${t('setAsSaveLocation', 'Set as Save Location')}</div>`);
     }
     // Edit URL for remote storage
     if (canEditUrl) {
@@ -1834,6 +1840,13 @@ function showStorageDirMenu(entry, dirName, button) {
                 return;
             }
 
+            // Save location submenu
+            if (action === "save-location") {
+                showSaveLocationSubMenu(entry, dirName, button);
+                closeMenu();
+                return;
+            }
+
             closeMenu();
             renderStorage();
         });
@@ -1863,6 +1876,100 @@ async function countFilesInDir(dirHandle) {
 
     return { count, size };
 }
+
+// Show submenu for setting save location
+function showSaveLocationSubMenu(entry, dirName, parentButton) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    // Close any existing menu
+    const existing = document.querySelector(".context-menu");
+    if (existing) existing.remove();
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+
+    const menuItems = [
+        `<div class="menu-item" data-type="screenRecording">📹 ${t('screenRecordingSaveLocation', 'Screen Recording')}</div>`,
+        `<div class="menu-item" data-type="videoRecording">🎬 ${t('videoRecordingSaveLocation', 'Video Recording')}</div>`,
+        `<div class="menu-item" data-type="screenshot">🖼️ ${t('screenshotSaveLocation', 'Screenshot')}</div>`,
+        `<div class="menu-item" data-action="close">${t('close', 'Close')}</div>`
+    ];
+
+    menu.innerHTML = menuItems.join("");
+    document.body.appendChild(menu);
+
+    // Position near the parent button
+    const btnRect = parentButton.getBoundingClientRect();
+    menu.style.position = "fixed";
+    menu.style.visibility = "hidden";
+
+    let left = btnRect.left - menu.offsetWidth;
+    if (left < 0) left = btnRect.right;
+    if (left + menu.offsetWidth > window.innerWidth) left = window.innerWidth - menu.offsetWidth;
+
+    let top = btnRect.top;
+    if (top + menu.offsetHeight > window.innerHeight) top = window.innerHeight - menu.offsetHeight;
+
+    menu.style.left = left + "px";
+    menu.style.top = top + "px";
+    menu.style.visibility = "visible";
+
+    // Handle clicks
+    const closeMenu = () => menu.remove();
+
+    menu.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const type = item.dataset.type;
+            const action = item.dataset.action;
+
+            if (action === "close") {
+                closeMenu();
+                return;
+            }
+
+            if (type) {
+                // Get the handle for external storage
+                let handle = null;
+                if (entry.schema === "external_storage") {
+                    const externalDirs = await loadExternalDirs();
+                    const parts = dirName.split("/");
+                    handle = externalDirs[parts[0]];
+                    if (handle && parts.length > 1) {
+                        for (let i = 1; i < parts.length; ++i) {
+                            handle = await handle.getDirectoryHandle(parts[i]);
+                        }
+                    }
+                }
+
+                const config = {
+                    schema: entry.schema,
+                    rootName: entry.rootName,
+                    path: dirName,
+                    handle: handle
+                };
+
+                setSaveLocationConfig(type, config);
+                const typeLabels = {
+                    screenRecording: t('screenRecordingSaveLocation', 'Screen Recording'),
+                    videoRecording: t('videoRecordingSaveLocation', 'Video Recording'),
+                    screenshot: t('screenshotSaveLocation', 'Screenshot')
+                };
+                alert(`${typeLabels[type]} ${t('saveLocationSet', 'save location set to')}: ${dirName}`);
+                closeMenu();
+            }
+        });
+    });
+
+    // Close on outside click
+    const closeHandler = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener("click", closeHandler, true);
+        }
+    };
+    document.addEventListener("click", closeHandler, true);
+}
+
 function showStorageFileMenu(entry, name, handle, fullPath, button) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
@@ -3324,3 +3431,102 @@ async function resolveRemoteDirToUrl(dirName) {
         return null;
     }
 }
+
+// ============================================================
+// Save Location Configuration
+// ============================================================
+// Stores paths for screen recordings, video recordings, and screenshots
+// Format: { schema, rootName, path, handle (for external) }
+
+// Get save location config for a type
+function getSaveLocationConfig(type) {
+    const key = `saveLocation_${type}`;
+    const config = localStorage.getItem(key);
+    return config ? JSON.parse(config) : null;
+}
+
+// Set save location config for a type
+function setSaveLocationConfig(type, config) {
+    const key = `saveLocation_${type}`;
+    localStorage.setItem(key, JSON.stringify(config));
+}
+
+// Clear save location config for a type
+function clearSaveLocationConfig(type) {
+    const key = `saveLocation_${type}`;
+    localStorage.removeItem(key);
+}
+
+// Try to save a file to configured location, fallback to download
+async function saveFileToConfiguredLocation(type, blob, filename) {
+    const config = getSaveLocationConfig(type);
+
+    if (!config) {
+        window.fallbackDownload(blob, filename);
+        return false;
+    }
+
+    try {
+        if (config.schema === 'indexeddb') {
+            const folder = config.path || `idb_${Date.now()}`;
+            await idb_putFile(folder, filename, blob, blob.type);
+            if (typeof renderStorage === 'function') renderStorage();
+            return true;
+        }
+
+        if (config.schema !== 'navigator_storage' && config.schema !== 'external_storage') {
+            throw new Error(`Unsupported storage schema: ${config.schema}`);
+        }
+
+        // Both navigator_storage and external_storage use FileSystem API
+        let dirHandle;
+
+        if (config.schema === 'navigator_storage') {
+            const root = await navigator.storage.getDirectory();
+            dirHandle = root;
+            if (config.path) {
+                const parts = config.path.split('/');
+                for (const part of parts) {
+                    dirHandle = await dirHandle.getDirectoryHandle(part, { create: true });
+                }
+            }
+        } else {
+            if (!config.handle) {
+                throw new Error('External storage handle not available');
+            }
+            dirHandle = config.handle;
+        }
+
+        // Permission check (harmless if API doesn't exist)
+        if (dirHandle.queryPermission) {
+            const permission = await dirHandle.queryPermission({ mode: 'readwrite' });
+            if (permission !== 'granted' && dirHandle.requestPermission) {
+                const request = await dirHandle.requestPermission({ mode: 'readwrite' });
+                if (request !== 'granted') {
+                    throw new Error('Permission denied');
+                }
+            }
+        }
+
+        const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        try {
+            await writable.write(blob);
+        } finally {
+            await writable.close();
+        }
+
+        if (typeof renderStorage === 'function') renderStorage();
+        return true;
+    } catch (err) {
+        console.warn(`Failed to save to configured location (${type}):`, err);
+        window.fallbackDownload(blob, filename);
+        return false;
+    }
+}
+
+// Expose globally
+window.getSaveLocationConfig = getSaveLocationConfig;
+window.setSaveLocationConfig = setSaveLocationConfig;
+window.clearSaveLocationConfig = clearSaveLocationConfig;
+window.saveFileToConfiguredLocation = saveFileToConfiguredLocation;

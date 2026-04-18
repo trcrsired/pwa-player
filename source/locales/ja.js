@@ -307,6 +307,12 @@ const JA_TRANSLATIONS = {
     screenCapture: "画面キャプチャ",
     microphone: "マイク",
     switchSource: "ソース切替",
+    enableMicrophonePrompt: "マイクを有効にしますか？",
+    screenRecordingSaveLocation: "画面録画",
+    videoRecordingSaveLocation: "動画録画",
+    screenshotSaveLocation: "スクリーンショット",
+    setAsSaveLocation: "保存場所に設定",
+    saveLocationSet: "保存場所を設定しました",
 
     // Video status
     videoLoading: "読み込み中...",

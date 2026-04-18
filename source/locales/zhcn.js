@@ -310,6 +310,12 @@ const ZHCN_TRANSLATIONS = {
     screenCapture: "屏幕录制",
     microphone: "麦克风",
     switchSource: "切换源",
+    enableMicrophonePrompt: "是否启用麦克风录音？",
+    screenRecordingSaveLocation: "屏幕录制",
+    videoRecordingSaveLocation: "视频录制",
+    screenshotSaveLocation: "截图",
+    setAsSaveLocation: "设为保存位置",
+    saveLocationSet: "保存位置已设为",
 
     // Video status
     videoLoading: "加载中...",
