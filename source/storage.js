@@ -1713,7 +1713,7 @@ function showStorageDirMenu(entry, dirName, button) {
             if (action === "delete") {
                 const isTopLevel = dirName && !dirName.includes("/");
                 const isEntryRemoval = entry.useRemoveLabel && (!dirName || isTopLevel);
-                const isExternalNotTopRemoval = !isTopLevel && entry.schema === "external_storage";
+                const isExternalNotTopRemoval = dirName && !isTopLevel && entry.schema === "external_storage";
 
                 let confirmMsg;
                 if (entry.schema === "indexeddb") {
