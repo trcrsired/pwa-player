@@ -46,8 +46,21 @@
       "action": "/",
       "start_in": "music",
       "accept": {
-        "video/*": [".mp4", ".webm", ".mkv"],
-        "audio/*": [".mp3", ".webm", ".wav", ".m4a", ".flac"]
+        "audio/*": [".mp3", ".wav", ".m4a", ".flac", ".webm"]
+      }
+    },
+    {
+      "action": "/",
+      "start_in": "videos",
+      "accept": {
+        "video/*": [".mp4", ".webm", ".mkv", ".mov"]
+      }
+    },
+    {
+      "action": "/",
+      "start_in": "images",
+      "accept": {
+        "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".ico", ".avif"]
       }
     }
   ]

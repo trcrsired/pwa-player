@@ -177,7 +177,20 @@ async function verifyPermission(fileHandle, mode = "read") {
 async function getMediaMetadataFromSource(sourceobject) {
   let blobURL = null;
   let mediasource = {}
-  if (sourceobject instanceof FileSystemFileHandle) {
+
+  // Handle temporary entries with file property (dropped files)
+  if (sourceobject && sourceobject.file && (sourceobject.file instanceof File || sourceobject.file instanceof Blob)) {
+    blobURL = URL.createObjectURL(sourceobject.file);
+    mediasource.title = sourceobject.name || sourceobject.file.name;
+  }
+  // Handle temporary directory entries with handle property
+  else if (sourceobject && sourceobject.handle && typeof sourceobject.handle.getFile === 'function') {
+    const handle = sourceobject.handle;
+    if (! await verifyPermission(handle)) return null;
+    const file = await handle.getFile();
+    blobURL = URL.createObjectURL(file);
+    mediasource.title = sourceobject.name || file.name;
+  } else if (sourceobject instanceof FileSystemFileHandle) {
     if (! await verifyPermission(sourceobject)) return null;
 
     const file = await sourceobject.getFile();
@@ -988,14 +1001,23 @@ window.addEventListener("drop", async e => {
             if (item.kind === "file") {
                 const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
                 if (entry && entry.isDirectory) {
-                    // It's a directory - add to external storage
+                    // It's a directory - check if we're in storage view
+                    const storageView = document.getElementById('storageView');
+                    const isInStorageView = storageView && !storageView.classList.contains('hidden');
+
                     try {
                         const dirHandle = await item.getAsFileSystemHandle();
                         if (dirHandle && dirHandle.kind === "directory") {
-                            await addDirectoryToExternalStorage(dirHandle);
+                            if (isInStorageView) {
+                                // In storage view - add to external storage
+                                await addDirectoryToExternalStorage(dirHandle);
+                            } else {
+                                // Not in storage view - play as temporary directory
+                                await playTemporaryDirectory(dirHandle);
+                            }
                         }
                     } catch (err) {
-                        console.error("Failed to add directory:", err);
+                        console.error("Failed to handle directory:", err);
                         alert(t('failedToImportExternal', "Failed to add directory to external storage."));
                     }
                     return;
@@ -1004,20 +1026,81 @@ window.addEventListener("drop", async e => {
         }
     }
 
-    // Fall back to file handling
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
+    // Handle multiple files (images and media)
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+        // Check if all are images
+        const imageFiles = Array.from(files).filter(f => window.isImageFile && window.isImageFile(f.name));
+        const mediaFiles = Array.from(files).filter(f => f.type.startsWith("video/") || f.type.startsWith("audio/"));
 
-    if (
-        !file.type.startsWith("video/") &&
-        !file.type.startsWith("audio/")
-    ) {
-        alert(t('dropMediaOrDirectory', "Please drop a video, audio file, or directory"));
+        if (imageFiles.length > 0 && mediaFiles.length === 0) {
+            // Only images - add to now playing queue and play first (temporary entries)
+            const queue = imageFiles.map(f => ({
+                name: f.name,
+                file: f, // File object from drop
+                isTemporary: true // Mark as temporary - cannot be saved to playlists
+            }));
+            if (typeof startNowPlayingFromPlaylistTable === 'function') {
+                startNowPlayingFromPlaylistTable(queue, 0, null, true);
+            }
+            return;
+        }
+
+        if (mediaFiles.length > 0) {
+            // Media files - play first
+            play_source(mediaFiles[0]);
+            return;
+        }
+
+        // Mixed files or unknown types - just play first
+        if (files.length > 0) {
+            play_source(files[0]);
+        }
         return;
     }
 
-    play_source(file);
+    alert(t('dropMediaOrDirectory', "Please drop a video, audio file, image, or directory"));
 });
+
+// Play a temporary directory (not added to storage)
+async function playTemporaryDirectory(dirHandle) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    // Verify permission first
+    if (!await verifyPermission(dirHandle)) {
+        alert(t('permissionDenied', 'Permission denied'));
+        return;
+    }
+
+    // Collect playable files from directory
+    const files = [];
+    for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === "file" && window.isPlayableOrImageFile && window.isPlayableOrImageFile(name)) {
+            files.push({ name, handle });
+        }
+    }
+
+    if (files.length === 0) {
+        alert(t('noPlayableFiles', 'No playable files found in folder'));
+        return;
+    }
+
+    // Sort files by name
+    files.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Create queue entries with file handles - these are temporary and NOT persistable
+    const queue = files.map(f => ({
+        name: f.name,
+        handle: f.handle, // FileSystemFileHandle - used to get file on play
+        dirHandle: dirHandle, // Keep directory handle for permission renewal
+        isTemporary: true // Mark as temporary - should not be saved to playlists
+    }));
+
+    // Play from now playing
+    if (typeof startNowPlayingFromPlaylistTable === 'function') {
+        startNowPlayingFromPlaylistTable(queue, 0, null, true);
+    }
+}
 
 // Add directory to external storage (like Import External button)
 async function addDirectoryToExternalStorage(dirHandle) {
@@ -1133,16 +1216,43 @@ pickerBtn.onclick = async (e) => {
 
     if (typeof window.showOpenFilePicker === "function") {
       // Modern browsers (Chrome / Edge)
+      // Use startIn: 'videos' as default, but allow all media types
       const [handle] = await window.showOpenFilePicker({
-        startIn: 'videos'
+        startIn: 'videos',
+        types: [
+          {
+            description: 'Video Files',
+            accept: {
+              'video/*': ['.mp4', '.webm', '.mkv', '.mov']
+            }
+          },
+          {
+            description: 'Audio Files',
+            accept: {
+              'audio/*': ['.mp3', '.wav', '.m4a', '.flac', '.ogg']
+            }
+          },
+          {
+            description: 'Image Files',
+            accept: {
+              'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.avif']
+            }
+          }
+        ]
       });
       file = handle; // pass handle to your existing logic
     } else {
-      // Safari / Firefox fallback
-      file = await pickFileSafariFallback("video/*");
+      // Safari / Firefox fallback - accept video, audio, and image
+      file = await pickFileSafariFallback("video/*,audio/*,image/*");
     }
 
-    play_source(file).catch(nop);
+    // Check if it's an image file
+    const fileName = file.name || (file.getFile ? (await file.getFile()).name : '');
+    if (window.isImageFile && window.isImageFile(fileName)) {
+      window.viewImage(file, fileName);
+    } else {
+      play_source(file).catch(nop);
+    }
   } catch (err) {
     // User cancelled the picker — do nothing
   }
@@ -1932,7 +2042,12 @@ if ('launchQueue' in window) {
   launchQueue.setConsumer(async (launchParams) => {
     for (const fileHandle of launchParams.files) {
       const file = await fileHandle.getFile();
-      play_source(file);
+      // Check if it's an image file
+      if (window.isImageFile && window.isImageFile(file.name)) {
+        window.viewImage(file, file.name);
+      } else {
+        play_source(file);
+      }
       return;
       // Route to appropriate player logic
     }

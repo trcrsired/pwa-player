@@ -444,14 +444,14 @@ async function promptForUniqueName(baseName, parentHandle) {
 
 // Media extensions for playlist items
 const PLAYLIST_EXTENSIONS = new Set([
-    ".mp4", ".webm", ".mkv",
+    ".mp4", ".webm", ".mkv", ".mov",
     ".mp3", ".wav", ".flac",
     ".m4a"
 ]);
 
 // Image extensions for viewing
 const IMAGE_EXTENSIONS = new Set([
-    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".ico"
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".ico", ".avif"
 ]);
 
 // Subtitle extensions
@@ -561,6 +561,7 @@ function isPlayableOrImageFile(name) {
 
 // Expose isImageFile globally for other modules
 window.isImageFile = isImageFile;
+window.isPlayableOrImageFile = isPlayableOrImageFile;
 
 // ============================================================
 // Copy a directory (from SAF) into private storage

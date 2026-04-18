@@ -236,6 +236,7 @@ const EN_TRANSLATIONS = {
     noTrackPlaying: "No track playing",
     fileCannotBePlayed: "This file type cannot be played directly",
     fileCannotBeAdded: "This file type cannot be added to playlist",
+    cannotAddTemporaryToPlaylist: "Temporary entries cannot be added to playlists. Import the directory to storage first.",
     invalidSelection: "Invalid selection",
     permissionDenied: "Permission denied",
     exportSuccess: "Export successful",

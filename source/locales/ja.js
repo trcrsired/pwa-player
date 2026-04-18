@@ -233,6 +233,7 @@ const JA_TRANSLATIONS = {
     noTrackPlaying: "再生中の曲はありません",
     fileCannotBePlayed: "このファイルタイプは直接再生できません",
     fileCannotBeAdded: "このファイルタイプはプレイリストに追加できません",
+    cannotAddTemporaryToPlaylist: "一時エントリはプレイリストに追加できません。先にディレクトリをストレージにインポートしてください。",
     invalidSelection: "無効な選択",
     permissionDenied: "権限が拒否されました",
     exportSuccess: "エクスポート成功",

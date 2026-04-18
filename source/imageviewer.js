@@ -8,6 +8,7 @@ let slideshowInterval = 5000;
 let currentImageEntry = null;
 let isSlideshowActive = false;
 let controlsHideTimer = null;
+let isInteractingWithControls = false; // Flag to prevent hiding when using controls
 
 // Scale levels
 const SCALE_LEVELS = [1, 1.5, 2, 3, 0.75];
@@ -18,6 +19,13 @@ let isPanning = false;
 let panStart = { x: 0, y: 0 };
 let panOffset = { x: 0, y: 0 };
 let lastPanOffset = { x: 0, y: 0 };
+
+// Add interaction flag handlers immediately with capture phase (fires BEFORE bubble phase)
+// This ensures the flag is set BEFORE playPrevious/playNext are called by nowplaying.js handlers
+document.getElementById("prevBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
+document.getElementById("nextBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
+document.getElementById("npPrevBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
+document.getElementById("npNextBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
 
 // Initialize
 function initImageViewer() {
@@ -51,11 +59,16 @@ function initImageViewer() {
     if (npStopBtn) npStopBtn.addEventListener('click', handleStopButtonClick);
 
     const timeDisplay = document.getElementById('timeDisplay');
-    if (timeDisplay) timeDisplay.addEventListener('click', handleTimeDisplayClick);
+    if (timeDisplay) {
+        timeDisplay.addEventListener('click', () => {
+            isInteractingWithControls = true;
+            handleTimeDisplayClick(event);
+        });
+    }
 
     const progressBar = document.getElementById('progressBar');
     if (progressBar) {
-        progressBar.addEventListener('input', handleProgressBarInput);
+        progressBar.addEventListener('input', () => { isInteractingWithControls = true; handleProgressBarInput(); });
         progressBar.addEventListener('change', handleProgressBarChange);
     }
 
@@ -447,14 +460,32 @@ async function viewImage(sourceobject, entryPath) {
     const magBtn = document.getElementById('magnifierBtn');
     if (magBtn) { magBtn.classList.remove('hidden'); updateMagnifierButton(); }
 
-    // Hide controls by default when viewing image
-    cancelControlsHide();
-    hideImageControls();
+    // Only hide controls if NOT interacting with controls (prev/next buttons, progressbar)
+    if (isInteractingWithControls) {
+        // User is using controls - keep controls visible, reset flag
+        isInteractingWithControls = false;
+        showImageControls(); // Ensure controls stay visible and schedule auto-hide
+    } else {
+        // User navigated via image click zones - hide controls
+        cancelControlsHide();
+        hideImageControls();
+    }
 
     let blobURL, imageName = entryPath;
 
     try {
-        if (sourceobject instanceof File || sourceobject instanceof Blob) {
+        // Handle temporary entries with file property (dropped files)
+        if (sourceobject && sourceobject.file && (sourceobject.file instanceof File || sourceobject.file instanceof Blob)) {
+            blobURL = URL.createObjectURL(sourceobject.file);
+            imageName = sourceobject.name || sourceobject.file.name || entryPath;
+        }
+        // Handle temporary directory entries with handle property
+        else if (sourceobject && sourceobject.handle && typeof sourceobject.handle.getFile === 'function') {
+            const file = await sourceobject.handle.getFile();
+            blobURL = URL.createObjectURL(file);
+            imageName = sourceobject.name || file.name || entryPath;
+        }
+        else if (sourceobject instanceof File || sourceobject instanceof Blob) {
             blobURL = URL.createObjectURL(sourceobject);
             imageName = sourceobject.name || entryPath;
         } else if (typeof sourceobject === 'string') {
@@ -489,6 +520,7 @@ async function viewImage(sourceobject, entryPath) {
     } catch (err) {
         console.error('Failed to view image:', err);
         alert('Failed to display image.');
+        isInteractingWithControls = false;
         return false;
     }
 }
@@ -496,6 +528,7 @@ async function viewImage(sourceobject, entryPath) {
 function hideImageViewer() {
     stopSlideshow();
     cancelControlsHide();
+    isInteractingWithControls = false;
 
     if (imageElement) {
         imageElement.classList.add('hidden');

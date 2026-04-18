@@ -236,6 +236,7 @@ const ZHCN_TRANSLATIONS = {
     noTrackPlaying: "没有正在播放的曲目",
     fileCannotBePlayed: "此文件类型无法直接播放",
     fileCannotBeAdded: "此文件类型无法添加到播放列表",
+    cannotAddTemporaryToPlaylist: "临时条目无法添加到播放列表。请先将目录导入到存储。",
     invalidSelection: "无效的选择",
     permissionDenied: "权限被拒绝",
     exportSuccess: "导出成功",
