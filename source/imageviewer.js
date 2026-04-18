@@ -3,7 +3,6 @@
 // ===============================
 
 let imageElement = null;
-let imageWrapper = null;
 let slideshowTimer = null;
 let slideshowInterval = 5000;
 let currentImageEntry = null;
@@ -16,6 +15,9 @@ let slideshowControlsVisible = false; // Track whether user wants controls visib
 const SCALE_LEVELS = [1, 1.5, 2, 3, 0.75];
 let currentScaleIndex = 0;
 
+// Note: Native pinch-zoom and panning handled by CSS touch-action: pinch-zoom pan-x pan-y
+// No custom touch/mouse handlers needed for panning
+
 // Add interaction flag handlers immediately with capture phase (fires BEFORE bubble phase)
 document.getElementById("prevBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
 document.getElementById("nextBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
@@ -25,14 +27,19 @@ document.getElementById("npNextBtn")?.addEventListener("click", () => { isIntera
 // Initialize
 function initImageViewer() {
     imageElement = document.getElementById('imageDisplay');
-    imageWrapper = document.getElementById('imageWrapper');
-    if (!imageElement || !imageWrapper) return;
+    if (!imageElement) return;
+
+    // Click on zoomed image to set zoom focus point
+    imageElement.addEventListener('click', handleZoomedImageClick);
 
     // Wheel for zoom (mouse/trackpad)
-    imageWrapper.addEventListener('wheel', handleWheel, { passive: false });
+    imageElement.addEventListener('wheel', handleWheel, { passive: false });
 
     // Keyboard navigation
     document.addEventListener('keydown', handleKeyDown);
+
+    // Note: touch-action: pinch-zoom pan-x pan-y in CSS handles native pinch zoom and panning
+    // No need for custom touch/mouse drag handlers
 
     const magnifierBtn = document.getElementById('magnifierBtn');
     if (magnifierBtn) magnifierBtn.addEventListener('click', handleMagnifierClick);
@@ -129,116 +136,168 @@ function handleKeyDown(event) {
 }
 
 function getCurrentScale() {
+    if (currentScaleIndex === -1) {
+        // Pinch zoom mode - get scale from transform
+        const transform = imageElement.style.transform;
+        const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
+        return scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    }
     return SCALE_LEVELS[currentScaleIndex];
 }
 
 function handleWheel(event) {
     if (!isImageViewerActive()) return;
     event.preventDefault();
-    if (event.deltaY < 0) zoomIn(event);
+    if (event.deltaY < 0) zoomIn(event.clientX, event.clientY);
     else zoomOut();
 }
 
-function zoomIn(event) {
-    const prevScale = getCurrentScale();
+function zoomIn(clientX, clientY) {
+    // If in pinch-zoom mode, snap to nearest predefined scale first
+    if (currentScaleIndex === -1) {
+        const currentScale = getCurrentScale();
+        // Find the next higher predefined scale
+        for (let i = 0; i < SCALE_LEVELS.length; ++i) {
+            if (SCALE_LEVELS[i] > currentScale) {
+                currentScaleIndex = i;
+                if (clientX !== undefined && clientY !== undefined) {
+                    const rect = imageElement.getBoundingClientRect();
+                    const xPercent = ((clientX - rect.left) / rect.width) * 100;
+                    const yPercent = ((clientY - rect.top) / rect.height) * 100;
+                    imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+                }
+                applyScale();
+                updateCursor();
+                updateMagnifierButton();
+                return;
+            }
+        }
+        return; // Already at max scale
+    }
 
     if (currentScaleIndex < SCALE_LEVELS.length - 1 && SCALE_LEVELS[currentScaleIndex + 1] > SCALE_LEVELS[currentScaleIndex]) {
         ++currentScaleIndex;
+        if (clientX !== undefined && clientY !== undefined) {
+            const rect = imageElement.getBoundingClientRect();
+            const xPercent = ((clientX - rect.left) / rect.width) * 100;
+            const yPercent = ((clientY - rect.top) / rect.height) * 100;
+            imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+        }
+        applyScale();
+        updateCursor();
+        updateMagnifierButton();
     } else if (SCALE_LEVELS[currentScaleIndex] === 1) {
         for (let i = 0; i < SCALE_LEVELS.length; ++i) {
             if (SCALE_LEVELS[i] > 1) {
                 currentScaleIndex = i;
+                applyScale();
+                updateCursor();
+                updateMagnifierButton();
                 break;
             }
         }
-    }
-
-    if (prevScale !== getCurrentScale()) {
-        applyScaleAndCenter(event);
-        updateMagnifierButton();
     }
 }
 
 function zoomOut() {
-    const prevScale = getCurrentScale();
+    // If in pinch-zoom mode, snap to nearest predefined scale first
+    if (currentScaleIndex === -1) {
+        const currentScale = getCurrentScale();
+        // Find the next lower predefined scale
+        for (let i = SCALE_LEVELS.length; i--;) {
+            if (SCALE_LEVELS[i] < currentScale) {
+                currentScaleIndex = i;
+                if (SCALE_LEVELS[currentScaleIndex] === 1) {
+                    imageElement.style.transformOrigin = 'center center';
+                }
+                applyScale();
+                updateCursor();
+                updateMagnifierButton();
+                return;
+            }
+        }
+        currentScaleIndex = 0; // Go to minimum
+        imageElement.style.transformOrigin = 'center center';
+        applyScale();
+        updateCursor();
+        updateMagnifierButton();
+        return;
+    }
 
     if (currentScaleIndex > 0 && SCALE_LEVELS[currentScaleIndex - 1] < SCALE_LEVELS[currentScaleIndex]) {
         --currentScaleIndex;
+        if (SCALE_LEVELS[currentScaleIndex] === 1) {
+            imageElement.style.transformOrigin = 'center center';
+        }
+        applyScale();
+        updateCursor();
+        updateMagnifierButton();
     } else if (SCALE_LEVELS[currentScaleIndex] > 1) {
         for (let i = currentScaleIndex; i--; ) {
             if (SCALE_LEVELS[i] < SCALE_LEVELS[currentScaleIndex]) {
                 currentScaleIndex = i;
+                if (SCALE_LEVELS[currentScaleIndex] === 1) {
+                    imageElement.style.transformOrigin = 'center center';
+                }
+                applyScale();
+                updateCursor();
+                updateMagnifierButton();
                 break;
             }
         }
     }
-
-    if (prevScale !== getCurrentScale()) {
-        applyScaleAndCenter();
-        updateMagnifierButton();
-    }
 }
 
-// Apply scale by setting image size - native browser scroll handles panning
-function applyScaleAndCenter(event) {
-    const scale = getCurrentScale();
-    const wrapperRect = imageWrapper.getBoundingClientRect();
+function updateCursor() {
+    imageElement.style.cursor = getCurrentScale() > 1 ? 'grab' : 'default';
+}
 
-    if (scale === 1) {
-        // Fit to container
-        imageElement.style.width = '';
-        imageElement.style.height = '';
-        imageElement.style.maxWidth = '100%';
-        imageElement.style.maxHeight = '100%';
-        imageWrapper.scrollTop = 0;
-        imageWrapper.scrollLeft = 0;
-    } else {
-        // Set actual scaled size - browser scroll handles pan
-        imageElement.style.maxWidth = '';
-        imageElement.style.maxHeight = '';
+// Handle click on zoomed image to set zoom focus point
+function handleZoomedImageClick(event) {
+    if (getCurrentScale() === 1) return;
 
-        // Wait for image to load if not loaded
-        if (imageElement.naturalWidth > 0) {
-            const scaledWidth = imageElement.naturalWidth * scale;
-            const scaledHeight = imageElement.naturalHeight * scale;
-            imageElement.style.width = scaledWidth + 'px';
-            imageElement.style.height = scaledHeight + 'px';
+    // Stop propagation so playerWrapper doesn't handle this click
+    event.stopPropagation();
 
-            // Center scroll position, or use event position for zoom point
-            if (event && event.clientX !== undefined) {
-                // Zoom toward the point where user scrolled
-                const imgRect = imageElement.getBoundingClientRect();
-                const xRatio = (event.clientX - imgRect.left) / (prevScaledWidth || scaledWidth);
-                const yRatio = (event.clientY - imgRect.top) / (prevScaledHeight || scaledHeight);
-                imageWrapper.scrollLeft = (scaledWidth - wrapperRect.width) * xRatio;
-                imageWrapper.scrollTop = (scaledHeight - wrapperRect.height) * yRatio;
-            } else {
-                // Center the image
-                imageWrapper.scrollLeft = (scaledWidth - wrapperRect.width) / 2;
-                imageWrapper.scrollTop = (scaledHeight - wrapperRect.height) / 2;
-            }
+    const rect = imageElement.getBoundingClientRect();
+    const xPercent = ((event.clientX - rect.left) / rect.width) * 100;
+    const yPercent = ((event.clientY - rect.top) / rect.height) * 100;
+    imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+}
+
+function handleNextWithLoopCheck() {
+    const pos = getImageQueuePosition();
+    if (!pos) {
+        if (typeof playNext === 'function') playNext();
+        return;
+    }
+    if (pos.index >= pos.total) {
+        const t = (key) => window.i18n ? window.i18n.t(key) : key;
+        if (confirm(t('loopToFirstImage', 'Jump back to first image?'))) {
+            jumpToImageIndex(0);
         }
+        return;
     }
+    if (typeof playNext === 'function') playNext();
 }
 
-// Store previous scaled size for zoom focus calculation
-let prevScaledWidth = 0;
-let prevScaledHeight = 0;
+// Apply scale transform (CSS handles native panning via touch-action)
+function applyScale() {
+    const scale = getCurrentScale();
+    imageElement.style.transform = `scale(${scale})`;
+}
 
 function handleMagnifierClick(event) {
     event.stopPropagation();
-    const prevScale = getCurrentScale();
     currentScaleIndex = (currentScaleIndex + 1) % SCALE_LEVELS.length;
-
-    if (prevScale !== getCurrentScale()) {
-        // Store previous size before applying new scale
-        if (prevScale > 1 && imageElement.naturalWidth > 0) {
-            prevScaledWidth = imageElement.naturalWidth * prevScale;
-            prevScaledHeight = imageElement.naturalHeight * prevScale;
-        }
-        applyScaleAndCenter();
-        updateMagnifierButton();
+    if (SCALE_LEVELS[currentScaleIndex] === 1) {
+        imageElement.style.transformOrigin = 'center center';
+        imageElement.style.transform = 'scale(1)';
+    } else {
+        applyScale();
     }
+    updateCursor();
+    updateMagnifierButton();
 }
 
 function updateMagnifierButton() {
@@ -247,6 +306,8 @@ function updateMagnifierButton() {
     btn.textContent = getCurrentScale() >= 2 ? '🔎' : '🔍';
     btn.title = getCurrentScale() >= 2 ? 'Zoom Out' : 'Zoom In';
 }
+
+// Note: Native pinch-zoom handled by CSS touch-action. No custom touch handlers needed.
 
 function handlePlayButtonClick(event) {
     if (!isImageViewerActive()) return;
@@ -362,22 +423,6 @@ function handleProgressBarChange() {
     jumpToImageIndex(Math.max(0, Math.min(idx, pos.total - 1)));
 }
 
-function handleNextWithLoopCheck() {
-    const pos = getImageQueuePosition();
-    if (!pos) {
-        if (typeof playNext === 'function') playNext();
-        return;
-    }
-    if (pos.index >= pos.total) {
-        const t = (key) => window.i18n ? window.i18n.t(key) : key;
-        if (confirm(t('loopToFirstImage', 'Jump back to first image?'))) {
-            jumpToImageIndex(0);
-        }
-        return;
-    }
-    if (typeof playNext === 'function') playNext();
-}
-
 async function viewImage(sourceobject, entryPath) {
     if (!imageElement) initImageViewer();
 
@@ -389,26 +434,33 @@ async function viewImage(sourceobject, entryPath) {
     if (embedded) embedded.classList.add('hidden');
     if (overlay) overlay.classList.add('hidden');
 
-    imageWrapper.classList.remove('hidden');
+    imageElement.classList.remove('hidden');
 
     const magBtn = document.getElementById('magnifierBtn');
     if (magBtn) { magBtn.classList.remove('hidden'); updateMagnifierButton(); }
 
     // Handle controls visibility based on context
+    // During slideshow, respect slideshowControlsVisible flag (user's preference)
+    // Otherwise, use isInteractingWithControls for normal navigation
     if (isSlideshowActive) {
+        // During slideshow - respect user's preference for controls visibility
         if (slideshowControlsVisible) {
+            // User wants controls visible during slideshow
             const controls = document.getElementById('controls');
             if (controls) controls.classList.remove('hidden');
             scheduleControlsHide();
         } else {
+            // User wants controls hidden during slideshow
             cancelControlsHide();
             const controls = document.getElementById('controls');
             if (controls) controls.classList.add('hidden');
         }
     } else if (isInteractingWithControls) {
+        // User is using controls (prev/next buttons, progressbar) - keep controls visible
         isInteractingWithControls = false;
         showImageControls();
     } else {
+        // User navigated via image click zones - hide controls
         cancelControlsHide();
         hideImageControls();
     }
@@ -445,14 +497,9 @@ async function viewImage(sourceobject, entryPath) {
         imageElement.alt = imageName;
 
         currentScaleIndex = 0;
-        prevScaledWidth = 0;
-        prevScaledHeight = 0;
-        imageElement.style.width = '';
-        imageElement.style.height = '';
-        imageElement.style.maxWidth = '100%';
-        imageElement.style.maxHeight = '100%';
-        imageWrapper.scrollTop = 0;
-        imageWrapper.scrollLeft = 0;
+        imageElement.style.transform = 'scale(1)';
+        imageElement.style.cursor = 'default';
+        imageElement.style.transformOrigin = 'center center';
 
         currentImageEntry = { name: imageName, path: entryPath };
 
@@ -476,18 +523,11 @@ function hideImageViewer() {
     cancelControlsHide();
     isInteractingWithControls = false;
 
-    if (imageWrapper) {
-        imageWrapper.classList.add('hidden');
-    }
     if (imageElement) {
+        imageElement.classList.add('hidden');
         imageElement.src = '';
         currentScaleIndex = 0;
-        prevScaledWidth = 0;
-        prevScaledHeight = 0;
-        imageElement.style.width = '';
-        imageElement.style.height = '';
-        imageElement.style.maxWidth = '100%';
-        imageElement.style.maxHeight = '100%';
+        imageElement.style.transform = 'scale(1)';
     }
 
     const magBtn = document.getElementById('magnifierBtn');
@@ -511,7 +551,7 @@ function hideImageViewer() {
 }
 
 function isImageViewerActive() {
-    return imageWrapper && !imageWrapper.classList.contains('hidden');
+    return imageElement && !imageElement.classList.contains('hidden');
 }
 
 function getCurrentImageEntry() {
@@ -572,8 +612,8 @@ window.showImageControls = showImageControls;
 window.hideImageControls = hideImageControls;
 window.scheduleControlsHide = scheduleControlsHide;
 window.cancelControlsHide = cancelControlsHide;
-window.isSlideshowActive = () => isSlideshowActive;
-window.setSlideshowControlsVisible = (val) => { slideshowControlsVisible = val; };
+window.isSlideshowActive = () => isSlideshowActive; // Expose slideshow state
+window.setSlideshowControlsVisible = (val) => { slideshowControlsVisible = val; }; // Allow external setting
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initImageViewer);
