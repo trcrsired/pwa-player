@@ -1384,12 +1384,8 @@ function updateSaveLocationsDisplay() {
     if (!screenInput || !videoInput || !screenshotInput) return;
 
     const getCfg = (type) => {
-        try {
-            const val = localStorage.getItem(`saveLocation_${type}`);
-            return val ? JSON.parse(val) : null;
-        } catch (e) {
-            return null;
-        }
+        const val = localStorage.getItem(`saveLocation_${type}`);
+        return val ? JSON.parse(val) : null;
     };
 
     const format = (cfg) => {
@@ -1402,10 +1398,33 @@ function updateSaveLocationsDisplay() {
     screenshotInput.value = format(getCfg('screenshot'));
 }
 
+function initSaveLocationClearHandlers() {
+    const screenInput = document.getElementById("screenRecordingLocationInput");
+    const videoInput = document.getElementById("videoRecordingLocationInput");
+    const screenshotInput = document.getElementById("screenshotLocationInput");
+
+    const clearHandler = (type) => {
+        if (!localStorage.getItem(`saveLocation_${type}`)) return;
+        if (confirm("Clear this save location?")) {
+            localStorage.removeItem(`saveLocation_${type}`);
+            updateSaveLocationsDisplay();
+            showToast("Save location cleared.");
+        }
+    };
+
+    screenInput?.addEventListener("click", () => clearHandler('screenRecording'));
+    videoInput?.addEventListener("click", () => clearHandler('videoRecording'));
+    screenshotInput?.addEventListener("click", () => clearHandler('screenshot'));
+}
+
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", updateSaveLocationsDisplay);
+    document.addEventListener("DOMContentLoaded", () => {
+        updateSaveLocationsDisplay();
+        initSaveLocationClearHandlers();
+    });
 } else {
     updateSaveLocationsDisplay();
+    initSaveLocationClearHandlers();
 }
 
 window.updateSaveLocationsDisplay = updateSaveLocationsDisplay;

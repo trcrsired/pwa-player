@@ -473,11 +473,36 @@ function clearSubtitles() {
 
 function updateTimeDisplay(txtct)
 {
+  // Check for screen recording (show elapsed time with 🖥️ icon)
+  if (typeof window.getScreenRecordingElapsedTime === 'function') {
+    const screenElapsed = window.getScreenRecordingElapsedTime();
+    if (screenElapsed !== null) {
+      const elapsedStr = window.formatRecordingTimeShort(screenElapsed);
+      if (!timeInputActive) {
+        timeDisplay.textContent = `🖥️ ${elapsedStr}`;
+      }
+      if (!npTimeInputActive) {
+        npTimeDisplay.textContent = txtct; // npTimeDisplay shows normal time
+      }
+      return;
+    }
+  }
+
+  // Check for video recording (append elapsed time with ⏺️ icon)
+  let finalText = txtct;
+  if (typeof window.getVideoRecordingElapsedTime === 'function') {
+    const videoElapsed = window.getVideoRecordingElapsedTime();
+    if (videoElapsed !== null) {
+      const elapsedStr = window.formatRecordingTimeShort(videoElapsed);
+      finalText = `${txtct} ⏺️ ${elapsedStr}`;
+    }
+  }
+
   if (!timeInputActive) {
-    timeDisplay.textContent = txtct;
+    timeDisplay.textContent = finalText;
   }
   if (!npTimeInputActive) {
-    npTimeDisplay.textContent = txtct;
+    npTimeDisplay.textContent = txtct; // npTimeDisplay shows normal time without recording indicator
   }
 }
 

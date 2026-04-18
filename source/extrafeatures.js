@@ -70,6 +70,7 @@ let switchCaptureBtn = null;
 let screenCaptureStream = null;
 let screenRecorder = null;
 let screenChunks = [];
+let screenRecordingStartTime = null;
 let micStream = null;
 let audioContext = null;
 let micGainNode = null;
@@ -388,20 +389,23 @@ function startScreenRecording(stream) {
 
     screenRecorder.onstop = saveScreenRecording;
 
-    // Use timeslice for better file integrity
+    // Set recording start time (timeDisplay will be updated by player.js updateTimeDisplay)
+    screenRecordingStartTime = Date.now();
+
     screenRecorder.start(1000);
 }
 
 function stopScreenRecording() {
+    // Clear recording start time
+    screenRecordingStartTime = null;
+
     if (screenRecorder && screenRecorder.state === "recording") {
-        // Request final data flush before stopping
         screenRecorder.requestData();
         screenRecorder.stop();
     }
 
     cleanupCaptureResources();
 
-    // Restore previous mute state
     video.muted = previousVideoMuted;
 
     screenCaptureBtn.textContent = "🖥️";
@@ -450,6 +454,35 @@ const mediaRecordBtn = document.getElementById("mediaRecordBtn");
 let mediaRecorder = null;
 let recordedChunks = [];
 let videoStream = null;
+let videoRecordingStartTime = null;
+
+// Short format for recording time (without REC prefix)
+function formatRecordingTimeShort(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Get video recording elapsed time (for external use)
+function getVideoRecordingElapsedTime() {
+    if (videoRecordingStartTime && mediaRecorder && mediaRecorder.state === "recording") {
+        return (Date.now() - videoRecordingStartTime) / 1000;
+    }
+    return null;
+}
+
+// Get screen recording elapsed time (for external use)
+function getScreenRecordingElapsedTime() {
+    if (screenRecordingStartTime && screenRecorder && screenRecorder.state === "recording") {
+        return (Date.now() - screenRecordingStartTime) / 1000;
+    }
+    return null;
+}
+
+// Expose functions globally for player.js to use
+window.getVideoRecordingElapsedTime = getVideoRecordingElapsedTime;
+window.getScreenRecordingElapsedTime = getScreenRecordingElapsedTime;
+window.formatRecordingTimeShort = formatRecordingTimeShort;
 
 // Fallback download when storage save fails
 function fallbackDownload(blob, filename) {
@@ -511,6 +544,9 @@ function startVideoRecording() {
 
     mediaRecorder.onstop = saveVideoRecording;
 
+    // Set recording start time (timeDisplay will be updated by player.js updateTimeDisplay)
+    videoRecordingStartTime = Date.now();
+
     // Use timeslice for better file integrity
     mediaRecorder.start(1000);
     mediaRecordBtn.textContent = "⏹️";
@@ -533,6 +569,9 @@ function saveVideoRecording() {
 
 // Stop recording
 function stopVideoRecording() {
+    // Clear recording start time
+    videoRecordingStartTime = null;
+
     const t = (key) => window.i18n ? window.i18n.t(key) : key;
     if (mediaRecorder && mediaRecorder.state === "recording") {
         mediaRecorder.requestData();
@@ -553,6 +592,9 @@ mediaRecordBtn.addEventListener("click", () => {
     if (mediaRecorder.state === "recording") {
         stopVideoRecording();
     } else {
+        // Resume recording - set start time
+        videoRecordingStartTime = Date.now();
+
         mediaRecorder.start(1000);
         mediaRecordBtn.textContent = "⏹️";
         alert(t('recordingStarted') || "Recording started.");

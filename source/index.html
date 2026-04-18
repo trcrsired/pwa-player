@@ -352,6 +352,21 @@
                 </label>
                 <p class="setting-hint" data-i18n="retryBeforeSrcResetHint">Number of retries before resetting video src (which can fix some issues but may interrupt playback). Default is 8. Set to 0 to never reset.</p>
 
+                <h3 data-i18n="saveLocations">Save Locations</h3>
+                <p class="setting-hint" data-i18n="saveLocationsHint">Configure where screen recordings, video recordings, and screenshots are saved. Click to clear. Set via Storage directory context menu.</p>
+                <label class="setting-label">
+                    <span data-i18n="screenRecordingSaveLocation">Screen Recording</span>
+                    <input type="text" id="screenRecordingLocationInput" class="setting-input" readonly placeholder="Not set (click to clear)" style="cursor:pointer;">
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="videoRecordingSaveLocation">Video Recording</span>
+                    <input type="text" id="videoRecordingLocationInput" class="setting-input" readonly placeholder="Not set (click to clear)" style="cursor:pointer;">
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="screenshotSaveLocation">Screenshot</span>
+                    <input type="text" id="screenshotLocationInput" class="setting-input" readonly placeholder="Not set (click to clear)" style="cursor:pointer;">
+                </label>
+
                 <h3 data-i18n="profiles">Profiles</h3>
                 <p class="setting-hint" data-i18n="profilesHint">Save and restore all settings, playlists, and custom IPTV channels.</p>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
@@ -367,21 +382,6 @@
                     <button id="importProfileBtn" class="btn" style="padding:6px 12px;font-size:12px;">📥 <span data-i18n="import">Import</span></button>
                     <input type="file" id="profileFileInput" accept=".json" style="display:none;">
                 </div>
-
-                <h3 data-i18n="saveLocations">Save Locations</h3>
-                <p class="setting-hint" data-i18n="saveLocationsHint">Configure where screen recordings, video recordings, and screenshots are saved. Set via Storage directory context menu.</p>
-                <label class="setting-label">
-                    <span data-i18n="screenRecordingSaveLocation">Screen Recording</span>
-                    <input type="text" id="screenRecordingLocationInput" class="setting-input" readonly>
-                </label>
-                <label class="setting-label">
-                    <span data-i18n="videoRecordingSaveLocation">Video Recording</span>
-                    <input type="text" id="videoRecordingLocationInput" class="setting-input" readonly>
-                </label>
-                <label class="setting-label">
-                    <span data-i18n="screenshotSaveLocation">Screenshot</span>
-                    <input type="text" id="screenshotLocationInput" class="setting-input" readonly>
-                </label>
 
                 <h3 data-i18n="aboutThisApp">About This App</h3>
 
