@@ -1802,6 +1802,43 @@ playerWrapper.addEventListener("click", (e) => {
     const target = e.target;
     const controlsHidden = controls.classList.contains("hidden");
 
+    // If image viewer is active, handle image navigation zones
+    if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+        const rect = playerWrapper.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const width = rect.width;
+        const height = rect.height;
+
+        // Bottom 20% = show controls
+        if (y > height * 0.8) {
+            if (typeof window.showImageControls === 'function') window.showImageControls();
+            return;
+        }
+
+        // Left 30% = prev (hide controls)
+        if (x < width * 0.3) {
+            if (typeof window.hideImageControls === 'function') window.hideImageControls();
+            if (typeof playPrevious === 'function') playPrevious();
+            return;
+        }
+
+        // Right 30% = next (hide controls)
+        if (x > width * 0.7) {
+            if (typeof window.hideImageControls === 'function') window.hideImageControls();
+            if (typeof window.handleNextWithLoopCheck === 'function') window.handleNextWithLoopCheck();
+            return;
+        }
+
+        // Center = toggle controls
+        if (controlsHidden) {
+            if (typeof window.showImageControls === 'function') window.showImageControls();
+        } else {
+            if (typeof window.hideImageControls === 'function') window.hideImageControls();
+        }
+        return;
+    }
+
     if (controlsHidden) {
         // Show controls when clicking anywhere
         showControls(true);

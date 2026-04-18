@@ -24,7 +24,10 @@ function initImageViewer() {
     imageElement = document.getElementById('imageDisplay');
     if (!imageElement) return;
 
-    imageElement.addEventListener('click', handleImageClick);
+    // Click on zoomed image to set zoom focus
+    imageElement.addEventListener('click', handleZoomedImageClick);
+
+    // Mouse events for panning when zoomed
     imageElement.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -187,51 +190,17 @@ function updateCursor() {
     imageElement.style.cursor = getCurrentScale() > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default';
 }
 
-function handleImageClick(event) {
-    if (getCurrentScale() !== 1) {
-        const rect = imageElement.getBoundingClientRect();
-        const xPercent = ((event.clientX - rect.left) / rect.width) * 100;
-        const yPercent = ((event.clientY - rect.top) / rect.height) * 100;
-        imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
-        return;
-    }
+// Handle click on zoomed image to set zoom focus point
+function handleZoomedImageClick(event) {
+    if (getCurrentScale() === 1) return;
+
+    // Stop propagation so playerWrapper doesn't handle this click
+    event.stopPropagation();
 
     const rect = imageElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    const width = rect.width;
-    const height = rect.height;
-
-    // Bottom 20% = show controls
-    if (y > height * 0.8) {
-        showImageControls();
-        return;
-    }
-    // Left 30% = prev (hide controls immediately)
-    if (x < width * 0.3) {
-        cancelControlsHide();
-        hideImageControls();
-        if (typeof playPrevious === 'function') playPrevious();
-        return;
-    }
-
-    // Right 30% = next (hide controls immediately)
-    if (x > width * 0.7) {
-        cancelControlsHide();
-        handleNextWithLoopCheck();
-        hideImageControls();
-        return;
-    }
-    console.log ("227: x/w=", x, width, "  y/h=", y," ",height);
-
-    // Center = toggle controls
-    const controls = document.getElementById('controls');
-    if (controls && controls.classList.contains('hidden')) {
-        showImageControls();
-    } else {
-        cancelControlsHide();
-        hideImageControls();
-    }
+    const xPercent = ((event.clientX - rect.left) / rect.width) * 100;
+    const yPercent = ((event.clientY - rect.top) / rect.height) * 100;
+    imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
 }
 
 function handleNextWithLoopCheck() {
@@ -331,7 +300,11 @@ function handleTouchEnd() {
     isPanning = false;
     updateCursor();
     if (Date.now() - touchStartTime < 200 && getCurrentScale() === 1) {
-        const rect = imageElement.getBoundingClientRect();
+        // Use playerWrapper dimensions for zone detection (entire UI region)
+        const playerWrapper = document.getElementById('playerWrapper');
+        if (!playerWrapper) return;
+
+        const rect = playerWrapper.getBoundingClientRect();
         const x = lastTouchX - rect.left;
         const y = lastTouchY - rect.top;
         const width = rect.width;
@@ -473,6 +446,10 @@ async function viewImage(sourceobject, entryPath) {
 
     const magBtn = document.getElementById('magnifierBtn');
     if (magBtn) { magBtn.classList.remove('hidden'); updateMagnifierButton(); }
+
+    // Hide controls by default when viewing image
+    cancelControlsHide();
+    hideImageControls();
 
     let blobURL, imageName = entryPath;
 
