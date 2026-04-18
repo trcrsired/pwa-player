@@ -68,6 +68,7 @@ settingsYearEl.addEventListener("click", () => {
 
 document.getElementById("settingsBtn").addEventListener("click", () => {
     switchView("settingsView");
+    setTimeout(updateSaveLocationsDisplay, 100);
 });
 
 document.getElementById("settingsCloseBtn").addEventListener("click", () => {
@@ -1371,6 +1372,46 @@ function initProfiles() {
 
 // Initialize on load
 initProfiles();
+
+// =====================================================
+// Save Locations Display
+// =====================================================
+function updateSaveLocationsDisplay() {
+    const screenInput = document.getElementById("screenRecordingLocationInput");
+    const videoInput = document.getElementById("videoRecordingLocationInput");
+    const screenshotInput = document.getElementById("screenshotLocationInput");
+
+    if (!screenInput || !videoInput || !screenshotInput) return;
+
+    const getCfg = (type) => {
+        try {
+            const val = localStorage.getItem(`saveLocation_${type}`);
+            return val ? JSON.parse(val) : null;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const format = (cfg) => {
+        if (!cfg) return "";
+        const schema = cfg.schema === 'navigator_storage' ? 'OPFS' :
+                       cfg.schema === 'external_storage' ? 'External' :
+                       cfg.schema === 'indexeddb' ? 'IndexedDB' : cfg.schema;
+        return `${schema}: ${cfg.path || 'root'}`;
+    };
+
+    screenInput.value = format(getCfg('screenRecording'));
+    videoInput.value = format(getCfg('videoRecording'));
+    screenshotInput.value = format(getCfg('screenshot'));
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", updateSaveLocationsDisplay);
+} else {
+    updateSaveLocationsDisplay();
+}
+
+window.updateSaveLocationsDisplay = updateSaveLocationsDisplay;
 
 // =====================================================
 // Share PWA Player URL Setting

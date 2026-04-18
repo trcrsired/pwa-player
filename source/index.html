@@ -368,6 +368,21 @@
                     <input type="file" id="profileFileInput" accept=".json" style="display:none;">
                 </div>
 
+                <h3 data-i18n="saveLocations">Save Locations</h3>
+                <p class="setting-hint" data-i18n="saveLocationsHint">Configure where screen recordings, video recordings, and screenshots are saved. Set via Storage directory context menu.</p>
+                <label class="setting-label">
+                    <span data-i18n="screenRecordingSaveLocation">Screen Recording</span>
+                    <input type="text" id="screenRecordingLocationInput" class="setting-input" readonly placeholder="Not set">
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="videoRecordingSaveLocation">Video Recording</span>
+                    <input type="text" id="videoRecordingLocationInput" class="setting-input" readonly placeholder="Not set">
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="screenshotSaveLocation">Screenshot</span>
+                    <input type="text" id="screenshotLocationInput" class="setting-input" readonly placeholder="Not set">
+                </label>
+
                 <h3 data-i18n="aboutThisApp">About This App</h3>
 
                 <p class="storage-description" data-i18n="storageDescription">

@@ -463,16 +463,23 @@ function fallbackDownload(blob, filename) {
 
 // Start recording the <video> element
 function startVideoRecording() {
+    const t = (key) => window.i18n ? window.i18n.t(key) : key;
+
+    // Check if embedded player (YouTube/Vimeo/etc) is active
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        alert(t('useScreenRecordForEmbedded') || "Use Screen Capture for embedded content (YouTube, Vimeo, etc.).");
+        return;
+    }
 
     // Check if video is ready
     if (video.readyState < 2) {
-        alert("Video is not ready yet. Please start playing the video first.");
+        alert(t('videoNotReady') || "Video is not ready yet. Please start playing the video first.");
         return;
     }
 
     // Check if captureStream is supported
     if (!video.captureStream && !video.mozCaptureStream) {
-        alert("Your browser does not support video recording.");
+        alert(t('browserNoRecordSupport') || "Your browser does not support video recording.");
         return;
     }
 
@@ -481,7 +488,7 @@ function startVideoRecording() {
 
     // Check if stream has tracks
     if (!videoStream || videoStream.getTracks().length === 0) {
-        alert("Unable to record this video. It may be cross-origin or not allowed.");
+        alert(t('videoRecordFailed') || "Unable to record this video. It may be cross-origin or not allowed.");
         return;
     }
 
@@ -507,7 +514,7 @@ function startVideoRecording() {
     // Use timeslice for better file integrity
     mediaRecorder.start(1000);
     mediaRecordBtn.textContent = "⏹️";
-    alert("Recording started.");
+    alert(t('recordingStarted') || "Recording started.");
 }
 
 // Save the recorded file
@@ -526,17 +533,18 @@ function saveVideoRecording() {
 
 // Stop recording
 function stopVideoRecording() {
+    const t = (key) => window.i18n ? window.i18n.t(key) : key;
     if (mediaRecorder && mediaRecorder.state === "recording") {
-        // Request final data flush before stopping
         mediaRecorder.requestData();
         mediaRecorder.stop();
     }
     mediaRecordBtn.textContent = "⏺️";
-    alert("Recording stopped.");
+    alert(t('recordingStopped') || "Recording stopped.");
 }
 
 // Toggle button
 mediaRecordBtn.addEventListener("click", () => {
+    const t = (key) => window.i18n ? window.i18n.t(key) : key;
     if (!mediaRecorder) {
         startVideoRecording();
         return;
@@ -545,9 +553,9 @@ mediaRecordBtn.addEventListener("click", () => {
     if (mediaRecorder.state === "recording") {
         stopVideoRecording();
     } else {
-        mediaRecorder.start();
+        mediaRecorder.start(1000);
         mediaRecordBtn.textContent = "⏹️";
-        alert("Recording started.");
+        alert(t('recordingStarted') || "Recording started.");
     }
 });
 
@@ -558,10 +566,11 @@ mediaRecordBtn.addEventListener("click", () => {
 const screenshotBtn = document.getElementById("screenshotBtn");
 
 screenshotBtn.addEventListener("click", async () => {
+    const t = (key) => window.i18n ? window.i18n.t(key) : key;
 
     // Ensure video is ready
     if (video.readyState < 2) {
-        alert("Video is not ready yet. Please start playing the video first.");
+        alert(t('videoNotReady') || "Video is not ready yet. Please start playing the video first.");
         return;
     }
 
@@ -572,18 +581,16 @@ screenshotBtn.addEventListener("click", async () => {
     const ctx = canvas.getContext("2d");
 
     try {
-        // Try drawing the video frame
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     } catch (err) {
-        alert("Unable to capture screenshot. The video source may be cross-origin without CORS.");
+        alert(t('screenshotFailed') || "Unable to capture screenshot. The video source may be cross-origin without CORS.");
         console.error(err);
         return;
     }
 
-    // Try exporting WebP
     canvas.toBlob(blob => {
         if (!blob) {
-            alert("Screenshot failed. The video source may not allow capturing.");
+            alert(t('screenshotFailed') || "Screenshot failed. The video source may not allow capturing.");
             return;
         }
         const filename = `screenshot-${Date.now()}.webp`;

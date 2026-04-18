@@ -1955,6 +1955,10 @@ function showSaveLocationSubMenu(entry, dirName, parentButton) {
                     screenshot: t('screenshotSaveLocation', 'Screenshot')
                 };
                 alert(`${typeLabels[type]} ${t('saveLocationSet', 'save location set to')}: ${dirName}`);
+                // Update settings display if function exists
+                if (typeof window.updateSaveLocationsDisplay === 'function') {
+                    window.updateSaveLocationsDisplay();
+                }
                 closeMenu();
             }
         });
