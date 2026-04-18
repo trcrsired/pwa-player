@@ -101,18 +101,21 @@ function handleKeyDown(event) {
 
     if (event.key === 'ArrowLeft') {
         event.preventDefault();
-        if (typeof playPrevious === 'function') playPrevious();
+        cancelControlsHide();
         hideImageControls();
+        if (typeof playPrevious === 'function') playPrevious();
     } else if (event.key === 'ArrowRight') {
         event.preventDefault();
-        handleNextWithLoopCheck();
+        cancelControlsHide();
         hideImageControls();
+        handleNextWithLoopCheck();
     } else if (event.key === ' ' || event.key === 'Spacebar') {
         event.preventDefault();
         handlePlayButtonClick(event);
         showImageControls();
     } else if (event.key === 'Escape') {
         event.preventDefault();
+        cancelControlsHide();
         hideImageControls();
     }
 }
@@ -204,26 +207,29 @@ function handleImageClick(event) {
         showImageControls();
         return;
     }
-
-    // Left 30% = prev (hide controls)
+    // Left 30% = prev (hide controls immediately)
     if (x < width * 0.3) {
-        if (typeof playPrevious === 'function') playPrevious();
+        cancelControlsHide();
         hideImageControls();
+        if (typeof playPrevious === 'function') playPrevious();
         return;
     }
 
-    // Right 30% = next (hide controls)
+    // Right 30% = next (hide controls immediately)
     if (x > width * 0.7) {
+        cancelControlsHide();
         handleNextWithLoopCheck();
         hideImageControls();
         return;
     }
+    console.log ("227: x/w=", x, width, "  y/h=", y," ",height);
 
     // Center = toggle controls
     const controls = document.getElementById('controls');
     if (controls && controls.classList.contains('hidden')) {
         showImageControls();
     } else {
+        cancelControlsHide();
         hideImageControls();
     }
 }
@@ -334,11 +340,13 @@ function handleTouchEnd() {
         if (y > height * 0.8) {
             showImageControls();
         } else if (x < width * 0.3) {
+            cancelControlsHide();
+            hideImageControls();
             if (typeof playPrevious === 'function') playPrevious();
-            hideImageControls();
         } else if (x > width * 0.7) {
-            handleNextWithLoopCheck();
+            cancelControlsHide();
             hideImageControls();
+            handleNextWithLoopCheck();
         }
     }
 }
@@ -465,8 +473,6 @@ async function viewImage(sourceobject, entryPath) {
 
     const magBtn = document.getElementById('magnifierBtn');
     if (magBtn) { magBtn.classList.remove('hidden'); updateMagnifierButton(); }
-
-    showImageControls();
 
     let blobURL, imageName = entryPath;
 
