@@ -2070,8 +2070,9 @@ playerWrapper.addEventListener("click", (e) => {
     if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
         const x = e.clientX;
         const y = e.clientY;
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+        // Use document.documentElement dimensions for better cross-platform compatibility
+        const width = document.documentElement.clientWidth;
+        const height = document.documentElement.clientHeight;
 
         // Bottom 20% = show controls
         if (y > height * 0.8) {

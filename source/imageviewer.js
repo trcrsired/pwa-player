@@ -11,18 +11,14 @@ let controlsHideTimer = null;
 let isInteractingWithControls = false; // Flag to prevent hiding when using controls
 let slideshowControlsVisible = false; // Track whether user wants controls visible during slideshow
 
-// Scale levels
+// Scale levels for magnifier button cycling
 const SCALE_LEVELS = [1, 1.5, 2, 3, 0.75];
 let currentScaleIndex = 0;
 
-// Pan state
-let isPanning = false;
-let panStart = { x: 0, y: 0 };
-let panOffset = { x: 0, y: 0 };
-let lastPanOffset = { x: 0, y: 0 };
+// Note: Native pinch-zoom and panning handled by CSS touch-action: pinch-zoom pan-x pan-y
+// No custom touch/mouse handlers needed for panning
 
 // Add interaction flag handlers immediately with capture phase (fires BEFORE bubble phase)
-// This ensures the flag is set BEFORE playPrevious/playNext are called by nowplaying.js handlers
 document.getElementById("prevBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
 document.getElementById("nextBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
 document.getElementById("npPrevBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
@@ -33,18 +29,17 @@ function initImageViewer() {
     imageElement = document.getElementById('imageDisplay');
     if (!imageElement) return;
 
-    // Click on zoomed image to set zoom focus
+    // Click on zoomed image to set zoom focus point
     imageElement.addEventListener('click', handleZoomedImageClick);
 
-    // Mouse events for panning when zoomed
-    imageElement.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Wheel for zoom (mouse/trackpad)
     imageElement.addEventListener('wheel', handleWheel, { passive: false });
-    imageElement.addEventListener('touchstart', handleTouchStart, { passive: false });
-    imageElement.addEventListener('touchmove', handleTouchMove, { passive: false });
-    imageElement.addEventListener('touchend', handleTouchEnd);
+
+    // Keyboard navigation
     document.addEventListener('keydown', handleKeyDown);
+
+    // Note: touch-action: pinch-zoom pan-x pan-y in CSS handles native pinch zoom and panning
+    // No need for custom touch/mouse drag handlers
 
     const magnifierBtn = document.getElementById('magnifierBtn');
     if (magnifierBtn) magnifierBtn.addEventListener('click', handleMagnifierClick);
@@ -171,7 +166,7 @@ function zoomIn(clientX, clientY) {
                     const yPercent = ((clientY - rect.top) / rect.height) * 100;
                     imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
                 }
-                applyPanAndZoom();
+                applyScale();
                 updateCursor();
                 updateMagnifierButton();
                 return;
@@ -188,14 +183,14 @@ function zoomIn(clientX, clientY) {
             const yPercent = ((clientY - rect.top) / rect.height) * 100;
             imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
         }
-        applyPanAndZoom();
+        applyScale();
         updateCursor();
         updateMagnifierButton();
     } else if (SCALE_LEVELS[currentScaleIndex] === 1) {
         for (let i = 0; i < SCALE_LEVELS.length; ++i) {
             if (SCALE_LEVELS[i] > 1) {
                 currentScaleIndex = i;
-                applyPanAndZoom();
+                applyScale();
                 updateCursor();
                 updateMagnifierButton();
                 break;
@@ -213,19 +208,17 @@ function zoomOut() {
             if (SCALE_LEVELS[i] < currentScale) {
                 currentScaleIndex = i;
                 if (SCALE_LEVELS[currentScaleIndex] === 1) {
-                    panOffset = { x: 0, y: 0 };
                     imageElement.style.transformOrigin = 'center center';
                 }
-                applyPanAndZoom();
+                applyScale();
                 updateCursor();
                 updateMagnifierButton();
                 return;
             }
         }
         currentScaleIndex = 0; // Go to minimum
-        panOffset = { x: 0, y: 0 };
         imageElement.style.transformOrigin = 'center center';
-        applyPanAndZoom();
+        applyScale();
         updateCursor();
         updateMagnifierButton();
         return;
@@ -234,10 +227,9 @@ function zoomOut() {
     if (currentScaleIndex > 0 && SCALE_LEVELS[currentScaleIndex - 1] < SCALE_LEVELS[currentScaleIndex]) {
         currentScaleIndex--;
         if (SCALE_LEVELS[currentScaleIndex] === 1) {
-            panOffset = { x: 0, y: 0 };
             imageElement.style.transformOrigin = 'center center';
         }
-        applyPanAndZoom();
+        applyScale();
         updateCursor();
         updateMagnifierButton();
     } else if (SCALE_LEVELS[currentScaleIndex] > 1) {
@@ -245,10 +237,9 @@ function zoomOut() {
             if (SCALE_LEVELS[i] < SCALE_LEVELS[currentScaleIndex]) {
                 currentScaleIndex = i;
                 if (SCALE_LEVELS[currentScaleIndex] === 1) {
-                    panOffset = { x: 0, y: 0 };
                     imageElement.style.transformOrigin = 'center center';
                 }
-                applyPanAndZoom();
+                applyScale();
                 updateCursor();
                 updateMagnifierButton();
                 break;
@@ -258,7 +249,7 @@ function zoomOut() {
 }
 
 function updateCursor() {
-    imageElement.style.cursor = getCurrentScale() > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default';
+    imageElement.style.cursor = getCurrentScale() > 1 ? 'grab' : 'default';
 }
 
 // Handle click on zoomed image to set zoom focus point
@@ -290,44 +281,20 @@ function handleNextWithLoopCheck() {
     if (typeof playNext === 'function') playNext();
 }
 
-function handleMouseDown(event) {
-    if (getCurrentScale() === 1) return;
-    event.preventDefault();
-    isPanning = true;
-    panStart = { x: event.clientX, y: event.clientY };
-    lastPanOffset = { ...panOffset };
-    imageElement.style.cursor = 'grabbing';
-}
-
-function handleMouseMove(event) {
-    if (!isPanning) return;
+// Apply scale transform (CSS handles native panning via touch-action)
+function applyScale() {
     const scale = getCurrentScale();
-    panOffset = {
-        x: lastPanOffset.x + (event.clientX - panStart.x) / scale,
-        y: lastPanOffset.y + (event.clientY - panStart.y) / scale
-    };
-    applyPanAndZoom();
-}
-
-function handleMouseUp() {
-    isPanning = false;
-    updateCursor();
-}
-
-function applyPanAndZoom() {
-    const scale = getCurrentScale();
-    imageElement.style.transform = `scale(${scale}) translate(${panOffset.x}px, ${panOffset.y}px)`;
+    imageElement.style.transform = `scale(${scale})`;
 }
 
 function handleMagnifierClick(event) {
     event.stopPropagation();
     currentScaleIndex = (currentScaleIndex + 1) % SCALE_LEVELS.length;
     if (SCALE_LEVELS[currentScaleIndex] === 1) {
-        panOffset = { x: 0, y: 0 };
         imageElement.style.transformOrigin = 'center center';
         imageElement.style.transform = 'scale(1)';
     } else {
-        applyPanAndZoom();
+        applyScale();
     }
     updateCursor();
     updateMagnifierButton();
@@ -340,140 +307,7 @@ function updateMagnifierButton() {
     btn.title = getCurrentScale() >= 2 ? 'Zoom Out' : 'Zoom In';
 }
 
-let touchStartTime = 0, lastTouchX = 0, lastTouchY = 0;
-let isPinching = false;
-let pinchStartDistance = 0;
-let pinchStartScale = 1;
-let pinchCenter = { x: 0, y: 0 };
-
-function getTouchDistance(touches) {
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
-function getTouchCenter(touches) {
-    return {
-        x: (touches[0].clientX + touches[1].clientX) / 2,
-        y: (touches[0].clientY + touches[1].clientY) / 2
-    };
-}
-
-function handleTouchStart(event) {
-    touchStartTime = Date.now();
-
-    if (event.touches.length === 2) {
-        // Pinch zoom start
-        event.preventDefault();
-        isPinching = true;
-        isPanning = false;
-        pinchStartDistance = getTouchDistance(event.touches);
-        pinchStartScale = getCurrentScale();
-        pinchCenter = getTouchCenter(event.touches);
-
-        // Set transform origin to pinch center
-        const rect = imageElement.getBoundingClientRect();
-        const xPercent = ((pinchCenter.x - rect.left) / rect.width) * 100;
-        const yPercent = ((pinchCenter.y - rect.top) / rect.height) * 100;
-        imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
-    } else if (event.touches.length === 1) {
-        lastTouchX = event.touches[0].clientX;
-        lastTouchY = event.touches[0].clientY;
-        if (getCurrentScale() !== 1) {
-            event.preventDefault();
-            isPanning = true;
-            panStart = { x: lastTouchX, y: lastTouchY };
-            lastPanOffset = { ...panOffset };
-        }
-    }
-}
-
-function handleTouchMove(event) {
-    if (event.touches.length === 2 && isPinching) {
-        event.preventDefault();
-
-        const currentDistance = getTouchDistance(event.touches);
-        const scaleRatio = currentDistance / pinchStartDistance;
-        const newScale = pinchStartScale * scaleRatio;
-
-        // Clamp scale to reasonable range
-        const minScale = 0.5;
-        const maxScale = 5;
-        const clampedScale = Math.max(minScale, Math.min(maxScale, newScale));
-
-        // Find the closest scale index or use direct scale
-        // For pinch zoom, use direct scale value instead of predefined levels
-        currentScaleIndex = -1; // Special index for pinch zoom
-        imageElement.style.transform = `scale(${clampedScale}) translate(${panOffset.x}px, ${panOffset.y}px)`;
-        updateCursor();
-        updateMagnifierButton();
-    } else if (!isPinching && isPanning && event.touches.length === 1) {
-        event.preventDefault();
-        const scale = getCurrentScale();
-        panOffset = {
-            x: lastPanOffset.x + (event.touches[0].clientX - panStart.x) / scale,
-            y: lastPanOffset.y + (event.touches[0].clientY - panStart.y) / scale
-        };
-        applyPanAndZoom();
-    }
-}
-
-function handleTouchEnd(event) {
-    // If ending pinch, find nearest scale level
-    if (isPinching && event.touches.length < 2) {
-        isPinching = false;
-
-        // Get current scale from transform
-        const transform = imageElement.style.transform;
-        const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
-        if (scaleMatch) {
-            const currentScale = parseFloat(scaleMatch[1]);
-            // Find closest predefined scale level
-            let closestIndex = 0;
-            let closestDiff = Math.abs(SCALE_LEVELS[0] - currentScale);
-            for (let i = 1; i < SCALE_LEVELS.length; ++i) {
-                const diff = Math.abs(SCALE_LEVELS[i] - currentScale);
-                if (diff < closestDiff) {
-                    closestDiff = diff;
-                    closestIndex = i;
-                }
-            }
-            currentScaleIndex = closestIndex;
-
-            if (SCALE_LEVELS[currentScaleIndex] === 1) {
-                panOffset = { x: 0, y: 0 };
-                imageElement.style.transformOrigin = 'center center';
-            }
-            applyPanAndZoom();
-            updateCursor();
-            updateMagnifierButton();
-        }
-    }
-
-    if (event.touches.length === 0) {
-        isPanning = false;
-        updateCursor();
-
-        // Handle tap only if not pinching and quick tap
-        if (!isPinching && Date.now() - touchStartTime < 200 && getCurrentScale() === 1) {
-            // Use entire window dimensions for zone detection (not limited to playerWrapper)
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-
-            if (lastTouchY > height * 0.8) {
-                showImageControls();
-            } else if (lastTouchX < width * 0.3) {
-                cancelControlsHide();
-                hideImageControls();
-                if (typeof playPrevious === 'function') playPrevious();
-            } else if (lastTouchX > width * 0.7) {
-                cancelControlsHide();
-                hideImageControls();
-                handleNextWithLoopCheck();
-            }
-        }
-    }
-}
+// Note: Native pinch-zoom handled by CSS touch-action. No custom touch handlers needed.
 
 function handlePlayButtonClick(event) {
     if (!isImageViewerActive()) return;
@@ -663,7 +497,6 @@ async function viewImage(sourceobject, entryPath) {
         imageElement.alt = imageName;
 
         currentScaleIndex = 0;
-        panOffset = { x: 0, y: 0 };
         imageElement.style.transform = 'scale(1)';
         imageElement.style.cursor = 'default';
         imageElement.style.transformOrigin = 'center center';
@@ -694,7 +527,6 @@ function hideImageViewer() {
         imageElement.classList.add('hidden');
         imageElement.src = '';
         currentScaleIndex = 0;
-        panOffset = { x: 0, y: 0 };
         imageElement.style.transform = 'scale(1)';
     }
 
