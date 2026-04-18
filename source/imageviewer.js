@@ -72,15 +72,24 @@ function initImageViewer() {
 
     // Hook into time display for image number input
     const timeDisplay = document.getElementById('timeDisplay');
+    const npTimeDisplay = document.getElementById('npTimeDisplay');
     if (timeDisplay) {
         timeDisplay.addEventListener('click', handleTimeDisplayClick);
     }
+    if (npTimeDisplay) {
+        npTimeDisplay.addEventListener('click', handleNpTimeDisplayClick);
+    }
 
-    // Hook into progress bar for image switching
+    // Hook into progress bars for image switching
     const progressBar = document.getElementById('progressBar');
+    const npProgressBar = document.getElementById('npProgressBar');
     if (progressBar) {
         progressBar.addEventListener('input', handleProgressBarInput);
         progressBar.addEventListener('change', handleProgressBarChange);
+    }
+    if (npProgressBar) {
+        npProgressBar.addEventListener('input', handleNpProgressBarInput);
+        npProgressBar.addEventListener('change', handleNpProgressBarChange);
     }
 }
 
@@ -109,9 +118,8 @@ function handleWheel(event) {
 // Zoom in one level
 function zoomIn(clientX, clientY) {
     if (currentScaleIndex < SCALE_LEVELS.length - 1 && SCALE_LEVELS[currentScaleIndex + 1] > SCALE_LEVELS[currentScaleIndex]) {
-        currentScaleIndex++;
+        ++currentScaleIndex;
 
-        // Set transform origin to cursor position for focused zoom
         if (clientX !== undefined && clientY !== undefined) {
             const rect = imageElement.getBoundingClientRect();
             const xPercent = ((clientX - rect.left) / rect.width) * 100;
@@ -123,8 +131,7 @@ function zoomIn(clientX, clientY) {
         updateCursor();
         updateMagnifierButton();
     } else if (SCALE_LEVELS[currentScaleIndex] === 1) {
-        // If at normal, find the first zoom-in level
-        for (let i = 0; i < SCALE_LEVELS.length; i++) {
+        for (let i = 0; i != SCALE_LEVELS.length; ++i) {
             if (SCALE_LEVELS[i] > 1) {
                 currentScaleIndex = i;
                 applyPanAndZoom();
@@ -139,9 +146,8 @@ function zoomIn(clientX, clientY) {
 // Zoom out one level
 function zoomOut() {
     if (currentScaleIndex > 0 && SCALE_LEVELS[currentScaleIndex - 1] < SCALE_LEVELS[currentScaleIndex]) {
-        currentScaleIndex--;
+        --currentScaleIndex;
         if (SCALE_LEVELS[currentScaleIndex] === 1) {
-            // Reset pan when returning to normal
             panOffset = { x: 0, y: 0 };
             imageElement.style.transformOrigin = 'center center';
         }
@@ -149,8 +155,7 @@ function zoomOut() {
         updateCursor();
         updateMagnifierButton();
     } else if (SCALE_LEVELS[currentScaleIndex] > 1) {
-        // Find previous smaller scale
-        for (let i = currentScaleIndex - 1; i >= 0; i--) {
+        for (let i = currentScaleIndex; i--;) {
             if (SCALE_LEVELS[i] < SCALE_LEVELS[currentScaleIndex]) {
                 currentScaleIndex = i;
                 if (SCALE_LEVELS[currentScaleIndex] === 1) {
@@ -177,9 +182,7 @@ function updateCursor() {
 
 // Handle image click for navigation (only at normal scale)
 function handleImageClick(event) {
-    // If zoomed, don't navigate - click is for potential zoom focus
     if (getCurrentScale() !== 1) {
-        // Single click at zoomed state - set focus point for next zoom
         const rect = imageElement.getBoundingClientRect();
         const xPercent = ((event.clientX - rect.left) / rect.width) * 100;
         const yPercent = ((event.clientY - rect.top) / rect.height) * 100;
@@ -191,15 +194,37 @@ function handleImageClick(event) {
     const x = event.clientX - rect.left;
     const width = rect.width;
 
-    // Left 30% = prev, Right 30% = next, Center 40% = nothing
     if (x < width * 0.3) {
         if (typeof playPrevious === 'function') {
             playPrevious();
         }
     } else if (x > width * 0.7) {
         if (typeof playNext === 'function') {
-            playNext();
+            handleNextWithLoopCheck();
         }
+    }
+}
+
+// Check if at last image and ask about looping
+function handleNextWithLoopCheck() {
+    const pos = getImageQueuePosition();
+    if (!pos) {
+        if (typeof playNext === 'function') playNext();
+        return;
+    }
+
+    // If at last image (index === total)
+    if (pos.index >= pos.total) {
+        const t = (key) => window.i18n ? window.i18n.t(key) : key;
+        const message = t('loopToFirstImage', 'You are at the last image. Jump back to the first one?');
+        if (confirm(message)) {
+            jumpToImageIndex(0);
+        }
+        return;
+    }
+
+    if (typeof playNext === 'function') {
+        playNext();
     }
 }
 
@@ -294,7 +319,6 @@ function handleTouchStart(event) {
         lastTouchX = event.touches[0].clientX;
         lastTouchY = event.touches[0].clientY;
 
-        // Start panning if zoomed
         if (getCurrentScale() !== 1) {
             event.preventDefault();
             isPanning = true;
@@ -330,7 +354,6 @@ function handleTouchEnd(event) {
 
     const touchDuration = Date.now() - touchStartTime;
 
-    // Quick tap (< 200ms) at normal scale for navigation
     if (touchDuration < 200 && getCurrentScale() === 1) {
         const rect = imageElement.getBoundingClientRect();
         const x = lastTouchX - rect.left;
@@ -341,16 +364,13 @@ function handleTouchEnd(event) {
                 playPrevious();
             }
         } else if (x > width * 0.7) {
-            if (typeof playNext === 'function') {
-                playNext();
-            }
+            handleNextWithLoopCheck();
         }
     }
 }
 
 // Handle play button click for slideshow
 function handlePlayButtonClick(event) {
-    // Only handle if image viewer is active
     if (!isImageViewerActive()) return;
 
     event.stopPropagation();
@@ -366,33 +386,33 @@ function handlePlayButtonClick(event) {
 
 // Handle stop button click - stop slideshow and clear image
 function handleStopButtonClick(event) {
-    // Only handle if image viewer is active
     if (!isImageViewerActive()) return;
 
     event.stopPropagation();
 
-    // Stop slideshow
     stopSlideshow();
-
-    // Clear image (go back to no media state)
     hideImageViewer();
 
-    // Clear now playing info
     if (typeof updateNowPlayingInfo === 'function') {
         updateNowPlayingInfo(null);
     }
 
-    // Clear time display
     const timeDisplay = document.getElementById('timeDisplay');
     const npTimeDisplay = document.getElementById('npTimeDisplay');
     if (timeDisplay) timeDisplay.textContent = '00:00 / 00:00';
     if (npTimeDisplay) npTimeDisplay.textContent = '00:00 / 00:00';
 
-    // Reset progress bar
     const progressBar = document.getElementById('progressBar');
+    const npProgressBar = document.getElementById('npProgressBar');
     if (progressBar) {
         progressBar.value = 0;
         progressBar.max = 100;
+        progressBar.step = 1;
+    }
+    if (npProgressBar) {
+        npProgressBar.value = 0;
+        npProgressBar.max = 100;
+        npProgressBar.step = 1;
     }
 }
 
@@ -414,14 +434,16 @@ function updatePlayButtonForSlideshow() {
 
 // Slideshow controls
 function startSlideshow(intervalMs = null) {
-    if (intervalMs) slideshowInterval = intervalMs;
+    // Get interval from settings if not provided
+    if (!intervalMs) {
+        intervalMs = getSlideshowInterval();
+    }
+    slideshowInterval = intervalMs;
 
     stopSlideshow();
     isSlideshowActive = true;
     slideshowTimer = setInterval(() => {
-        if (typeof playNext === 'function') {
-            playNext();
-        }
+        handleNextWithLoopCheck();
     }, slideshowInterval);
 
     updatePlayButtonForSlideshow();
@@ -436,102 +458,14 @@ function stopSlideshow() {
     updatePlayButtonForSlideshow();
 }
 
-// Handle time display click - allow typing image number
-function handleTimeDisplayClick(event) {
-    if (!isImageViewerActive()) return;
-
-    const pos = getImageQueuePosition();
-    if (!pos) return;
-
-    const timeDisplay = document.getElementById('timeDisplay');
-    if (!timeDisplay) return;
-
-    // Create input field
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.min = 1;
-    input.max = pos.total;
-    input.value = pos.index;
-    input.style.cssText = 'width:60px;font-size:inherit;background:#333;color:#fff;border:1px solid #666;padding:2px;text-align:center;';
-
-    timeDisplay.textContent = '';
-    timeDisplay.appendChild(input);
-    input.focus();
-
-    // Handle input
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const targetIndex = parseInt(input.value, 10) - 1;
-            if (targetIndex >= 0 && targetIndex < pos.total) {
-                jumpToImageIndex(targetIndex);
-            }
-            restoreTimeDisplay();
-        } else if (e.key === 'Escape') {
-            restoreTimeDisplay();
-        }
-    });
-
-    input.addEventListener('blur', restoreTimeDisplay);
-
-    function restoreTimeDisplay() {
-        const newPos = getImageQueuePosition();
-        if (newPos) {
-            timeDisplay.textContent = `${newPos.index}/${newPos.total}`;
-        }
-    }
-}
-
-// Handle progress bar input (drag) - show preview
-function handleProgressBarInput(event) {
-    if (!isImageViewerActive()) return;
-
-    // Set dragging flag to prevent video handler interference
-    window.isDraggingProgressBar = true;
-
-    const pos = getImageQueuePosition();
-    if (!pos) return;
-
-    const progressBar = document.getElementById('progressBar');
-    if (!progressBar) return;
-
-    const percent = parseFloat(progressBar.value) / 100;
-    const targetIndex = Math.floor(percent * pos.total) + 1;
-
-    // Show preview of target
-    const timeDisplay = document.getElementById('timeDisplay');
-    if (timeDisplay) {
-        timeDisplay.textContent = `${targetIndex}/${pos.total}`;
-    }
-}
-
-// Handle progress bar change (release) - jump to image
-function handleProgressBarChange(event) {
-    if (!isImageViewerActive()) return;
-
-    // Clear dragging flag
-    window.isDraggingProgressBar = false;
-
-    const pos = getImageQueuePosition();
-    if (!pos) return;
-
-    const progressBar = document.getElementById('progressBar');
-    if (!progressBar) return;
-
-    const percent = parseFloat(progressBar.value) / 100;
-    const targetIndex = Math.floor(percent * pos.total);
-
-    jumpToImageIndex(targetIndex);
-}
-
-// Jump to specific image index in queue
-function jumpToImageIndex(targetIndex) {
-    if (typeof nowPlaying_playIndex === 'function' && typeof nowPlayingIndex !== 'undefined') {
-        nowPlaying_playIndex(targetIndex);
-    }
-}
-
-// Slideshow interval from settings
+// Get slideshow interval from settings or default
 function getSlideshowInterval() {
+    // Try localStorage first
+    const stored = localStorage.getItem('slideshowInterval');
+    if (stored) {
+        return parseInt(stored, 10) || 5000;
+    }
+    // Try settings input
     const input = document.getElementById('slideshowIntervalInput');
     if (input && input.value) {
         return parseInt(input.value, 10) || 5000;
@@ -539,16 +473,129 @@ function getSlideshowInterval() {
     return slideshowInterval;
 }
 
+// Handle time display click - allow typing image number
+function handleTimeDisplayClick(event) {
+    if (!isImageViewerActive()) return;
+    showImageNumberInput('timeDisplay');
+}
+
+// Handle np time display click
+function handleNpTimeDisplayClick(event) {
+    if (!isImageViewerActive()) return;
+    showImageNumberInput('npTimeDisplay');
+}
+
+// Show image number input in given display element
+function showImageNumberInput(displayId) {
+    const pos = getImageQueuePosition();
+    if (!pos) return;
+
+    const displayEl = document.getElementById(displayId);
+    if (!displayEl) return;
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = 1;
+    input.max = pos.total;
+    input.value = pos.index;
+    input.style.cssText = 'width:60px;font-size:inherit;background:#333;color:#fff;border:1px solid #666;padding:2px;text-align:center;';
+
+    displayEl.textContent = '';
+    displayEl.appendChild(input);
+    input.focus();
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const targetIndex = parseInt(input.value, 10) - 1;
+            if (targetIndex >= 0 && targetIndex < pos.total) {
+                jumpToImageIndex(targetIndex);
+            }
+            restoreDisplay();
+        } else if (e.key === 'Escape') {
+            restoreDisplay();
+        }
+    });
+
+    input.addEventListener('blur', restoreDisplay);
+
+    function restoreDisplay() {
+        const newPos = getImageQueuePosition();
+        if (newPos) {
+            displayEl.textContent = `${newPos.index}/${newPos.total}`;
+        }
+    }
+}
+
+// Handle progress bar input (drag) - show preview
+function handleProgressBarInput(event) {
+    handleProgressBarInputGeneric('progressBar', 'timeDisplay');
+}
+
+// Handle np progress bar input
+function handleNpProgressBarInput(event) {
+    handleProgressBarInputGeneric('npProgressBar', 'npTimeDisplay');
+}
+
+// Generic progress bar input handler
+function handleProgressBarInputGeneric(progressBarId, displayId) {
+    if (!isImageViewerActive()) return;
+
+    window.isDraggingProgressBar = true;
+
+    const pos = getImageQueuePosition();
+    if (!pos) return;
+
+    const progressBar = document.getElementById(progressBarId);
+    if (!progressBar) return;
+
+    // Progress bar uses integer steps: 0 to total-1
+    const targetIndex = parseInt(progressBar.value, 10);
+
+    // Clamp to valid range
+    const clampedIndex = Math.max(0, Math.min(targetIndex, pos.total - 1));
+
+    const displayEl = document.getElementById(displayId);
+    if (displayEl) {
+        displayEl.textContent = `${clampedIndex + 1}/${pos.total}`;
+    }
+}
+
+// Handle progress bar change (release) - jump to image
+function handleProgressBarChange(event) {
+    handleProgressBarChangeGeneric('progressBar');
+}
+
+// Handle np progress bar change
+function handleNpProgressBarChange(event) {
+    handleProgressBarChangeGeneric('npProgressBar');
+}
+
+// Generic progress bar change handler
+function handleProgressBarChangeGeneric(progressBarId) {
+    if (!isImageViewerActive()) return;
+
+    window.isDraggingProgressBar = false;
+
+    const pos = getImageQueuePosition();
+    if (!pos) return;
+
+    const progressBar = document.getElementById(progressBarId);
+    if (!progressBar) return;
+
+    const targetIndex = parseInt(progressBar.value, 10);
+    const clampedIndex = Math.max(0, Math.min(targetIndex, pos.total - 1));
+
+    jumpToImageIndex(clampedIndex);
+}
+
 // View image - main entry point
 async function viewImage(sourceobject, entryPath) {
     const t = (key) => window.i18n ? window.i18n.t(key) : key;
 
-    // Initialize if needed
     if (!imageElement) {
         initImageViewer();
     }
 
-    // Hide video and embedded player
     const video = document.getElementById('player');
     const embeddedPlayer = document.getElementById('embeddedPlayer');
     const videoStatusOverlay = document.getElementById('videoStatusOverlay');
@@ -564,19 +611,16 @@ async function viewImage(sourceobject, entryPath) {
         videoStatusOverlay.classList.add('hidden');
     }
 
-    // Show image element
     if (imageElement) {
         imageElement.classList.remove('hidden');
     }
 
-    // Show magnifier button
     const magnifierBtn = document.getElementById('magnifierBtn');
     if (magnifierBtn) {
         magnifierBtn.classList.remove('hidden');
         updateMagnifierButton();
     }
 
-    // Get blob URL from source
     let blobURL;
     let imageName = entryPath;
 
@@ -599,7 +643,6 @@ async function viewImage(sourceobject, entryPath) {
         imageElement.src = blobURL;
         imageElement.alt = imageName;
 
-        // Reset scale and pan
         currentScaleIndex = 0;
         panOffset = { x: 0, y: 0 };
         imageElement.style.transform = 'scale(1)';
@@ -611,17 +654,14 @@ async function viewImage(sourceobject, entryPath) {
             path: entryPath
         };
 
-        // Update Now Playing info
         if (typeof updateNowPlayingInfo === 'function') {
             updateNowPlayingInfo(currentImageEntry);
         }
 
-        // Update buttons and display
         updatePlayButtonForSlideshow();
         updateMagnifierButton();
-
-        // Update time display with queue position
         updateImageTimeDisplay();
+        updateImageProgressBars();
 
         return true;
     } catch (err) {
@@ -653,9 +693,18 @@ function hideImageViewer() {
     if (playBtn) playBtn.textContent = '▶️';
     if (npPlayBtn) npPlayBtn.textContent = '▶️';
 
+    // Reset progress bars to video mode
     const progressBar = document.getElementById('progressBar');
+    const npProgressBar = document.getElementById('npProgressBar');
     if (progressBar) {
         progressBar.value = 0;
+        progressBar.max = 100;
+        progressBar.step = 1;
+    }
+    if (npProgressBar) {
+        npProgressBar.value = 0;
+        npProgressBar.max = 100;
+        npProgressBar.step = 1;
     }
 
     const video = document.getElementById('player');
@@ -690,31 +739,64 @@ function getImageQueuePosition() {
 
     if (!queue || queue.length === 0) return null;
 
+    // Clamp index to valid range
+    currentIndex = Math.max(0, Math.min(currentIndex, queue.length - 1));
+
     return {
-        index: currentIndex + 1,
+        index: currentIndex + 1,  // 1-based for display
         total: queue.length
     };
 }
 
-// Update progress bar for image queue position
-function updateImageProgressBar(index, total) {
-    const progressBar = document.getElementById('progressBar');
-    if (!progressBar) return;
-
-    const percent = ((index - 1) / total) * 100;
-    progressBar.value = percent;
-    progressBar.max = 100;
-}
-
 // Update time display with queue position
 function updateImageTimeDisplay() {
-    if (typeof updateTimeDisplay === 'function') {
-        updateTimeDisplay(''); // Empty string triggers image-specific handling in player.js
+    if (!isImageViewerActive()) return;
+
+    const pos = getImageQueuePosition();
+    if (!pos) return;
+
+    const timeDisplay = document.getElementById('timeDisplay');
+    const npTimeDisplay = document.getElementById('npTimeDisplay');
+    if (timeDisplay) timeDisplay.textContent = `${pos.index}/${pos.total}`;
+    if (npTimeDisplay) npTimeDisplay.textContent = `${pos.index}/${pos.total}`;
+}
+
+// Update progress bars for image queue position (integer steps)
+function updateImageProgressBars() {
+    if (!isImageViewerActive()) return;
+
+    const pos = getImageQueuePosition();
+    if (!pos) return;
+
+    const progressBar = document.getElementById('progressBar');
+    const npProgressBar = document.getElementById('npProgressBar');
+
+    // Set progress bar to use integer steps: 0 to total-1
+    const max = pos.total - 1;
+    const value = pos.index - 1;  // Convert 1-based to 0-based
+
+    if (progressBar) {
+        progressBar.min = 0;
+        progressBar.max = max;
+        progressBar.step = 1;
+        progressBar.value = value;
+    }
+    if (npProgressBar) {
+        npProgressBar.min = 0;
+        npProgressBar.max = max;
+        npProgressBar.step = 1;
+        npProgressBar.value = value;
     }
 }
 
-// Expose for external calls after navigation
-window.updateImageTimeDisplay = updateImageTimeDisplay;
+// Jump to specific image index in queue
+function jumpToImageIndex(targetIndex) {
+    if (typeof nowPlaying_playIndex === 'function') {
+        nowPlaying_playIndex(targetIndex);
+    }
+}
+
+// Expose functions globally
 window.viewImage = viewImage;
 window.hideImageViewer = hideImageViewer;
 window.isImageViewerActive = isImageViewerActive;
@@ -723,9 +805,11 @@ window.stopSlideshow = stopSlideshow;
 window.getSlideshowInterval = getSlideshowInterval;
 window.getCurrentImageEntry = getCurrentImageEntry;
 window.getImageQueuePosition = getImageQueuePosition;
-window.updateImageProgressBar = updateImageProgressBar;
+window.updateImageTimeDisplay = updateImageTimeDisplay;
+window.updateImageProgressBars = updateImageProgressBars;
 window.zoomIn = zoomIn;
 window.zoomOut = zoomOut;
+window.handleNextWithLoopCheck = handleNextWithLoopCheck;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {

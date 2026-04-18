@@ -490,23 +490,13 @@ function updateTimeDisplay(txtct)
 
   // Check for image viewer (show queue position i/n)
   if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
-    if (typeof window.getImageQueuePosition === 'function') {
-      const pos = window.getImageQueuePosition();
-      if (pos) {
-        const imageText = `${pos.index}/${pos.total}`;
-        if (!timeInputActive) {
-          timeDisplay.textContent = imageText;
-        }
-        if (!npTimeInputActive) {
-          npTimeDisplay.textContent = imageText;
-        }
-        // Update progress bar for image queue position
-        if (typeof window.updateImageProgressBar === 'function') {
-          window.updateImageProgressBar(pos.index, pos.total);
-        }
-        return;
-      }
+    if (typeof window.updateImageTimeDisplay === 'function') {
+      window.updateImageTimeDisplay();
     }
+    if (typeof window.updateImageProgressBars === 'function') {
+      window.updateImageProgressBars();
+    }
+    return;
   }
 
   // Check for video recording (append elapsed time with ⏺️ icon)

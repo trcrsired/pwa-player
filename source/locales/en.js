@@ -337,15 +337,17 @@ const EN_TRANSLATIONS = {
     // Image viewer
     slideshow: "Slideshow",
     slideshowInterval: "Slideshow Interval (ms)",
-    slideshowIntervalHint: "Time between images in slideshow mode. Default 5000ms (5 seconds).",
+    slideshowIntervalHint: "Time in milliseconds between images in slideshow mode. Default 5000ms (5 seconds).",
     startSlideshow: "Start Slideshow",
     stopSlideshow: "Stop Slideshow",
     imageView: "Image View",
+    imageViewer: "Image Viewer",
     zoomIn: "Zoom In",
     zoomOut: "Zoom Out",
     clickLeftForPrev: "Click left side for previous image",
     clickRightForNext: "Click right side for next image",
     clickCenterToZoom: "Click center to toggle zoom",
+    loopToFirstImage: "You are at the last image. Jump back to the first one?",
 
     // Video status
     videoLoading: "Loading...",

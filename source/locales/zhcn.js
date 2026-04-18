@@ -341,11 +341,13 @@ const ZHCN_TRANSLATIONS = {
     startSlideshow: "开始幻灯片",
     stopSlideshow: "停止幻灯片",
     imageView: "图片查看",
+    imageViewer: "图片查看器",
     zoomIn: "放大",
     zoomOut: "缩小",
     clickLeftForPrev: "点击左侧查看上一张图片",
     clickRightForNext: "点击右侧查看下一张图片",
     clickCenterToZoom: "点击中间切换缩放",
+    loopToFirstImage: "您已到达最后一张图片。是否跳回第一张？",
 
     // Video status
     videoLoading: "加载中...",

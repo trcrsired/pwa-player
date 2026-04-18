@@ -370,6 +370,13 @@
                     <input type="text" id="screenshotLocationInput" class="setting-input" readonly placeholder="Not set (click to clear)" style="cursor:pointer;">
                 </label>
 
+                <h3 data-i18n="imageViewer">Image Viewer</h3>
+                <label class="setting-label">
+                    <span data-i18n="slideshowInterval">Slideshow Interval (ms)</span>
+                    <input type="number" id="slideshowIntervalInput" class="setting-input-small" min="100" max="60000" value="5000">
+                </label>
+                <p class="setting-hint" data-i18n="slideshowIntervalHint">Time in milliseconds between images in slideshow mode. Default 5000ms (5 seconds).</p>
+
                 <h3 data-i18n="profiles">Profiles</h3>
                 <p class="setting-hint" data-i18n="profilesHint">Save and restore all settings, playlists, and custom IPTV channels.</p>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">

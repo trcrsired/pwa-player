@@ -338,11 +338,13 @@ const JA_TRANSLATIONS = {
     startSlideshow: "スライドショー開始",
     stopSlideshow: "スライドショー停止",
     imageView: "画像表示",
+    imageViewer: "画像ビューア",
     zoomIn: "拡大",
     zoomOut: "縮小",
     clickLeftForPrev: "左側をクリックで前の画像",
     clickRightForNext: "右側をクリックで次の画像",
     clickCenterToZoom: "中央をクリックでズーム切替",
+    loopToFirstImage: "最後の画像です。最初の画像に戻りますか？",
 
     // Video status
     videoLoading: "読み込み中...",

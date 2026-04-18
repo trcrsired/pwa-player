@@ -1430,6 +1430,28 @@ if (document.readyState === "loading") {
 window.updateSaveLocationsDisplay = updateSaveLocationsDisplay;
 
 // =====================================================
+// Slideshow Interval Setting
+// =====================================================
+const slideshowIntervalInput = document.getElementById("slideshowIntervalInput");
+
+// Load saved slideshow interval (default: 5000ms)
+if (slideshowIntervalInput) {
+    slideshowIntervalInput.value = localStorage.getItem("slideshowInterval") || "5000";
+
+    slideshowIntervalInput.addEventListener("change", () => {
+        const value = parseInt(slideshowIntervalInput.value, 10);
+        if (value >= 100 && value <= 60000) {
+            localStorage.setItem("slideshowInterval", value.toString());
+            showToast("Slideshow interval saved.");
+        } else {
+            slideshowIntervalInput.value = "5000";
+            localStorage.setItem("slideshowInterval", "5000");
+            showToast("Invalid value. Reset to 5000ms.");
+        }
+    });
+}
+
+// =====================================================
 // Share PWA Player URL Setting
 // =====================================================
 const sharePwaPlayerUrlCheckbox = document.getElementById("sharePwaPlayerUrl");
