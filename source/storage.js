@@ -3478,29 +3478,27 @@ async function saveFileToConfiguredLocation(type, blob, filename) {
             return true;
         }
 
-        if (config.schema !== 'navigator_storage' && config.schema !== 'external_storage') {
+        // Both navigator_storage and external_storage use FileSystem API
+        let dirHandle;
+        let startidx = 0;
+        const parts = config.path.split('/');
+        if (config.schema === 'navigator_storage') {
+            dirHandle = await navigator.storage.getDirectory();
+            dirHandle = await dirHandle.getDirectoryHandle(config.rootName, { create: true });
+        } else if (config.schema === 'external_storage') {
+            const externalDirs = await loadExternalDirs();
+            const topLevelName = parts[0];
+            dirHandle = externalDirs[topLevelName];
+            startidx = 1;
+        }
+        else
+        {
             throw new Error(`Unsupported storage schema: ${config.schema}`);
         }
 
-        // Both navigator_storage and external_storage use FileSystem API
-        let dirHandle;
-
-        if (config.schema === 'navigator_storage') {
-            const root = await navigator.storage.getDirectory();
-            dirHandle = root;
-            if (config.path) {
-                const parts = config.path.split('/');
-                for (const part of parts) {
-                    dirHandle = await dirHandle.getDirectoryHandle(part, { create: true });
-                }
-            }
-        } else {
-            if (!config.handle) {
-                throw new Error('External storage handle not available');
-            }
-            dirHandle = config.handle;
+        for (let i = startidx; i < parts.length; ++i) {
+            dirHandle = await dirHandle.getDirectoryHandle(parts[i], { create: true });
         }
-
         // Permission check (harmless if API doesn't exist)
         if (dirHandle.queryPermission) {
             const permission = await dirHandle.queryPermission({ mode: 'readwrite' });

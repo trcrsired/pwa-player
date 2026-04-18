@@ -1394,10 +1394,7 @@ function updateSaveLocationsDisplay() {
 
     const format = (cfg) => {
         if (!cfg) return "";
-        const schema = cfg.schema === 'navigator_storage' ? 'OPFS' :
-                       cfg.schema === 'external_storage' ? 'External' :
-                       cfg.schema === 'indexeddb' ? 'IndexedDB' : cfg.schema;
-        return `${schema}: ${cfg.path || 'root'}`;
+        return `${cfg.schema}://${cfg.rootName}/${cfg.path}`;
     };
 
     screenInput.value = format(getCfg('screenRecording'));
