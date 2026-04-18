@@ -317,23 +317,17 @@ function handleTouchEnd() {
     isPanning = false;
     updateCursor();
     if (Date.now() - touchStartTime < 200 && getCurrentScale() === 1) {
-        // Use playerWrapper dimensions for zone detection (entire UI region)
-        const playerWrapper = document.getElementById('playerWrapper');
-        if (!playerWrapper) return;
+        // Use entire window dimensions for zone detection (not limited to playerWrapper)
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-        const rect = playerWrapper.getBoundingClientRect();
-        const x = lastTouchX - rect.left;
-        const y = lastTouchY - rect.top;
-        const width = rect.width;
-        const height = rect.height;
-
-        if (y > height * 0.8) {
+        if (lastTouchY > height * 0.8) {
             showImageControls();
-        } else if (x < width * 0.3) {
+        } else if (lastTouchX < width * 0.3) {
             cancelControlsHide();
             hideImageControls();
             if (typeof playPrevious === 'function') playPrevious();
-        } else if (x > width * 0.7) {
+        } else if (lastTouchX > width * 0.7) {
             cancelControlsHide();
             hideImageControls();
             handleNextWithLoopCheck();

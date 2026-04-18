@@ -2066,13 +2066,12 @@ playerWrapper.addEventListener("click", (e) => {
     const target = e.target;
     const controlsHidden = controls.classList.contains("hidden");
 
-    // If image viewer is active, handle image navigation zones
+    // If image viewer is active, handle image navigation zones using entire window
     if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
-        const rect = playerWrapper.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const width = rect.width;
-        const height = rect.height;
+        const x = e.clientX;
+        const y = e.clientY;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
         // Bottom 20% = show controls
         if (y > height * 0.8) {
