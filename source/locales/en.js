@@ -351,6 +351,8 @@ const EN_TRANSLATIONS = {
     loopToFirstImage: "You are at the last image. Jump back to the first one?",
     disableImageToPlaylist: "Disable adding images to playlist/Now Playing",
     disableImageToPlaylistHint: "When enabled, images from storage manager or dropped directories will not be added to playlist or Now Playing queue. Images can still be viewed individually.",
+    enableImagePreview: "Enable image preview on progress bar",
+    enableImagePreviewHint: "When enabled, hovering over the progress bar during image viewing shows a preview of the target image. May be slow for large images.",
 
     // Video status
     videoLoading: "Loading...",

@@ -1472,6 +1472,26 @@ function isImageToPlaylistDisabled() {
 window.isImageToPlaylistDisabled = isImageToPlaylistDisabled;
 
 // =====================================================
+// Enable Image Preview Setting
+// =====================================================
+const enableImagePreviewInput = document.getElementById("enableImagePreviewInput");
+
+// Load saved setting (default: false - disabled by default due to performance)
+if (enableImagePreviewInput) {
+    enableImagePreviewInput.checked = localStorage.getItem("enableImagePreview") === "true";
+
+    enableImagePreviewInput.addEventListener("change", () => {
+        localStorage.setItem("enableImagePreview", enableImagePreviewInput.checked.toString());
+    });
+}
+
+// Helper function to check if image preview is enabled
+function isImagePreviewEnabled() {
+    return localStorage.getItem("enableImagePreview") === "true";
+}
+window.isImagePreviewEnabled = isImagePreviewEnabled;
+
+// =====================================================
 // Share PWA Player URL Setting
 // =====================================================
 const sharePwaPlayerUrlCheckbox = document.getElementById("sharePwaPlayerUrl");

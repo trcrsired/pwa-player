@@ -1711,6 +1711,21 @@ async function showImagePreview(index, xPos) {
   const entryName = entry.name || entry.path || '';
   const isImage = typeof window.isImageFile === 'function' && window.isImageFile(entryName);
 
+  // For images, check if image preview is enabled (disabled by default due to performance)
+  if (isImage && typeof window.isImagePreviewEnabled === 'function' && !window.isImagePreviewEnabled()) {
+    // Just show the index number without loading the image
+    videoPreview.style.display = "block";
+    if (previewImage) previewImage.style.display = "none";
+    if (previewVideo) previewVideo.style.display = "none";
+    previewTime.textContent = `${targetIndex + 1}/${queue.length}`;
+    const containerRect = progressContainer.getBoundingClientRect();
+    const previewWidth = 160;
+    let left = xPos - previewWidth / 2;
+    left = Math.max(0, Math.min(left, containerRect.width - previewWidth));
+    videoPreview.style.left = left + "px";
+    return;
+  }
+
   try {
     // Get blob URL for the entry
     let blobURL = null;

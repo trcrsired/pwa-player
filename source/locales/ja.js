@@ -348,6 +348,8 @@ const JA_TRANSLATIONS = {
     loopToFirstImage: "最後の画像です。最初の画像に戻りますか？",
     disableImageToPlaylist: "画像をプレイリスト/再生中に追加しない",
     disableImageToPlaylistHint: "有効時、ストレージマネージャーやドロップしたディレクトリからの画像はプレイリストや再生中キューに追加されません。画像は個別に閲覧可能です。",
+    enableImagePreview: "プログレスバーで画像プレビューを有効化",
+    enableImagePreviewHint: "有効時、画像閲覧中にプログレスバーにホバーするとターゲット画像のプレビューを表示します。大きな画像では遅くなる可能性があります。",
 
     // Video status
     videoLoading: "読み込み中...",

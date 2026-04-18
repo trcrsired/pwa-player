@@ -9,6 +9,7 @@ let currentImageEntry = null;
 let isSlideshowActive = false;
 let controlsHideTimer = null;
 let isInteractingWithControls = false; // Flag to prevent hiding when using controls
+let slideshowControlsVisible = false; // Track whether user wants controls visible during slideshow
 
 // Scale levels
 const SCALE_LEVELS = [1, 1.5, 2, 3, 0.75];
@@ -103,11 +104,13 @@ function cancelControlsHide() {
 function hideImageControls() {
     const controls = document.getElementById('controls');
     if (controls) controls.classList.add('hidden');
+    slideshowControlsVisible = false; // User explicitly hid controls
 }
 
 function showImageControls() {
     const controls = document.getElementById('controls');
     if (controls) controls.classList.remove('hidden');
+    slideshowControlsVisible = true; // User explicitly showed controls
     scheduleControlsHide();
 }
 
@@ -128,6 +131,7 @@ function handleKeyDown(event) {
     } else if (event.key === ' ' || event.key === 'Spacebar') {
         event.preventDefault();
         handlePlayButtonClick(event);
+        // When toggling slideshow via spacebar, show controls so user can interact
         showImageControls();
     } else if (event.key === 'Escape') {
         event.preventDefault();
@@ -342,6 +346,8 @@ function handlePlayButtonClick(event) {
     event.stopPropagation();
     isSlideshowActive ? stopSlideshow() : startSlideshow();
     updatePlayButtonForSlideshow();
+    // Show controls when user interacts with play button during image viewing
+    showImageControls();
 }
 
 function handleStopButtonClick(event) {
@@ -354,6 +360,8 @@ function handleStopButtonClick(event) {
     if (td) td.textContent = '00:00 / 00:00';
     const pb = document.getElementById('progressBar');
     if (pb) pb.value = 0;
+    // Show controls after stopping - user is back to normal video playback
+    if (typeof showControls === 'function') showControls(false);
 }
 
 function updatePlayButtonForSlideshow() {
@@ -371,12 +379,15 @@ function startSlideshow(intervalMs = null) {
     isSlideshowActive = true;
     slideshowTimer = setInterval(handleNextWithLoopCheck, slideshowInterval);
     updatePlayButtonForSlideshow();
+    // When starting slideshow, hide controls by default (user can show them via center click/spacebar)
+    slideshowControlsVisible = false;
 }
 
 function stopSlideshow() {
     if (slideshowTimer) clearInterval(slideshowTimer);
     slideshowTimer = null;
     isSlideshowActive = false;
+    slideshowControlsVisible = false; // Reset when slideshow stops
     updatePlayButtonForSlideshow();
 }
 
@@ -460,11 +471,26 @@ async function viewImage(sourceobject, entryPath) {
     const magBtn = document.getElementById('magnifierBtn');
     if (magBtn) { magBtn.classList.remove('hidden'); updateMagnifierButton(); }
 
-    // Only hide controls if NOT interacting with controls (prev/next buttons, progressbar)
-    if (isInteractingWithControls) {
-        // User is using controls - keep controls visible, reset flag
+    // Handle controls visibility based on context
+    // During slideshow, respect slideshowControlsVisible flag (user's preference)
+    // Otherwise, use isInteractingWithControls for normal navigation
+    if (isSlideshowActive) {
+        // During slideshow - respect user's preference for controls visibility
+        if (slideshowControlsVisible) {
+            // User wants controls visible during slideshow
+            const controls = document.getElementById('controls');
+            if (controls) controls.classList.remove('hidden');
+            scheduleControlsHide();
+        } else {
+            // User wants controls hidden during slideshow
+            cancelControlsHide();
+            const controls = document.getElementById('controls');
+            if (controls) controls.classList.add('hidden');
+        }
+    } else if (isInteractingWithControls) {
+        // User is using controls (prev/next buttons, progressbar) - keep controls visible
         isInteractingWithControls = false;
-        showImageControls(); // Ensure controls stay visible and schedule auto-hide
+        showImageControls();
     } else {
         // User navigated via image click zones - hide controls
         cancelControlsHide();
@@ -620,6 +646,8 @@ window.showImageControls = showImageControls;
 window.hideImageControls = hideImageControls;
 window.scheduleControlsHide = scheduleControlsHide;
 window.cancelControlsHide = cancelControlsHide;
+window.isSlideshowActive = () => isSlideshowActive; // Expose slideshow state
+window.setSlideshowControlsVisible = (val) => { slideshowControlsVisible = val; }; // Allow external setting
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initImageViewer);
