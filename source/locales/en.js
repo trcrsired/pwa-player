@@ -236,6 +236,7 @@ const EN_TRANSLATIONS = {
     noTrackPlaying: "No track playing",
     fileCannotBePlayed: "This file type cannot be played directly",
     fileCannotBeAdded: "This file type cannot be added to playlist",
+    cannotAddTemporaryToPlaylist: "Temporary entries cannot be added to playlists. Import the directory to storage first.",
     invalidSelection: "Invalid selection",
     permissionDenied: "Permission denied",
     exportSuccess: "Export successful",
@@ -333,6 +334,23 @@ const EN_TRANSLATIONS = {
     clearVideoRecordingLocation: "Clear Video Recording",
     clearScreenshotLocation: "Clear Screenshot",
     saveLocationCleared: "Save location cleared.",
+
+    // Image viewer
+    slideshow: "Slideshow",
+    slideshowInterval: "Slideshow Interval (ms)",
+    slideshowIntervalHint: "Time in milliseconds between images in slideshow mode. Default 5000ms (5 seconds).",
+    startSlideshow: "Start Slideshow",
+    stopSlideshow: "Stop Slideshow",
+    imageView: "Image View",
+    imageViewer: "Image Viewer",
+    zoomIn: "Zoom In",
+    zoomOut: "Zoom Out",
+    clickLeftForPrev: "Click left side for previous image",
+    clickRightForNext: "Click right side for next image",
+    clickCenterToZoom: "Click center to toggle zoom",
+    loopToFirstImage: "You are at the last image. Jump back to the first one?",
+    disableImageToPlaylist: "Disable adding images to playlist/Now Playing",
+    disableImageToPlaylistHint: "When enabled, images from storage manager or dropped directories will not be added to playlist or Now Playing queue. Images can still be viewed individually.",
 
     // Video status
     videoLoading: "Loading...",

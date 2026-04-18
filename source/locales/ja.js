@@ -233,6 +233,7 @@ const JA_TRANSLATIONS = {
     noTrackPlaying: "再生中の曲はありません",
     fileCannotBePlayed: "このファイルタイプは直接再生できません",
     fileCannotBeAdded: "このファイルタイプはプレイリストに追加できません",
+    cannotAddTemporaryToPlaylist: "一時エントリはプレイリストに追加できません。先にディレクトリをストレージにインポートしてください。",
     invalidSelection: "無効な選択",
     permissionDenied: "権限が拒否されました",
     exportSuccess: "エクスポート成功",
@@ -330,6 +331,23 @@ const JA_TRANSLATIONS = {
     clearVideoRecordingLocation: "動画録画を清除",
     clearScreenshotLocation: "スクリーンショットを清除",
     saveLocationCleared: "保存場所を清除しました。",
+
+    // Image viewer
+    slideshow: "スライドショー",
+    slideshowInterval: "スライドショー間隔（ミリ秒）",
+    slideshowIntervalHint: "スライドショー模式での画像切替間隔。デフォルト5000ミリ秒（5秒）。",
+    startSlideshow: "スライドショー開始",
+    stopSlideshow: "スライドショー停止",
+    imageView: "画像表示",
+    imageViewer: "画像ビューア",
+    zoomIn: "拡大",
+    zoomOut: "縮小",
+    clickLeftForPrev: "左側をクリックで前の画像",
+    clickRightForNext: "右側をクリックで次の画像",
+    clickCenterToZoom: "中央をクリックでズーム切替",
+    loopToFirstImage: "最後の画像です。最初の画像に戻りますか？",
+    disableImageToPlaylist: "画像をプレイリスト/再生中に追加しない",
+    disableImageToPlaylistHint: "有効時、ストレージマネージャーやドロップしたディレクトリからの画像はプレイリストや再生中キューに追加されません。画像は個別に閲覧可能です。",
 
     // Video status
     videoLoading: "読み込み中...",

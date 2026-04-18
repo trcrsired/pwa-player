@@ -296,8 +296,11 @@ function updateNowPlayingInfo(entry) {
         return;
     }
 
-    // Basic metadata
-    titleEl.textContent = entry.name || "Unknown Title";
+    // Check if this is an image
+    const isImage = typeof window.isImageFile === 'function' && window.isImageFile(entry.name || entry.path || '');
+
+    // Basic metadata with image indicator
+    titleEl.textContent = isImage ? `🖼️ ${entry.name || "Unknown Title"}` : entry.name || "Unknown Title";
     artistEl.textContent = entry.artist || "";
     urlEl.textContent = entry.path || "";
 }
@@ -580,9 +583,13 @@ function renderNowPlayingQueue() {
         // Get badges using polymorphic platform method
         const badgesHtml = typeof getEntryBadgeHtml === 'function' ? getEntryBadgeHtml(entry) : '';
 
+        // Add image badge if this is an image file
+        const isImage = typeof window.isImageFile === 'function' && window.isImageFile(entry.name || entry.path || '');
+        const imageBadge = isImage ? ' 🖼️' : '';
+
         // Add playing indicator if this is the current track
         const playingIndicator = isCurrentTrack ? '▶ ' : '';
-        titleSpan.innerHTML = `${playingIndicator}${escapeHTML(entry.name || entry.path)}${badgesHtml}`;
+        titleSpan.innerHTML = `${playingIndicator}${escapeHTML(entry.name || entry.path)}${imageBadge}${badgesHtml}`;
 
         // Click on title → play
         titleSpan.addEventListener("click", () => {

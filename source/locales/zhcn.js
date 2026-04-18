@@ -236,6 +236,7 @@ const ZHCN_TRANSLATIONS = {
     noTrackPlaying: "没有正在播放的曲目",
     fileCannotBePlayed: "此文件类型无法直接播放",
     fileCannotBeAdded: "此文件类型无法添加到播放列表",
+    cannotAddTemporaryToPlaylist: "临时条目无法添加到播放列表。请先将目录导入到存储。",
     invalidSelection: "无效的选择",
     permissionDenied: "权限被拒绝",
     exportSuccess: "导出成功",
@@ -333,6 +334,23 @@ const ZHCN_TRANSLATIONS = {
     clearVideoRecordingLocation: "清除视频录制",
     clearScreenshotLocation: "清除截图",
     saveLocationCleared: "保存位置已清除。",
+
+    // Image viewer
+    slideshow: "幻灯片",
+    slideshowInterval: "幻灯片间隔（毫秒）",
+    slideshowIntervalHint: "幻灯片模式下图片切换间隔。默认5000毫秒（5秒）。",
+    startSlideshow: "开始幻灯片",
+    stopSlideshow: "停止幻灯片",
+    imageView: "图片查看",
+    imageViewer: "图片查看器",
+    zoomIn: "放大",
+    zoomOut: "缩小",
+    clickLeftForPrev: "点击左侧查看上一张图片",
+    clickRightForNext: "点击右侧查看下一张图片",
+    clickCenterToZoom: "点击中间切换缩放",
+    loopToFirstImage: "您已到达最后一张图片。是否跳回第一张？",
+    disableImageToPlaylist: "禁用添加图片到播放列表/正在播放",
+    disableImageToPlaylistHint: "启用后，存储管理器或拖放目录中的图片不会被添加到播放列表或正在播放队列。图片仍可单独查看。",
 
     // Video status
     videoLoading: "加载中...",

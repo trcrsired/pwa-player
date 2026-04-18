@@ -279,8 +279,8 @@ async function addIndexedDBFolderToPlaylist(folderName, tonowplaying) {
             return;
         }
 
-        // Filter to only playable files
-        const playableFiles = files.filter(f => isPlaylistFile(f.name));
+        // Filter to only playable/viewable files
+        const playableFiles = files.filter(f => isPlayableOrImageFile(f.name));
         if (playableFiles.length === 0) {
             alert(`${t('noPlayableFiles', 'No playable files found in folder')} "${folderName}".`);
             return;
@@ -444,9 +444,14 @@ async function promptForUniqueName(baseName, parentHandle) {
 
 // Media extensions for playlist items
 const PLAYLIST_EXTENSIONS = new Set([
-    ".mp4", ".webm", ".mkv",
+    ".mp4", ".webm", ".mkv", ".mov",
     ".mp3", ".wav", ".flac",
     ".m4a"
+]);
+
+// Image extensions for viewing
+const IMAGE_EXTENSIONS = new Set([
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".ico", ".avif"
 ]);
 
 // Subtitle extensions
@@ -454,10 +459,11 @@ const SUBTITLE_EXTENSIONS = new Set([
     ".vtt"
 ]);
 
-// Allowed extensions for import (media + subtitles)
+// Allowed extensions for import (media + subtitles + images)
 const ALLOWED_EXTENSIONS = new Set([
     ...PLAYLIST_EXTENSIONS,
-    ...SUBTITLE_EXTENSIONS
+    ...SUBTITLE_EXTENSIONS,
+    ...IMAGE_EXTENSIONS
 ]);
 
 function isAllowedFile(name) {
@@ -525,6 +531,37 @@ function isSubtitleFile(name) {
         return false;
     }
 }
+
+function isImageFile(name) {
+    // Check if file is an image file
+    try
+    {
+        if (typeof name !== "string") return false;
+
+        const lower = name.trim().toLowerCase();
+        if (!lower) return false;
+
+        const dotIndex = lower.lastIndexOf(".");
+        if (dotIndex === -1) return false;
+
+        const ext = lower.slice(dotIndex);
+
+        return IMAGE_EXTENSIONS.has(ext);
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+function isPlayableOrImageFile(name) {
+    // Check if file can be played or viewed (media + images)
+    return isPlaylistFile(name) || isImageFile(name);
+}
+
+// Expose isImageFile globally for other modules
+window.isImageFile = isImageFile;
+window.isPlayableOrImageFile = isPlayableOrImageFile;
 
 // ============================================================
 // Copy a directory (from SAF) into private storage
@@ -941,7 +978,7 @@ async function pasteFileToDest(file, fileName, destSchema, targetDirHandle, targ
 // ============================================================
 // Collect all file pointers recursively under a directory
 // ============================================================
-async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = null) {
+async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = null, excludeImages = false) {
     const result = [];
 
     if (schema === "remote_storage") {
@@ -950,14 +987,16 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
         try {
             const response = await fetch(remoteTargetUrl, { cache: "no-store" });
             if (!response.ok) return [];
-            
+
             const htmlText = await response.text();
             const { dirs, files } = parseRemoteDirectoryListing(htmlText, remoteTargetUrl);
 
             // Add files found in this directory
             for (const f of files) {
                 const name = f.name;
-                if (!isPlaylistFile(name)) continue;
+                // Skip images if excludeImages is true
+                if (excludeImages && isImageFile(name)) continue;
+                if (!isPlayableOrImageFile(name)) continue;
                 result.push({
                     name: name,
                     path: f.url // For remote, path is the direct URL
@@ -969,7 +1008,7 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
                 if (d.name === ".." || d.name === "." || !d.name) continue;
                 // Ensure sub-URL ends with a slash
                 const subUrl = new URL(d.name + "/", remoteTargetUrl).href;
-                const subPointers = await collectPointers(null, schema, null, subUrl);
+                const subPointers = await collectPointers(null, schema, null, subUrl, excludeImages);
                 result.push(...subPointers);
             }
         } catch (e) {
@@ -979,14 +1018,16 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
         // Standard FileSystemHandle Logic (navigator_storage / external_storage)
         for await (const [name, handle] of dirHandle.entries()) {
             if (handle.kind === "file") {
-                if (!isPlaylistFile(name)) continue;
+                // Skip images if excludeImages is true
+                if (excludeImages && isImageFile(name)) continue;
+                if (!isPlayableOrImageFile(name)) continue;
                 result.push({
                     name,
                     path: `${schema}://${basePath}/${name}`
                 });
             } else if (handle.kind === "directory") {
                 const subPath = `${basePath}/${name}`;
-                const subPointers = await collectPointers(handle, schema, subPath);
+                const subPointers = await collectPointers(handle, schema, subPath, null, excludeImages);
                 result.push(...subPointers);
             }
         }
@@ -1008,7 +1049,10 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
        return await addIndexedDBFolderToPlaylist(dirPath, !playlistName);
     }
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-    
+
+    // Check if images should be excluded from playlist/now playing
+    const excludeImages = typeof window.isImageToPlaylistDisabled === 'function' && window.isImageToPlaylistDisabled();
+
     try {
         let pointers = [];
         let targetDir = null;
@@ -1019,7 +1063,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
             for (const part of parts) {
                 targetDir = await targetDir.getDirectoryHandle(part, { create: false });
             }
-            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`);
+            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`, null, excludeImages);
 
         } else if (schema === "external_storage") {
             const parts = dirPath.split("/");
@@ -1037,7 +1081,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
             for (let i = 1; i < parts.length; ++i) {
                 targetDir = await targetDir.getDirectoryHandle(parts[i], { create: false });
             }
-            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`);
+            pointers = await collectPointers(targetDir, schema, `${rootName}/${dirPath}`, null, excludeImages);
 
         } else if (schema === "remote_storage") {
             const parts = dirPath.split("/");
@@ -1054,7 +1098,7 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
                 ? new URL(relativePath + "/", baseUrl).href
                 : (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
             // Call the new recursive remote collector
-            pointers = await collectPointers(null , schema, null, targetUrl);
+            pointers = await collectPointers(null , schema, null, targetUrl, excludeImages);
 
         } else {
             alert(t('unknownStorageSchema', "Unknown storage schema."));
@@ -1860,7 +1904,7 @@ async function countFilesInDir(dirHandle) {
 
     for await (const [name, handle] of dirHandle.entries()) {
         if (handle.kind === "file") {
-            if (isPlaylistFile(name)) {
+            if (isPlayableOrImageFile(name)) {
                 try {
                     const file = await handle.getFile();
                     size += file.size;
@@ -1977,7 +2021,7 @@ function showSaveLocationSubMenu(entry, dirName, parentButton) {
 function showStorageFileMenu(entry, name, handle, fullPath, button) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
-    const isPlayable = isPlaylistFile(name);
+    const isPlayable = isPlayableOrImageFile(name);
     const isSubtitle = isSubtitleFile(name);
 
     const menuItems = [];
@@ -2020,7 +2064,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
 
             const actionisplay = action === "play";
             if (actionisplay || action === "play-keep-open") {
-                if (isPlaylistFile(name)) {
+                if (isPlayableOrImageFile(name)) {
                     let entryPath;
                     if (isRemote)
                     {
@@ -2042,7 +2086,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
             }
 
             if (action === "add") {
-                if (!isPlaylistFile(name)) {
+                if (!isPlayableOrImageFile(name)) {
                     alert(t('fileCannotBeAdded', "This file type cannot be added to playlist."));
                     closeMenu();
                     return;
@@ -2331,7 +2375,7 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
 
     const fullPath = currentPath ? `${currentPath}/${name}` : name;
 
-    const isPlayable = isPlaylistFile(name);
+    const isPlayable = isPlayableOrImageFile(name);
     const isSubtitle = isSubtitleFile(name);
 
     li.innerHTML = `
@@ -2405,7 +2449,7 @@ function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "
     const li = document.createElement("li");
     li.className = "storage-file-item";
 
-    const isPlayable = isPlaylistFile(name);
+    const isPlayable = isPlayableOrImageFile(name);
     const isSubtitle = isSubtitleFile(name);
 
     // Build full path: indexeddb://idb/folder/filename.ext
@@ -2475,7 +2519,7 @@ function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "
 function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
-    const isPlayable = isPlaylistFile(name);
+    const isPlayable = isPlayableOrImageFile(name);
     const isSubtitle = isSubtitleFile(name);
 
     // Build full path
@@ -2518,7 +2562,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
             const action = item.dataset.action;
 
             if (action === "play" || action === "play-keep-open") {
-                if (isPlaylistFile(name)) {
+                if (isPlayableOrImageFile(name)) {
                     try {
                         const file = new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "application/octet-stream" });
                         await play_source(file, { entryPath });
@@ -2537,7 +2581,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
             }
 
             if (action === "add") {
-                if (!isPlaylistFile(name)) {
+                if (!isPlayableOrImageFile(name)) {
                     alert(t('fileCannotBeAdded', "This file type cannot be added to playlist."));
                     closeMenu();
                     return;
@@ -3382,10 +3426,10 @@ function parseRemoteDirectoryListing(htmlText, baseUrl) {
                 dirs.push({ name: folderName });
             }
         } 
-        else if (isPlaylistFile(name) || isSubtitleFile(name)) {
-            files.push({ 
-                name: name, 
-                url: fullUrl 
+        else if (isPlayableOrImageFile(name) || isSubtitleFile(name)) {
+            files.push({
+                name: name,
+                url: fullUrl
             });
         }
     }

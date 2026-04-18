@@ -177,7 +177,20 @@ async function verifyPermission(fileHandle, mode = "read") {
 async function getMediaMetadataFromSource(sourceobject) {
   let blobURL = null;
   let mediasource = {}
-  if (sourceobject instanceof FileSystemFileHandle) {
+
+  // Handle temporary entries with file property (dropped files)
+  if (sourceobject && sourceobject.file && (sourceobject.file instanceof File || sourceobject.file instanceof Blob)) {
+    blobURL = URL.createObjectURL(sourceobject.file);
+    mediasource.title = sourceobject.name || sourceobject.file.name;
+  }
+  // Handle temporary directory entries with handle property
+  else if (sourceobject && sourceobject.handle && typeof sourceobject.handle.getFile === 'function') {
+    const handle = sourceobject.handle;
+    if (! await verifyPermission(handle)) return null;
+    const file = await handle.getFile();
+    blobURL = URL.createObjectURL(file);
+    mediasource.title = sourceobject.name || file.name;
+  } else if (sourceobject instanceof FileSystemFileHandle) {
     if (! await verifyPermission(sourceobject)) return null;
 
     const file = await sourceobject.getFile();
@@ -286,6 +299,7 @@ const npProgressBar = document.getElementById("npProgressBar");
 const progressContainer = document.getElementById("progressContainer");
 const videoPreview = document.getElementById("videoPreview");
 const previewVideo = document.getElementById("previewVideo");
+const previewImage = document.getElementById("previewImage");
 const previewTime = document.getElementById("previewTime");
 const rotationBtn = document.getElementById("rotationBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
@@ -488,6 +502,17 @@ function updateTimeDisplay(txtct)
     }
   }
 
+  // Check for image viewer (show queue position i/n)
+  if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+    if (typeof window.updateImageTimeDisplay === 'function') {
+      window.updateImageTimeDisplay();
+    }
+    if (typeof window.updateImageProgressBars === 'function') {
+      window.updateImageProgressBars();
+    }
+    return;
+  }
+
   // Check for video recording (append elapsed time with ⏺️ icon)
   let finalText = txtct;
   if (typeof window.getVideoRecordingElapsedTime === 'function') {
@@ -606,6 +631,20 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       sourceobject: sourceobject
     });
     return;
+  }
+
+  // Check if this is an image file - use image viewer instead
+  const entryPath = playlist?.entryPath || mediametadata.title || '';
+  if (typeof window.isImageFile === 'function' && window.isImageFile(entryPath)) {
+    if (typeof window.viewImage === 'function') {
+      window.viewImage(sourceobject, entryPath);
+      return;
+    }
+  }
+
+  // Hide image viewer if active (switching from image to video)
+  if (typeof window.hideImageViewer === 'function') {
+    window.hideImageViewer();
   }
 
   // Stop embedded player (YouTube/Vimeo) if active - we're switching to normal video
@@ -963,14 +1002,23 @@ window.addEventListener("drop", async e => {
             if (item.kind === "file") {
                 const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
                 if (entry && entry.isDirectory) {
-                    // It's a directory - add to external storage
+                    // It's a directory - check if we're in storage view
+                    const storageView = document.getElementById('storageView');
+                    const isInStorageView = storageView && !storageView.classList.contains('hidden');
+
                     try {
                         const dirHandle = await item.getAsFileSystemHandle();
                         if (dirHandle && dirHandle.kind === "directory") {
-                            await addDirectoryToExternalStorage(dirHandle);
+                            if (isInStorageView) {
+                                // In storage view - add to external storage
+                                await addDirectoryToExternalStorage(dirHandle);
+                            } else {
+                                // Not in storage view - play as temporary directory
+                                await playTemporaryDirectory(dirHandle);
+                            }
                         }
                     } catch (err) {
-                        console.error("Failed to add directory:", err);
+                        console.error("Failed to handle directory:", err);
                         alert(t('failedToImportExternal', "Failed to add directory to external storage."));
                     }
                     return;
@@ -979,20 +1027,97 @@ window.addEventListener("drop", async e => {
         }
     }
 
-    // Fall back to file handling
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
+    // Handle multiple files (images and media)
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+        // Check if images are disabled from being added to playlist
+        const imagesDisabled = typeof window.isImageToPlaylistDisabled === 'function' && window.isImageToPlaylistDisabled();
 
-    if (
-        !file.type.startsWith("video/") &&
-        !file.type.startsWith("audio/")
-    ) {
-        alert(t('dropMediaOrDirectory', "Please drop a video, audio file, or directory"));
+        // Check if all are images
+        const imageFiles = Array.from(files).filter(f => window.isImageFile && window.isImageFile(f.name));
+        const mediaFiles = Array.from(files).filter(f => f.type.startsWith("video/") || f.type.startsWith("audio/"));
+
+        if (imageFiles.length > 0 && mediaFiles.length === 0) {
+            // Only images
+            if (imagesDisabled) {
+                // Images disabled - just view the first image without adding to queue
+                if (typeof window.viewImage === 'function') {
+                    window.viewImage(imageFiles[0], imageFiles[0].name);
+                }
+            } else {
+                // Add to now playing queue and play first (temporary entries)
+                const queue = imageFiles.map(f => ({
+                    name: f.name,
+                    file: f, // File object from drop
+                    isTemporary: true // Mark as temporary - cannot be saved to playlists
+                }));
+                if (typeof startNowPlayingFromPlaylistTable === 'function') {
+                    startNowPlayingFromPlaylistTable(queue, 0, null, true);
+                }
+            }
+            return;
+        }
+
+        if (mediaFiles.length > 0) {
+            // Media files - play first
+            play_source(mediaFiles[0]);
+            return;
+        }
+
+        // Mixed files or unknown types - just play first
+        if (files.length > 0) {
+            play_source(files[0]);
+        }
         return;
     }
 
-    play_source(file);
+    alert(t('dropMediaOrDirectory', "Please drop a video, audio file, image, or directory"));
 });
+
+// Play a temporary directory (not added to storage)
+async function playTemporaryDirectory(dirHandle) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+
+    // Verify permission first
+    if (!await verifyPermission(dirHandle)) {
+        alert(t('permissionDenied', 'Permission denied'));
+        return;
+    }
+
+    // Check if images are disabled from being added to playlist
+    const imagesDisabled = typeof window.isImageToPlaylistDisabled === 'function' && window.isImageToPlaylistDisabled();
+
+    // Collect playable files from directory
+    const files = [];
+    for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === "file" && window.isPlayableOrImageFile && window.isPlayableOrImageFile(name)) {
+            // Skip images if disabled
+            if (imagesDisabled && window.isImageFile && window.isImageFile(name)) continue;
+            files.push({ name, handle });
+        }
+    }
+
+    if (files.length === 0) {
+        alert(t('noPlayableFiles', 'No playable files found in folder'));
+        return;
+    }
+
+    // Sort files by name
+    files.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Create queue entries with file handles - these are temporary and NOT persistable
+    const queue = files.map(f => ({
+        name: f.name,
+        handle: f.handle, // FileSystemFileHandle - used to get file on play
+        dirHandle: dirHandle, // Keep directory handle for permission renewal
+        isTemporary: true // Mark as temporary - should not be saved to playlists
+    }));
+
+    // Play from now playing
+    if (typeof startNowPlayingFromPlaylistTable === 'function') {
+        startNowPlayingFromPlaylistTable(queue, 0, null, true);
+    }
+}
 
 // Add directory to external storage (like Import External button)
 async function addDirectoryToExternalStorage(dirHandle) {
@@ -1108,16 +1233,43 @@ pickerBtn.onclick = async (e) => {
 
     if (typeof window.showOpenFilePicker === "function") {
       // Modern browsers (Chrome / Edge)
+      // Use startIn: 'videos' as default, but allow all media types
       const [handle] = await window.showOpenFilePicker({
-        startIn: 'videos'
+        startIn: 'videos',
+        types: [
+          {
+            description: 'Video Files',
+            accept: {
+              'video/*': ['.mp4', '.webm', '.mkv', '.mov']
+            }
+          },
+          {
+            description: 'Audio Files',
+            accept: {
+              'audio/*': ['.mp3', '.wav', '.m4a', '.flac', '.ogg']
+            }
+          },
+          {
+            description: 'Image Files',
+            accept: {
+              'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.avif']
+            }
+          }
+        ]
       });
       file = handle; // pass handle to your existing logic
     } else {
-      // Safari / Firefox fallback
-      file = await pickFileSafariFallback("video/*");
+      // Safari / Firefox fallback - accept video, audio, and image
+      file = await pickFileSafariFallback("video/*,audio/*,image/*");
     }
 
-    play_source(file).catch(nop);
+    // Check if it's an image file
+    const fileName = file.name || (file.getFile ? (await file.getFile()).name : '');
+    if (window.isImageFile && window.isImageFile(fileName)) {
+      window.viewImage(file, fileName);
+    } else {
+      play_source(file).catch(nop);
+    }
   } catch (err) {
     // User cancelled the picker — do nothing
   }
@@ -1491,9 +1643,10 @@ npProgressBar.onchange = () => {
 };
 
 // =====================================================
-// Video Preview on Progress Bar
+// Video/Image Preview on Progress Bar
 // =====================================================
 let previewLoadedSrc = null;
+let previewLoadedImageQueue = null; // For image preview, store the queue
 
 function formatPreviewTime(seconds) {
   const mins = Math.floor(seconds / 60);
@@ -1502,12 +1655,22 @@ function formatPreviewTime(seconds) {
 }
 
 function showVideoPreview(time, xPos) {
+  // Skip if image viewer is active
+  if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+    showImagePreview(time, xPos);
+    return;
+  }
+
   if (!videoPreview || !previewVideo || !hasActiveSource) return;
   if (!isFinite(video.duration) || video.duration === Infinity) return;
   // Check if video preview is enabled
   if (typeof isVideoPreviewEnabled === 'function' && !isVideoPreviewEnabled()) return;
   // Only show preview for videos (has width/height), not audio
   if (!video.videoWidth || !video.videoHeight || video.videoWidth === 0 || video.videoHeight === 0) return;
+
+  // Hide image preview, show video preview
+  if (previewImage) previewImage.style.display = "none";
+  previewVideo.style.display = "block";
 
   // Set source if not already set
   if (previewLoadedSrc !== video.src) {
@@ -1530,19 +1693,109 @@ function showVideoPreview(time, xPos) {
   previewVideo.currentTime = time;
 }
 
+// Image/Video preview when viewing items in queue
+async function showImagePreview(index, xPos) {
+  if (!videoPreview) return;
+
+  // Get the queue
+  const queue = typeof getActiveQueue === 'function' ? getActiveQueue() : null;
+  if (!queue || queue.length === 0) return;
+
+  // Get the target entry
+  const targetIndex = Math.max(0, Math.min(Math.floor(index), queue.length - 1));
+  const entry = queue[targetIndex];
+
+  if (!entry) return;
+
+  // Check if this entry is an image or video
+  const entryName = entry.name || entry.path || '';
+  const isImage = typeof window.isImageFile === 'function' && window.isImageFile(entryName);
+
+  try {
+    // Get blob URL for the entry
+    let blobURL = null;
+    let fileHandle = null;
+
+    if (entry.handle && typeof entry.handle.getFile === 'function') {
+      fileHandle = entry.handle;
+      const file = await entry.handle.getFile();
+      blobURL = URL.createObjectURL(file);
+    } else if (entry.file && (entry.file instanceof File || entry.file instanceof Blob)) {
+      blobURL = URL.createObjectURL(entry.file);
+    } else if (entry.path && entry.path.startsWith('blob:')) {
+      blobURL = entry.path;
+    } else if (typeof storage_resolvePath === 'function' && entry.path) {
+      const handle = await storage_resolvePath(entry.path);
+      if (handle && typeof handle.getFile === 'function') {
+        fileHandle = handle;
+        const file = await handle.getFile();
+        blobURL = URL.createObjectURL(file);
+      }
+    }
+
+    if (!blobURL) return;
+
+    if (isImage) {
+      // Show image preview
+      if (previewVideo) previewVideo.style.display = "none";
+      if (previewImage) {
+        previewImage.style.display = "block";
+        if (previewLoadedImageQueue !== blobURL) {
+          previewImage.src = blobURL;
+          previewLoadedImageQueue = blobURL;
+        }
+      }
+    } else {
+      // Show video preview (for video files in queue)
+      if (previewImage) previewImage.style.display = "none";
+      if (previewVideo) {
+        previewVideo.style.display = "block";
+        if (previewLoadedSrc !== blobURL) {
+          previewVideo.src = blobURL;
+          previewLoadedSrc = blobURL;
+          // Wait for video to be ready before seeking
+          previewVideo.onloadedmetadata = () => {
+            previewVideo.currentTime = 0;
+          };
+        } else {
+          // Already loaded, just seek to beginning
+          previewVideo.currentTime = 0;
+        }
+      }
+    }
+
+    // Show preview container
+    videoPreview.style.display = "block";
+    previewTime.textContent = `${targetIndex + 1}/${queue.length}`;
+
+    // Position preview
+    const containerRect = progressContainer.getBoundingClientRect();
+    const previewWidth = 160;
+    let left = xPos - previewWidth / 2;
+    left = Math.max(0, Math.min(left, containerRect.width - previewWidth));
+    videoPreview.style.left = left + "px";
+  } catch (err) {
+    console.warn('Failed to load preview:', err);
+  }
+}
+
 function hideVideoPreview() {
   if (videoPreview) {
     videoPreview.style.display = "none";
   }
 }
 
-// Clear preview video resources
+// Clear preview video/image resources
 function clearVideoPreview() {
   if (previewVideo) {
     previewVideo.removeAttribute("src");
     previewVideo.load();
   }
+  if (previewImage) {
+    previewImage.removeAttribute("src");
+  }
   previewLoadedSrc = null;
+  previewLoadedImageQueue = null;
   hideVideoPreview();
 }
 
@@ -1557,6 +1810,21 @@ function setupProgressBarPointerEvents(progressBarEl, containerEl) {
 
   // pointermove: show preview and update visual position
   container.addEventListener("pointermove", (e) => {
+    // Check if image viewer is active - use image preview logic
+    if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+      const pos = typeof window.getImageQueuePosition === 'function' ? window.getImageQueuePosition() : null;
+      if (pos) {
+        const rect = progressBarEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percent = Math.max(0, Math.min(1, x / rect.width));
+        const index = percent * (pos.total - 1);
+        if (containerEl === progressContainer) {
+          showImagePreview(index, x);
+        }
+      }
+      return;
+    }
+
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
     // Show controls without auto-hide while hovering (only for main player)
@@ -1589,6 +1857,12 @@ function setupProgressBarPointerEvents(progressBarEl, containerEl) {
 
   // pointerdown: start dragging
   progressBarEl.addEventListener("pointerdown", (e) => {
+    // Check if image viewer is active
+    if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+      window.isDraggingProgressBar = true;
+      return;
+    }
+
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
     window.isDraggingProgressBar = true;
@@ -1777,6 +2051,43 @@ playerWrapper.addEventListener("click", (e) => {
     const target = e.target;
     const controlsHidden = controls.classList.contains("hidden");
 
+    // If image viewer is active, handle image navigation zones
+    if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+        const rect = playerWrapper.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const width = rect.width;
+        const height = rect.height;
+
+        // Bottom 20% = show controls
+        if (y > height * 0.8) {
+            if (typeof window.showImageControls === 'function') window.showImageControls();
+            return;
+        }
+
+        // Left 30% = prev (hide controls)
+        if (x < width * 0.3) {
+            if (typeof window.hideImageControls === 'function') window.hideImageControls();
+            if (typeof playPrevious === 'function') playPrevious();
+            return;
+        }
+
+        // Right 30% = next (hide controls)
+        if (x > width * 0.7) {
+            if (typeof window.hideImageControls === 'function') window.hideImageControls();
+            if (typeof window.handleNextWithLoopCheck === 'function') window.handleNextWithLoopCheck();
+            return;
+        }
+
+        // Center = toggle controls
+        if (controlsHidden) {
+            if (typeof window.showImageControls === 'function') window.showImageControls();
+        } else {
+            if (typeof window.hideImageControls === 'function') window.hideImageControls();
+        }
+        return;
+    }
+
     if (controlsHidden) {
         // Show controls when clicking anywhere
         showControls(true);
@@ -1870,7 +2181,12 @@ if ('launchQueue' in window) {
   launchQueue.setConsumer(async (launchParams) => {
     for (const fileHandle of launchParams.files) {
       const file = await fileHandle.getFile();
-      play_source(file);
+      // Check if it's an image file
+      if (window.isImageFile && window.isImageFile(file.name)) {
+        window.viewImage(file, file.name);
+      } else {
+        play_source(file);
+      }
       return;
       // Route to appropriate player logic
     }

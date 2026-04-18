@@ -316,6 +316,12 @@ async function showPlaylistItemMenu(playlistName, index, button) {
             }
 
             if (action === "add-to-playlist") {
+                // Check if entry is temporary (has handle, no persistable path)
+                if (currentEntry && currentEntry.isTemporary) {
+                    alert(t('cannotAddTemporaryToPlaylist', 'Temporary entries cannot be added to playlists. Import the directory to storage first.'));
+                    closeMenu();
+                    return;
+                }
                 const allPlaylists = await playlists_load();
                 const names = Object.keys(allPlaylists).filter(n => n !== playlistName);
                 if (names.length === 0) {

@@ -1430,6 +1430,48 @@ if (document.readyState === "loading") {
 window.updateSaveLocationsDisplay = updateSaveLocationsDisplay;
 
 // =====================================================
+// Slideshow Interval Setting
+// =====================================================
+const slideshowIntervalInput = document.getElementById("slideshowIntervalInput");
+
+// Load saved slideshow interval (default: 5000ms)
+if (slideshowIntervalInput) {
+    slideshowIntervalInput.value = localStorage.getItem("slideshowInterval") || "5000";
+
+    slideshowIntervalInput.addEventListener("change", () => {
+        const value = parseInt(slideshowIntervalInput.value, 10);
+        if (value >= 100 && value <= 60000) {
+            localStorage.setItem("slideshowInterval", value.toString());
+            showToast("Slideshow interval saved.");
+        } else {
+            slideshowIntervalInput.value = "5000";
+            localStorage.setItem("slideshowInterval", "5000");
+            showToast("Invalid value. Reset to 5000ms.");
+        }
+    });
+}
+
+// =====================================================
+// Disable Image to Playlist/Now Playing Setting
+// =====================================================
+const disableImageToPlaylistInput = document.getElementById("disableImageToPlaylistInput");
+
+// Load saved setting (default: false - images can be added)
+if (disableImageToPlaylistInput) {
+    disableImageToPlaylistInput.checked = localStorage.getItem("disableImageToPlaylist") === "true";
+
+    disableImageToPlaylistInput.addEventListener("change", () => {
+        localStorage.setItem("disableImageToPlaylist", disableImageToPlaylistInput.checked.toString());
+    });
+}
+
+// Helper function to check if images are disabled from being added to playlist/now playing
+function isImageToPlaylistDisabled() {
+    return localStorage.getItem("disableImageToPlaylist") === "true";
+}
+window.isImageToPlaylistDisabled = isImageToPlaylistDisabled;
+
+// =====================================================
 // Share PWA Player URL Setting
 // =====================================================
 const sharePwaPlayerUrlCheckbox = document.getElementById("sharePwaPlayerUrl");
