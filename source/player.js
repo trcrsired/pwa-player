@@ -550,7 +550,7 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
     const vttUrl = basePath + '.vtt';
     try {
       // Use a HEAD request to check if the .vtt file actually exists
-      const response = await fetch(vttUrl, { method: 'HEAD' });
+      const response = await fetch(vttUrl, { method: 'HEAD', mode: "cors" });
       if (response.ok) {
         // If it exists, pass the URL directly to loadSubtitle
         // Note: loadSubtitle must be able to handle a string URL

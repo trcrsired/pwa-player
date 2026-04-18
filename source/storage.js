@@ -736,7 +736,7 @@ async function pasteSingleFile(source, fileName, destSchema, targetDirHandle, ta
     try {
         if (source.schema === "remote_storage") {
             // Download from remote URL
-            const response = await fetch(source.handle, { cache: "no-store" });
+            const response = await fetch(source.handle, { cache: "no-store", mode: "cors" });
             if (!response.ok) {
                 result.errors.push(`Failed to fetch: ${fileName}`);
                 return;
@@ -853,7 +853,7 @@ async function downloadRemoteDirectory(remoteUrl, destSchema, targetDirHandle, t
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     try {
-        const response = await fetch(remoteUrl, { cache: "no-store" });
+        const response = await fetch(remoteUrl, { cache: "no-store", mode: "cors" });
         if (!response.ok) {
             result.errors.push(`Failed to fetch directory: ${remoteUrl}`);
             return;
@@ -869,7 +869,7 @@ async function downloadRemoteDirectory(remoteUrl, destSchema, targetDirHandle, t
             if (statusCallback) statusCallback(`${t('downloading', 'Downloading')}: ${f.name}`);
 
             try {
-                const fileResponse = await fetch(f.url, { cache: "no-store" });
+                const fileResponse = await fetch(f.url, { cache: "no-store", mode: "cors" });
                 if (!fileResponse.ok) {
                     result.errors.push(`Failed to download: ${f.name}`);
                     continue;
@@ -985,7 +985,7 @@ async function collectPointers(dirHandle, schema, basePath, remoteTargetUrl = nu
         // Handle Remote Recursion
         // remoteTargetUrl is the actual URL to fetch (e.g. http://127.0.0.1:8080/Movies/)
         try {
-            const response = await fetch(remoteTargetUrl, { cache: "no-store" });
+            const response = await fetch(remoteTargetUrl, { cache: "no-store", mode: "cors" });
             if (!response.ok) return [];
 
             const htmlText = await response.text();
@@ -2232,7 +2232,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 try {
                     if (isRemote) {
                         // REMOTE: Fetch headers to get size and type
-                        const response = await fetch(handle, { method: 'HEAD' });
+                        const response = await fetch(handle, { method: 'HEAD', mode: "cors" });
                         if (response.ok) {
                             const size = response.headers.get('content-length');
                             const type = response.headers.get('content-type');
@@ -2860,7 +2860,7 @@ async function loadStorageSubdirs(subList, dirHandle, entry, currentPath = "", r
             const targetUrl = baseUrl;
 
             try {
-                const response = await fetch(targetUrl, { cache: "no-store" });
+                const response = await fetch(targetUrl, { cache: "no-store", mode: "cors" });
                 if (response.ok) {
                     const htmlText = await response.text();
                     // parseRemoteDirectoryListing handles DOM parsing and filtering
