@@ -176,7 +176,7 @@ function zoomIn(clientX, clientY) {
     }
 
     if (currentScaleIndex < SCALE_LEVELS.length - 1 && SCALE_LEVELS[currentScaleIndex + 1] > SCALE_LEVELS[currentScaleIndex]) {
-        currentScaleIndex++;
+        ++currentScaleIndex;
         if (clientX !== undefined && clientY !== undefined) {
             const rect = imageElement.getBoundingClientRect();
             const xPercent = ((clientX - rect.left) / rect.width) * 100;
