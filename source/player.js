@@ -1693,34 +1693,31 @@ function showVideoPreview(time, xPos) {
   previewVideo.currentTime = time;
 }
 
-// Image preview when viewing images in queue
+// Image/Video preview when viewing items in queue
 async function showImagePreview(index, xPos) {
-  if (!videoPreview || !previewImage) return;
+  if (!videoPreview) return;
 
   // Get the queue
   const queue = typeof getActiveQueue === 'function' ? getActiveQueue() : null;
   if (!queue || queue.length === 0) return;
 
-  // Calculate image index from progress bar position
-  const pos = typeof window.getImageQueuePosition === 'function' ? window.getImageQueuePosition() : null;
-  if (!pos) return;
-
-  // Hide video preview, show image preview
-  previewVideo.style.display = "none";
-  previewImage.style.display = "block";
-
-  // Get the target image entry
+  // Get the target entry
   const targetIndex = Math.max(0, Math.min(Math.floor(index), queue.length - 1));
   const entry = queue[targetIndex];
 
   if (!entry) return;
 
-  // Try to load preview image
-  try {
-    let blobURL = null;
+  // Check if this entry is an image or video
+  const entryName = entry.name || entry.path || '';
+  const isImage = typeof window.isImageFile === 'function' && window.isImageFile(entryName);
 
-    // Handle different entry types
+  try {
+    // Get blob URL for the entry
+    let blobURL = null;
+    let fileHandle = null;
+
     if (entry.handle && typeof entry.handle.getFile === 'function') {
+      fileHandle = entry.handle;
       const file = await entry.handle.getFile();
       blobURL = URL.createObjectURL(file);
     } else if (entry.file && (entry.file instanceof File || entry.file instanceof Blob)) {
@@ -1728,20 +1725,46 @@ async function showImagePreview(index, xPos) {
     } else if (entry.path && entry.path.startsWith('blob:')) {
       blobURL = entry.path;
     } else if (typeof storage_resolvePath === 'function' && entry.path) {
-      // Try to resolve from storage
       const handle = await storage_resolvePath(entry.path);
       if (handle && typeof handle.getFile === 'function') {
+        fileHandle = handle;
         const file = await handle.getFile();
         blobURL = URL.createObjectURL(file);
       }
     }
 
-    if (blobURL && previewLoadedImageQueue !== blobURL) {
-      previewImage.src = blobURL;
-      previewLoadedImageQueue = blobURL;
+    if (!blobURL) return;
+
+    if (isImage) {
+      // Show image preview
+      if (previewVideo) previewVideo.style.display = "none";
+      if (previewImage) {
+        previewImage.style.display = "block";
+        if (previewLoadedImageQueue !== blobURL) {
+          previewImage.src = blobURL;
+          previewLoadedImageQueue = blobURL;
+        }
+      }
+    } else {
+      // Show video preview (for video files in queue)
+      if (previewImage) previewImage.style.display = "none";
+      if (previewVideo) {
+        previewVideo.style.display = "block";
+        if (previewLoadedSrc !== blobURL) {
+          previewVideo.src = blobURL;
+          previewLoadedSrc = blobURL;
+          // Wait for video to be ready before seeking
+          previewVideo.onloadedmetadata = () => {
+            previewVideo.currentTime = 0;
+          };
+        } else {
+          // Already loaded, just seek to beginning
+          previewVideo.currentTime = 0;
+        }
+      }
     }
 
-    // Show preview
+    // Show preview container
     videoPreview.style.display = "block";
     previewTime.textContent = `${targetIndex + 1}/${queue.length}`;
 
@@ -1752,7 +1775,7 @@ async function showImagePreview(index, xPos) {
     left = Math.max(0, Math.min(left, containerRect.width - previewWidth));
     videoPreview.style.left = left + "px";
   } catch (err) {
-    console.warn('Failed to load image preview:', err);
+    console.warn('Failed to load preview:', err);
   }
 }
 
