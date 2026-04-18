@@ -331,6 +331,19 @@ const JA_TRANSLATIONS = {
     clearScreenshotLocation: "スクリーンショットを清除",
     saveLocationCleared: "保存場所を清除しました。",
 
+    // Image viewer
+    slideshow: "スライドショー",
+    slideshowInterval: "スライドショー間隔（ミリ秒）",
+    slideshowIntervalHint: "スライドショー模式での画像切替間隔。デフォルト5000ミリ秒（5秒）。",
+    startSlideshow: "スライドショー開始",
+    stopSlideshow: "スライドショー停止",
+    imageView: "画像表示",
+    zoomIn: "拡大",
+    zoomOut: "縮小",
+    clickLeftForPrev: "左側をクリックで前の画像",
+    clickRightForNext: "右側をクリックで次の画像",
+    clickCenterToZoom: "中央をクリックでズーム切替",
+
     // Video status
     videoLoading: "読み込み中...",
     videoLoadFailed: "ビデオの読み込みに失敗しました。形式が対応していない可能性があります。",

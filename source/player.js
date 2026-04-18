@@ -488,6 +488,27 @@ function updateTimeDisplay(txtct)
     }
   }
 
+  // Check for image viewer (show queue position i/n)
+  if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+    if (typeof window.getImageQueuePosition === 'function') {
+      const pos = window.getImageQueuePosition();
+      if (pos) {
+        const imageText = `${pos.index}/${pos.total}`;
+        if (!timeInputActive) {
+          timeDisplay.textContent = imageText;
+        }
+        if (!npTimeInputActive) {
+          npTimeDisplay.textContent = imageText;
+        }
+        // Update progress bar for image queue position
+        if (typeof window.updateImageProgressBar === 'function') {
+          window.updateImageProgressBar(pos.index, pos.total);
+        }
+        return;
+      }
+    }
+  }
+
   // Check for video recording (append elapsed time with ⏺️ icon)
   let finalText = txtct;
   if (typeof window.getVideoRecordingElapsedTime === 'function') {
@@ -606,6 +627,20 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       sourceobject: sourceobject
     });
     return;
+  }
+
+  // Check if this is an image file - use image viewer instead
+  const entryPath = playlist?.entryPath || mediametadata.title || '';
+  if (typeof window.isImageFile === 'function' && window.isImageFile(entryPath)) {
+    if (typeof window.viewImage === 'function') {
+      window.viewImage(sourceobject, entryPath);
+      return;
+    }
+  }
+
+  // Hide image viewer if active (switching from image to video)
+  if (typeof window.hideImageViewer === 'function') {
+    window.hideImageViewer();
   }
 
   // Stop embedded player (YouTube/Vimeo) if active - we're switching to normal video

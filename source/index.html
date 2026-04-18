@@ -23,6 +23,8 @@
         <div id="playerContainer">
             <div id="playerWrapper">
                 <video id="player" crossorigin="anonymous" autoplay></video>
+                <!-- Image display for image viewing -->
+                <img id="imageDisplay" class="hidden" style="max-width:100%;max-height:100%;object-fit:contain;cursor:pointer;user-select:none;">
                 <!-- Embedded player container (YouTube, etc.) -->
                 <div id="embeddedPlayer" class="hidden"></div>
                 <!-- Invisible trigger zone on right side to reveal button -->
@@ -60,6 +62,7 @@
                         <button id="screenCaptureBtn" data-i18n-title="captureScreen">🖥️</button>
                         <button id="mediaRecordBtn" data-i18n-title="recordMedia">⏺️</button>
                         <button id="screenshotBtn" data-i18n-title="screenshot">📸</button>
+                        <button id="magnifierBtn" data-i18n-title="zoomIn" class="hidden">🔍</button>
                     </div>
                     <div class="control-group right-controls">
                         <button id="micToggleBtn" data-i18n-title="toggleMicrophone" style="display:none;">🎤</button>
@@ -465,6 +468,7 @@
         <button id="scrollDownBtn" class="scroll-btn scroll-down" title="Scroll to bottom">⬇</button>
 
         <script src="extrafeatures.js"></script>
+        <script src="imageviewer.js"></script>
         <script src="wakelock.js"></script>
         <script src="settings.js"></script>
         <script src="sw-register.js"></script>

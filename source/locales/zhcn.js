@@ -334,6 +334,19 @@ const ZHCN_TRANSLATIONS = {
     clearScreenshotLocation: "清除截图",
     saveLocationCleared: "保存位置已清除。",
 
+    // Image viewer
+    slideshow: "幻灯片",
+    slideshowInterval: "幻灯片间隔（毫秒）",
+    slideshowIntervalHint: "幻灯片模式下图片切换间隔。默认5000毫秒（5秒）。",
+    startSlideshow: "开始幻灯片",
+    stopSlideshow: "停止幻灯片",
+    imageView: "图片查看",
+    zoomIn: "放大",
+    zoomOut: "缩小",
+    clickLeftForPrev: "点击左侧查看上一张图片",
+    clickRightForNext: "点击右侧查看下一张图片",
+    clickCenterToZoom: "点击中间切换缩放",
+
     // Video status
     videoLoading: "加载中...",
     videoLoadFailed: "视频加载失败。格式可能不受支持。",

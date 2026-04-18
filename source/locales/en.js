@@ -334,6 +334,19 @@ const EN_TRANSLATIONS = {
     clearScreenshotLocation: "Clear Screenshot",
     saveLocationCleared: "Save location cleared.",
 
+    // Image viewer
+    slideshow: "Slideshow",
+    slideshowInterval: "Slideshow Interval (ms)",
+    slideshowIntervalHint: "Time between images in slideshow mode. Default 5000ms (5 seconds).",
+    startSlideshow: "Start Slideshow",
+    stopSlideshow: "Stop Slideshow",
+    imageView: "Image View",
+    zoomIn: "Zoom In",
+    zoomOut: "Zoom Out",
+    clickLeftForPrev: "Click left side for previous image",
+    clickRightForNext: "Click right side for next image",
+    clickCenterToZoom: "Click center to toggle zoom",
+
     // Video status
     videoLoading: "Loading...",
     videoLoadFailed: "Failed to load video. The format may not be supported.",
