@@ -141,6 +141,12 @@ function handleKeyDown(event) {
 }
 
 function getCurrentScale() {
+    if (currentScaleIndex === -1) {
+        // Pinch zoom mode - get scale from transform
+        const transform = imageElement.style.transform;
+        const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
+        return scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    }
     return SCALE_LEVELS[currentScaleIndex];
 }
 
@@ -152,6 +158,28 @@ function handleWheel(event) {
 }
 
 function zoomIn(clientX, clientY) {
+    // If in pinch-zoom mode, snap to nearest predefined scale first
+    if (currentScaleIndex === -1) {
+        const currentScale = getCurrentScale();
+        // Find the next higher predefined scale
+        for (let i = 0; i < SCALE_LEVELS.length; ++i) {
+            if (SCALE_LEVELS[i] > currentScale) {
+                currentScaleIndex = i;
+                if (clientX !== undefined && clientY !== undefined) {
+                    const rect = imageElement.getBoundingClientRect();
+                    const xPercent = ((clientX - rect.left) / rect.width) * 100;
+                    const yPercent = ((clientY - rect.top) / rect.height) * 100;
+                    imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+                }
+                applyPanAndZoom();
+                updateCursor();
+                updateMagnifierButton();
+                return;
+            }
+        }
+        return; // Already at max scale
+    }
+
     if (currentScaleIndex < SCALE_LEVELS.length - 1 && SCALE_LEVELS[currentScaleIndex + 1] > SCALE_LEVELS[currentScaleIndex]) {
         currentScaleIndex++;
         if (clientX !== undefined && clientY !== undefined) {
@@ -164,7 +192,7 @@ function zoomIn(clientX, clientY) {
         updateCursor();
         updateMagnifierButton();
     } else if (SCALE_LEVELS[currentScaleIndex] === 1) {
-        for (let i = 0; i < SCALE_LEVELS.length; i++) {
+        for (let i = 0; i < SCALE_LEVELS.length; ++i) {
             if (SCALE_LEVELS[i] > 1) {
                 currentScaleIndex = i;
                 applyPanAndZoom();
@@ -177,6 +205,32 @@ function zoomIn(clientX, clientY) {
 }
 
 function zoomOut() {
+    // If in pinch-zoom mode, snap to nearest predefined scale first
+    if (currentScaleIndex === -1) {
+        const currentScale = getCurrentScale();
+        // Find the next lower predefined scale
+        for (let i = SCALE_LEVELS.length - 1; i >= 0; i--) {
+            if (SCALE_LEVELS[i] < currentScale) {
+                currentScaleIndex = i;
+                if (SCALE_LEVELS[currentScaleIndex] === 1) {
+                    panOffset = { x: 0, y: 0 };
+                    imageElement.style.transformOrigin = 'center center';
+                }
+                applyPanAndZoom();
+                updateCursor();
+                updateMagnifierButton();
+                return;
+            }
+        }
+        currentScaleIndex = 0; // Go to minimum
+        panOffset = { x: 0, y: 0 };
+        imageElement.style.transformOrigin = 'center center';
+        applyPanAndZoom();
+        updateCursor();
+        updateMagnifierButton();
+        return;
+    }
+
     if (currentScaleIndex > 0 && SCALE_LEVELS[currentScaleIndex - 1] < SCALE_LEVELS[currentScaleIndex]) {
         currentScaleIndex--;
         if (SCALE_LEVELS[currentScaleIndex] === 1) {
@@ -287,10 +341,42 @@ function updateMagnifierButton() {
 }
 
 let touchStartTime = 0, lastTouchX = 0, lastTouchY = 0;
+let isPinching = false;
+let pinchStartDistance = 0;
+let pinchStartScale = 1;
+let pinchCenter = { x: 0, y: 0 };
+
+function getTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getTouchCenter(touches) {
+    return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+}
 
 function handleTouchStart(event) {
     touchStartTime = Date.now();
-    if (event.touches.length === 1) {
+
+    if (event.touches.length === 2) {
+        // Pinch zoom start
+        event.preventDefault();
+        isPinching = true;
+        isPanning = false;
+        pinchStartDistance = getTouchDistance(event.touches);
+        pinchStartScale = getCurrentScale();
+        pinchCenter = getTouchCenter(event.touches);
+
+        // Set transform origin to pinch center
+        const rect = imageElement.getBoundingClientRect();
+        const xPercent = ((pinchCenter.x - rect.left) / rect.width) * 100;
+        const yPercent = ((pinchCenter.y - rect.top) / rect.height) * 100;
+        imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+    } else if (event.touches.length === 1) {
         lastTouchX = event.touches[0].clientX;
         lastTouchY = event.touches[0].clientY;
         if (getCurrentScale() !== 1) {
@@ -303,34 +389,88 @@ function handleTouchStart(event) {
 }
 
 function handleTouchMove(event) {
-    if (!isPanning || event.touches.length !== 1) return;
-    event.preventDefault();
-    const scale = getCurrentScale();
-    panOffset = {
-        x: lastPanOffset.x + (event.touches[0].clientX - panStart.x) / scale,
-        y: lastPanOffset.y + (event.touches[0].clientY - panStart.y) / scale
-    };
-    applyPanAndZoom();
+    if (event.touches.length === 2 && isPinching) {
+        event.preventDefault();
+
+        const currentDistance = getTouchDistance(event.touches);
+        const scaleRatio = currentDistance / pinchStartDistance;
+        const newScale = pinchStartScale * scaleRatio;
+
+        // Clamp scale to reasonable range
+        const minScale = 0.5;
+        const maxScale = 5;
+        const clampedScale = Math.max(minScale, Math.min(maxScale, newScale));
+
+        // Find the closest scale index or use direct scale
+        // For pinch zoom, use direct scale value instead of predefined levels
+        currentScaleIndex = -1; // Special index for pinch zoom
+        imageElement.style.transform = `scale(${clampedScale}) translate(${panOffset.x}px, ${panOffset.y}px)`;
+        updateCursor();
+        updateMagnifierButton();
+    } else if (!isPinching && isPanning && event.touches.length === 1) {
+        event.preventDefault();
+        const scale = getCurrentScale();
+        panOffset = {
+            x: lastPanOffset.x + (event.touches[0].clientX - panStart.x) / scale,
+            y: lastPanOffset.y + (event.touches[0].clientY - panStart.y) / scale
+        };
+        applyPanAndZoom();
+    }
 }
 
-function handleTouchEnd() {
-    isPanning = false;
-    updateCursor();
-    if (Date.now() - touchStartTime < 200 && getCurrentScale() === 1) {
-        // Use entire window dimensions for zone detection (not limited to playerWrapper)
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+function handleTouchEnd(event) {
+    // If ending pinch, find nearest scale level
+    if (isPinching && event.touches.length < 2) {
+        isPinching = false;
 
-        if (lastTouchY > height * 0.8) {
-            showImageControls();
-        } else if (lastTouchX < width * 0.3) {
-            cancelControlsHide();
-            hideImageControls();
-            if (typeof playPrevious === 'function') playPrevious();
-        } else if (lastTouchX > width * 0.7) {
-            cancelControlsHide();
-            hideImageControls();
-            handleNextWithLoopCheck();
+        // Get current scale from transform
+        const transform = imageElement.style.transform;
+        const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
+        if (scaleMatch) {
+            const currentScale = parseFloat(scaleMatch[1]);
+            // Find closest predefined scale level
+            let closestIndex = 0;
+            let closestDiff = Math.abs(SCALE_LEVELS[0] - currentScale);
+            for (let i = 1; i < SCALE_LEVELS.length; ++i) {
+                const diff = Math.abs(SCALE_LEVELS[i] - currentScale);
+                if (diff < closestDiff) {
+                    closestDiff = diff;
+                    closestIndex = i;
+                }
+            }
+            currentScaleIndex = closestIndex;
+
+            if (SCALE_LEVELS[currentScaleIndex] === 1) {
+                panOffset = { x: 0, y: 0 };
+                imageElement.style.transformOrigin = 'center center';
+            }
+            applyPanAndZoom();
+            updateCursor();
+            updateMagnifierButton();
+        }
+    }
+
+    if (event.touches.length === 0) {
+        isPanning = false;
+        updateCursor();
+
+        // Handle tap only if not pinching and quick tap
+        if (!isPinching && Date.now() - touchStartTime < 200 && getCurrentScale() === 1) {
+            // Use entire window dimensions for zone detection (not limited to playerWrapper)
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            if (lastTouchY > height * 0.8) {
+                showImageControls();
+            } else if (lastTouchX < width * 0.3) {
+                cancelControlsHide();
+                hideImageControls();
+                if (typeof playPrevious === 'function') playPrevious();
+            } else if (lastTouchX > width * 0.7) {
+                cancelControlsHide();
+                hideImageControls();
+                handleNextWithLoopCheck();
+            }
         }
     }
 }

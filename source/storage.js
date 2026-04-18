@@ -675,7 +675,7 @@ async function pasteToDestination(entry, dirName, parent) {
             }
 
             // Navigate to subdirectory
-            for (let i = 1; i < parts.length; i++) {
+            for (let i = 1; i < parts.length; ++i) {
                 targetDirHandle = await targetDirHandle.getDirectoryHandle(parts[i], { create: true });
             }
         } else {
