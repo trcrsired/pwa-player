@@ -15,8 +15,19 @@ let slideshowControlsVisible = false; // Track whether user wants controls visib
 const SCALE_LEVELS = [1, 1.5, 2, 3, 0.75];
 let currentScaleIndex = 0;
 
-// Note: Native pinch-zoom and panning handled by CSS touch-action: pinch-zoom pan-x pan-y
-// No custom touch/mouse handlers needed for panning
+// Touch pinch-zoom state
+let touchStartDistance = 0;
+let touchStartScale = 1;
+let touchStartCenterX = 0;
+let touchStartCenterY = 0;
+let isTouchZooming = false;
+
+// Pan state for mouse/touch drag when zoomed
+let isPanning = false;
+let panStartX = 0;
+let panStartY = 0;
+let panOffsetX = 0;
+let panOffsetY = 0;
 
 // Add interaction flag handlers immediately with capture phase (fires BEFORE bubble phase)
 document.getElementById("prevBtn")?.addEventListener("click", () => { isInteractingWithControls = true; }, true);
@@ -29,17 +40,21 @@ function initImageViewer() {
     imageElement = document.getElementById('imageDisplay');
     if (!imageElement) return;
 
-    // Click on zoomed image to set zoom focus point
-    imageElement.addEventListener('click', handleZoomedImageClick);
+    // Touch handlers for pinch-zoom and pan on mobile
+    imageElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+    imageElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+    imageElement.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    // Mouse drag for panning when zoomed (desktop)
+    imageElement.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 
     // Wheel for zoom (mouse/trackpad)
     imageElement.addEventListener('wheel', handleWheel, { passive: false });
 
     // Keyboard navigation
     document.addEventListener('keydown', handleKeyDown);
-
-    // Note: touch-action: pinch-zoom pan-x pan-y in CSS handles native pinch zoom and panning
-    // No need for custom touch/mouse drag handlers
 
     const magnifierBtn = document.getElementById('magnifierBtn');
     if (magnifierBtn) magnifierBtn.addEventListener('click', handleMagnifierClick);
@@ -107,6 +122,133 @@ function showImageControls() {
     if (controls) controls.classList.remove('hidden');
     slideshowControlsVisible = true; // User explicitly showed controls
     scheduleControlsHide();
+}
+
+// Touch handlers for pinch-zoom and pan on mobile
+function getTouchDistance(touches) {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getTouchCenter(touches) {
+    if (touches.length < 2) return { x: touches[0].clientX, y: touches[0].clientY };
+    return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+}
+
+function handleTouchStart(event) {
+    if (!isImageViewerActive()) return;
+
+    if (event.touches.length === 2) {
+        // Start pinch-zoom
+        event.preventDefault();
+        isTouchZooming = true;
+        isPanning = false;
+        touchStartDistance = getTouchDistance(event.touches);
+        touchStartScale = getCurrentScale();
+        const center = getTouchCenter(event.touches);
+        touchStartCenterX = center.x;
+        touchStartCenterY = center.y;
+    } else if (event.touches.length === 1 && getCurrentScale() > 1) {
+        // Start pan with single finger when zoomed
+        isTouchZooming = false;
+        isPanning = true;
+        panStartX = event.touches[0].clientX - panOffsetX;
+        panStartY = event.touches[0].clientY - panOffsetY;
+    }
+}
+
+function handleTouchMove(event) {
+    if (!isImageViewerActive()) return;
+
+    if (isTouchZooming && event.touches.length === 2) {
+        event.preventDefault();
+        const currentDistance = getTouchDistance(event.touches);
+        if (touchStartDistance > 0) {
+            const scale = touchStartScale * (currentDistance / touchStartDistance);
+            // Clamp scale to reasonable range
+            const clampedScale = Math.max(0.5, Math.min(5, scale));
+
+            // Update scale index to match (for magnifier button)
+            currentScaleIndex = -1; // Custom scale mode
+
+            // Calculate pan based on center movement
+            const center = getTouchCenter(event.touches);
+            const dx = center.x - touchStartCenterX;
+            const dy = center.y - touchStartCenterY;
+            panOffsetX += dx;
+            panOffsetY += dy;
+            touchStartCenterX = center.x;
+            touchStartCenterY = center.y;
+
+            // Apply transform
+            imageElement.style.transform = `translate(${panOffsetX}px, ${panOffsetY}px) scale(${clampedScale})`;
+            updateCursor();
+            updateMagnifierButton();
+        }
+    } else if (isPanning && event.touches.length === 1) {
+        event.preventDefault();
+        panOffsetX = event.touches[0].clientX - panStartX;
+        panOffsetY = event.touches[0].clientY - panStartY;
+        applyScale();
+    }
+}
+
+function handleTouchEnd(event) {
+    if (isTouchZooming) {
+        // Snap to nearest predefined scale
+        const currentScale = getCurrentScale();
+        let nearestIndex = 0;
+        let minDiff = Math.abs(SCALE_LEVELS[0] - currentScale);
+        for (let i = 1; i < SCALE_LEVELS.length; ++i) {
+            const diff = Math.abs(SCALE_LEVELS[i] - currentScale);
+            if (diff < minDiff) {
+                minDiff = diff;
+                nearestIndex = i;
+            }
+        }
+        currentScaleIndex = nearestIndex;
+        if (SCALE_LEVELS[currentScaleIndex] === 1) {
+            panOffsetX = 0;
+            panOffsetY = 0;
+            imageElement.style.transformOrigin = 'center center';
+        }
+        applyScale();
+        updateCursor();
+        updateMagnifierButton();
+    }
+    isTouchZooming = false;
+    isPanning = false;
+}
+
+// Mouse drag handlers for panning when zoomed (desktop)
+function handleMouseDown(event) {
+    if (!isImageViewerActive()) return;
+    if (getCurrentScale() <= 1) return;
+    if (event.button !== 0) return;
+
+    isPanning = true;
+    panStartX = event.clientX - panOffsetX;
+    panStartY = event.clientY - panOffsetY;
+    imageElement.style.cursor = 'grabbing';
+    event.preventDefault();
+}
+
+function handleMouseMove(event) {
+    if (!isPanning) return;
+    panOffsetX = event.clientX - panStartX;
+    panOffsetY = event.clientY - panStartY;
+    applyScale();
+}
+
+function handleMouseUp(event) {
+    if (!isPanning) return;
+    isPanning = false;
+    updateCursor();
 }
 
 function handleKeyDown(event) {
@@ -217,6 +359,8 @@ function zoomOut() {
             }
         }
         currentScaleIndex = 0; // Go to minimum
+        panOffsetX = 0;
+        panOffsetY = 0;
         imageElement.style.transformOrigin = 'center center';
         applyScale();
         updateCursor();
@@ -227,6 +371,8 @@ function zoomOut() {
     if (currentScaleIndex > 0 && SCALE_LEVELS[currentScaleIndex - 1] < SCALE_LEVELS[currentScaleIndex]) {
         --currentScaleIndex;
         if (SCALE_LEVELS[currentScaleIndex] === 1) {
+            panOffsetX = 0;
+            panOffsetY = 0;
             imageElement.style.transformOrigin = 'center center';
         }
         applyScale();
@@ -249,7 +395,8 @@ function zoomOut() {
 }
 
 function updateCursor() {
-    imageElement.style.cursor = getCurrentScale() > 1 ? 'grab' : 'default';
+    const scale = getCurrentScale();
+    imageElement.style.cursor = scale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default';
 }
 
 // Handle click on zoomed image to set zoom focus point
@@ -281,16 +428,18 @@ function handleNextWithLoopCheck() {
     if (typeof playNext === 'function') playNext();
 }
 
-// Apply scale transform (CSS handles native panning via touch-action)
+// Apply scale transform with pan offset
 function applyScale() {
     const scale = getCurrentScale();
-    imageElement.style.transform = `scale(${scale})`;
+    imageElement.style.transform = `translate(${panOffsetX}px, ${panOffsetY}px) scale(${scale})`;
 }
 
 function handleMagnifierClick(event) {
     event.stopPropagation();
     currentScaleIndex = (currentScaleIndex + 1) % SCALE_LEVELS.length;
     if (SCALE_LEVELS[currentScaleIndex] === 1) {
+        panOffsetX = 0;
+        panOffsetY = 0;
         imageElement.style.transformOrigin = 'center center';
         imageElement.style.transform = 'scale(1)';
     } else {
@@ -497,6 +646,8 @@ async function viewImage(sourceobject, entryPath) {
         imageElement.alt = imageName;
 
         currentScaleIndex = 0;
+        panOffsetX = 0;
+        panOffsetY = 0;
         imageElement.style.transform = 'scale(1)';
         imageElement.style.cursor = 'default';
         imageElement.style.transformOrigin = 'center center';
@@ -527,6 +678,8 @@ function hideImageViewer() {
         imageElement.classList.add('hidden');
         imageElement.src = '';
         currentScaleIndex = 0;
+        panOffsetX = 0;
+        panOffsetY = 0;
         imageElement.style.transform = 'scale(1)';
     }
 
