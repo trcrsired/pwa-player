@@ -204,7 +204,7 @@ function zoomOut() {
     if (currentScaleIndex === -1) {
         const currentScale = getCurrentScale();
         // Find the next lower predefined scale
-        for (let i = SCALE_LEVELS.length - 1; i >= 0; i--) {
+        for (let i = SCALE_LEVELS.length; i--;) {
             if (SCALE_LEVELS[i] < currentScale) {
                 currentScaleIndex = i;
                 if (SCALE_LEVELS[currentScaleIndex] === 1) {
@@ -233,7 +233,7 @@ function zoomOut() {
         updateCursor();
         updateMagnifierButton();
     } else if (SCALE_LEVELS[currentScaleIndex] > 1) {
-        for (let i = currentScaleIndex - 1; i >= 0; i--) {
+        for (let i = currentScaleIndex; i--; ) {
             if (SCALE_LEVELS[i] < SCALE_LEVELS[currentScaleIndex]) {
                 currentScaleIndex = i;
                 if (SCALE_LEVELS[currentScaleIndex] === 1) {
