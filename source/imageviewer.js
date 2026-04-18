@@ -225,7 +225,7 @@ function zoomOut() {
     }
 
     if (currentScaleIndex > 0 && SCALE_LEVELS[currentScaleIndex - 1] < SCALE_LEVELS[currentScaleIndex]) {
-        currentScaleIndex--;
+        --currentScaleIndex;
         if (SCALE_LEVELS[currentScaleIndex] === 1) {
             imageElement.style.transformOrigin = 'center center';
         }
