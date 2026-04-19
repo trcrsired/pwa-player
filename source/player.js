@@ -1299,7 +1299,6 @@ function performSkip(direction, pressDuration = 0) {
 
         if (skipAmount < skipMid) skipAmount = skipMid;
     }
-    console.log(`pressDuration=${pressDuration} skipAmount=${skipAmount}`);
 
     const newTime = currentTime + direction * skipAmount;
     const clampedTime = Math.max(0, Math.min(newTime, duration || 0));
@@ -1309,6 +1308,7 @@ function performSkip(direction, pressDuration = 0) {
 function startSkip(direction) {
     skipDirection = direction;
     skipPressStartTime = Date.now();
+    window.hasControlsPointerActivity = true;
 
     // Initial skip (short press behavior)
     performSkip(direction);
@@ -1334,6 +1334,11 @@ function stopSkip() {
     }
     skipDirection = 0;
     skipPressStartTime = 0;
+    window.hasControlsPointerActivity = false;
+    // Restart auto-hide timer after interaction ends
+    if (hasActiveSource) {
+        showControls(true);
+    }
 }
 
 // Setup skip button event handlers using pointer events for VR compatibility
@@ -1661,6 +1666,29 @@ npVolumeSlider.addEventListener("input", () => {
   volumeSliderInput(npVolumeSlider);
 });
 
+// Track volume slider pointer activity to prevent auto-hide
+volumeSlider.addEventListener("pointerdown", () => {
+  window.hasControlsPointerActivity = true;
+});
+volumeSlider.addEventListener("pointerup", () => {
+  window.hasControlsPointerActivity = false;
+  if (hasActiveSource) showControls(true);
+});
+volumeSlider.addEventListener("pointercancel", () => {
+  window.hasControlsPointerActivity = false;
+});
+
+npVolumeSlider.addEventListener("pointerdown", () => {
+  window.hasControlsPointerActivity = true;
+});
+npVolumeSlider.addEventListener("pointerup", () => {
+  window.hasControlsPointerActivity = false;
+  if (hasActiveSource) showControls(true);
+});
+npVolumeSlider.addEventListener("pointercancel", () => {
+  window.hasControlsPointerActivity = false;
+});
+
 function volumeToggleBtnClick()
 {
   if (volumeToggleBtn.textContent.trim() === "🔊") {
@@ -1770,13 +1798,17 @@ function handleProgressBarInput(bar, timeDisplayEl) {
 progressBar.oninput = () => handleProgressBarInput(progressBar, timeDisplay);
 progressBar.onchange = () => {
   video.currentTime = progressBar.value;
-  isDraggingProgressBar = false;
+  window.isDraggingProgressBar = false;
+  window.hasControlsPointerActivity = false;
+  if (hasActiveSource) showControls(true);
 };
 
 npProgressBar.oninput = () => handleProgressBarInput(npProgressBar, npTimeDisplay);
 npProgressBar.onchange = () => {
   video.currentTime = npProgressBar.value;
-  isDraggingProgressBar = false;
+  window.isDraggingProgressBar = false;
+  window.hasControlsPointerActivity = false;
+  if (hasActiveSource) showControls(true);
 };
 
 // =====================================================
@@ -1953,6 +1985,7 @@ function clearVideoPreview() {
 
 // Track when user is actively dragging the progress bar (pointer down)
 window.isDraggingProgressBar = false;
+window.hasControlsPointerActivity = false;
 
 // Common function to setup pointer events for a progress bar
 function setupProgressBarPointerEvents(progressBarEl, containerEl) {
@@ -2012,12 +2045,14 @@ function setupProgressBarPointerEvents(progressBarEl, containerEl) {
     // Check if image viewer is active
     if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
       window.isDraggingProgressBar = true;
+      window.hasControlsPointerActivity = true;
       return;
     }
 
     if (!hasActiveSource || !isFinite(video.duration)) return;
 
     window.isDraggingProgressBar = true;
+    window.hasControlsPointerActivity = true;
 
     // Show controls without auto-hide while dragging (only for main player)
     if (typeof showControls === 'function' && containerEl === progressContainer) {
@@ -2038,6 +2073,7 @@ function setupProgressBarPointerEvents(progressBarEl, containerEl) {
   // pointerup: end dragging
   progressBarEl.addEventListener("pointerup", () => {
     window.isDraggingProgressBar = false;
+    window.hasControlsPointerActivity = false;
     // Restart auto-hide timer if playing (only for main player)
     if (containerEl === progressContainer && hasActiveSource && !video.paused) {
       showControls(true);
@@ -2047,6 +2083,7 @@ function setupProgressBarPointerEvents(progressBarEl, containerEl) {
   // pointercancel: end dragging
   progressBarEl.addEventListener("pointercancel", () => {
     window.isDraggingProgressBar = false;
+    window.hasControlsPointerActivity = false;
   });
 }
 
@@ -2170,8 +2207,8 @@ function showControls(autoHide = true) {
 
     clearTimeout(hideTimeout);
 
-    // Auto-hide after configured delay only when playing and not dragging progress bar
-    if (autoHide && hasActiveSource && !window.isDraggingProgressBar) {
+    // Auto-hide after configured delay only when playing and no pointer activity in controls
+    if (autoHide && hasActiveSource && !window.hasControlsPointerActivity) {
         const delay = parseInt(localStorage.getItem("controlsAutoHideDelay"), 10) || 10000;
         if (delay > 0) {
             hideTimeout = setTimeout(() => {
