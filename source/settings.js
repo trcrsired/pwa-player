@@ -631,7 +631,7 @@ if (videoForABLoop) {
 
 // Get active player current time (handles both video and embedded)
 function getActiveCurrentTime() {
-    if (window.pendingSeekTarget) {
+    if (window.pendingSeekTarget != null) {
       return window.pendingSeekTarget;
     }
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {

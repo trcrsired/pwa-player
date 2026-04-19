@@ -1252,47 +1252,60 @@ function performSkip(direction, pressDuration = 0) {
 
     const duration = getActiveDuration();
     const currentTime = getActiveCurrentTime();
-
-    // Fixed skip parameters
-    const skipShortBack = 2;        // backward only, 0–1s
-    const skipMedium = 5;           // 1–3s
-    const skipMid = 15;             // minimum after 3s
-    const skipPercentMax = 2;       // max skip as percentage of video duration
-
-    const t1 = 1000;                // 1 second
-    const t2 = 3000;                // 3 seconds
-    const accelEnd = 30000;         // 30 seconds
-
-    const maxSkip = duration * (skipPercentMax / 100);
-
-    let skipAmount;
-
-    if (pressDuration <= t1) {
-        // Phase 1: 0–1s
-        skipAmount = direction < 0 ? skipShortBack : skipMedium;
-
-    } else if (pressDuration <= t2) {
-        // Phase 2: 1–3s → always 5s
-        skipAmount = skipMedium;
-
-    } else if (pressDuration >= accelEnd) {
-        // Phase 4: cap at max skip
-        skipAmount = maxSkip;
-
-    } else {
-        // Phase 3: logarithmic growth from 15 → maxSkip
-        const t = (pressDuration - t2) / (accelEnd - t2); // normalized 0 → 1
-
-        // Logarithmic smoothing (0 → 1)
-        const smooth = Math.log(1 + 9 * t) / Math.log(10);
-
-        skipAmount = skipMid + (maxSkip - skipMid) * smooth;
-
-        if (skipAmount < skipMid) skipAmount = skipMid;
+  
+    let clampedTime;
+    if (currentTime<=0 && direction < 0)
+    {
+      clampedTime = 0;
     }
-    const newTime = currentTime + direction * skipAmount;
-    const clampedTime = Math.max(0, Math.min(newTime, duration || 0));
+    else if (duration<=currentTime && 0 < direction)
+    {
+      clampedTime = duration;
+    }
+    else
+    {
 
+      // Fixed skip parameters
+      const skipShortBack = 2;        // backward only, 0–1s
+      const skipMedium = 5;           // 1–3s
+      const skipMid = 15;             // minimum after 3s
+      const skipPercentMax = 2;       // max skip as percentage of video duration
+
+      const t1 = 1000;                // 1 second
+      const t2 = 3000;                // 3 seconds
+      const accelEnd = 30000;         // 30 seconds
+
+      const maxSkip = duration * (skipPercentMax / 100);
+
+      let skipAmount;
+
+      if (pressDuration <= t1) {
+          // Phase 1: 0–1s
+          skipAmount = direction < 0 ? skipShortBack : skipMedium;
+
+      } else if (pressDuration <= t2) {
+          // Phase 2: 1–3s → always 5s
+          skipAmount = skipMedium;
+
+      } else if (pressDuration >= accelEnd) {
+          // Phase 4: cap at max skip
+          skipAmount = maxSkip;
+
+      } else {
+          // Phase 3: logarithmic growth from 15 → maxSkip
+          const t = (pressDuration - t2) / (accelEnd - t2); // normalized 0 → 1
+
+          // Logarithmic smoothing (0 → 1)
+          const smooth = Math.log(1 + 9 * t) / Math.log(10);
+
+          skipAmount = skipMid + (maxSkip - skipMid) * smooth;
+
+          if (skipAmount < skipMid) skipAmount = skipMid;
+      }
+      const newTime = currentTime + direction * skipAmount;
+      clampedTime = Math.max(0, Math.min(newTime, duration || 0));
+
+    }
     // Store pending seek target
     window.pendingSeekTarget = clampedTime;
 
