@@ -264,7 +264,6 @@ function getButtonSize() {
 // =====================================================
 // Playback Speed Control
 // =====================================================
-const speedSlider = document.getElementById("speedSlider");
 const speedValue = document.getElementById("speedValue");
 const speedDown = document.getElementById("speedDown");
 const speedUp = document.getElementById("speedUp");
@@ -327,10 +326,6 @@ function isSpeedAudioOnly() {
 // Update speed display
 function updateSpeedDisplay(speed) {
     speedValue.value = speed.toFixed(2);
-    // Slider only covers 0.25-4 range
-    if (speed >= 0.25 && speed <= 4) {
-        speedSlider.value = speed;
-    }
 }
 
 // Apply speed to video element (only for non-live videos)
@@ -409,16 +404,6 @@ speedStepInput.addEventListener("change", () => {
     updateStepLabels();
 });
 
-speedSlider.addEventListener("input", () => {
-    const speed = parseFloat(speedSlider.value);
-    updateSpeedDisplay(speed);
-});
-
-speedSlider.addEventListener("change", () => {
-    const speed = parseFloat(speedSlider.value);
-    setPlaybackSpeed(speed);
-});
-
 speedDown.addEventListener("click", () => {
     const currentSpeed = getPlaybackSpeed();
     setPlaybackSpeed(currentSpeed - getSpeedStep());
@@ -430,7 +415,16 @@ speedUp.addEventListener("click", () => {
 });
 
 speedReset.addEventListener("click", () => {
-    setPlaybackSpeed(DEFAULT_PLAYBACK_SPEED);
+    const currentSpeed = getPlaybackSpeed();
+    if (Math.abs(currentSpeed - DEFAULT_PLAYBACK_SPEED) < 0.001 && previousSpeedBeforeReset !== null) {
+        // Currently at 1.0, restore previous speed
+        setPlaybackSpeed(previousSpeedBeforeReset);
+        previousSpeedBeforeReset = null;
+    } else {
+        // Store current speed and reset to 1.0
+        previousSpeedBeforeReset = currentSpeed;
+        setPlaybackSpeed(DEFAULT_PLAYBACK_SPEED);
+    }
 });
 
 preservePitchCheckbox.addEventListener("change", () => {
