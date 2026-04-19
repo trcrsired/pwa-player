@@ -18,11 +18,17 @@ function initLocale() {
     if (saved && LANGUAGES[saved]) {
         currentLang = saved;
     } else {
-        // Detect browser language (e.g., "en-US" → "en")
-        const browserLang = navigator.language?.split('-')[0];
+        // Detect browser language (e.g., "en-US" → "en", "zh-CN" → "zhcn")
+        const rawLang = navigator.language || 'en';
+        const parts = rawLang.split('-');
+        const primaryLang = parts[0];
 
-        if (browserLang && LANGUAGES[browserLang]) {
-            currentLang = browserLang;
+        // Map browser language to our language codes
+        // zh-CN, zh-TW, zh-HK, zh → zhcn
+        if (primaryLang === 'zh') {
+            currentLang = 'zhcn';
+        } else if (LANGUAGES[primaryLang]) {
+            currentLang = primaryLang;
         } else {
             currentLang = 'en'; // default fallback
         }
