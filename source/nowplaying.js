@@ -155,7 +155,7 @@ async function startNowPlayingFromPlaylist(playlistName, startIndex) {
     const playlists = await playlists_load();
     const list = playlists[playlistName];
     if (!list) return;
-    startNowPlayingFromPlaylistTable(list, startIndex, true);
+    await startNowPlayingFromPlaylistTable(list, startIndex, playlistName, true);
 }
 
 async function playPrevious() {
