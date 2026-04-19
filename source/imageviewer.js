@@ -15,6 +15,11 @@ let slideshowControlsVisible = false; // Track whether user wants controls visib
 const SCALE_LEVELS = [1, 1.5, 2, 3, 0.75];
 let currentScaleIndex = 0;
 
+// Rotation and flip state
+let rotationAngle = 0; // 0, 90, 180, 270
+let flipHorizontal = false;
+let flipVertical = false;
+
 // Touch pinch-zoom state
 let touchStartDistance = 0;
 let touchStartScale = 1;
@@ -58,6 +63,18 @@ function initImageViewer() {
 
     const magnifierBtn = document.getElementById('magnifierBtn');
     if (magnifierBtn) magnifierBtn.addEventListener('click', handleMagnifierClick);
+
+    const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+    if (rotateLeftBtn) rotateLeftBtn.addEventListener('click', handleRotateLeft);
+
+    const rotateRightBtn = document.getElementById('rotateRightBtn');
+    if (rotateRightBtn) rotateRightBtn.addEventListener('click', handleRotateRight);
+
+    const flipHBtn = document.getElementById('flipHBtn');
+    if (flipHBtn) flipHBtn.addEventListener('click', handleFlipHorizontal);
+
+    const flipVBtn = document.getElementById('flipVBtn');
+    if (flipVBtn) flipVBtn.addEventListener('click', handleFlipVertical);
 
     const playBtn = document.getElementById('playBtn');
     const npPlayBtn = document.getElementById('npPlayBtn');
@@ -428,10 +445,35 @@ function handleNextWithLoopCheck() {
     if (typeof playNext === 'function') playNext();
 }
 
-// Apply scale transform with pan offset
+// Apply scale, rotation, flip transforms with pan offset
 function applyScale() {
     const scale = getCurrentScale();
-    imageElement.style.transform = `translate(${panOffsetX}px, ${panOffsetY}px) scale(${scale})`;
+    const scaleX = flipHorizontal ? -scale : scale;
+    const scaleY = flipVertical ? -scale : scale;
+    imageElement.style.transform = `translate(${panOffsetX}px, ${panOffsetY}px) rotate(${rotationAngle}deg) scale(${scaleX}, ${scaleY})`;
+}
+
+// Rotation handlers
+function handleRotateLeft() {
+    rotationAngle = (rotationAngle - 90) % 360;
+    if (rotationAngle < 0) rotationAngle += 360;
+    applyScale();
+}
+
+function handleRotateRight() {
+    rotationAngle = (rotationAngle + 90) % 360;
+    applyScale();
+}
+
+// Flip handlers
+function handleFlipHorizontal() {
+    flipHorizontal = !flipHorizontal;
+    applyScale();
+}
+
+function handleFlipVertical() {
+    flipVertical = !flipVertical;
+    applyScale();
 }
 
 function handleMagnifierClick(event) {
@@ -588,6 +630,15 @@ async function viewImage(sourceobject, entryPath) {
     const magBtn = document.getElementById('magnifierBtn');
     if (magBtn) { magBtn.classList.remove('hidden'); updateMagnifierButton(); }
 
+    const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+    const rotateRightBtn = document.getElementById('rotateRightBtn');
+    const flipHBtn = document.getElementById('flipHBtn');
+    const flipVBtn = document.getElementById('flipVBtn');
+    if (rotateLeftBtn) rotateLeftBtn.classList.remove('hidden');
+    if (rotateRightBtn) rotateRightBtn.classList.remove('hidden');
+    if (flipHBtn) flipHBtn.classList.remove('hidden');
+    if (flipVBtn) flipVBtn.classList.remove('hidden');
+
     // Handle controls visibility based on context
     // During slideshow, respect slideshowControlsVisible flag (user's preference)
     // Otherwise, use isInteractingWithControls for normal navigation
@@ -648,6 +699,9 @@ async function viewImage(sourceobject, entryPath) {
         currentScaleIndex = 0;
         panOffsetX = 0;
         panOffsetY = 0;
+        rotationAngle = 0;
+        flipHorizontal = false;
+        flipVertical = false;
         imageElement.style.transform = 'scale(1)';
         imageElement.style.cursor = 'default';
         imageElement.style.transformOrigin = 'center center';
@@ -680,11 +734,23 @@ function hideImageViewer() {
         currentScaleIndex = 0;
         panOffsetX = 0;
         panOffsetY = 0;
+        rotationAngle = 0;
+        flipHorizontal = false;
+        flipVertical = false;
         imageElement.style.transform = 'scale(1)';
     }
 
     const magBtn = document.getElementById('magnifierBtn');
     if (magBtn) magBtn.classList.add('hidden');
+
+    const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+    const rotateRightBtn = document.getElementById('rotateRightBtn');
+    const flipHBtn = document.getElementById('flipHBtn');
+    const flipVBtn = document.getElementById('flipVBtn');
+    if (rotateLeftBtn) rotateLeftBtn.classList.add('hidden');
+    if (rotateRightBtn) rotateRightBtn.classList.add('hidden');
+    if (flipHBtn) flipHBtn.classList.add('hidden');
+    if (flipVBtn) flipVBtn.classList.add('hidden');
 
     const playBtn = document.getElementById('playBtn');
     const npPlayBtn = document.getElementById('npPlayBtn');
