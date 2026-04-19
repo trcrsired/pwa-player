@@ -834,7 +834,7 @@ document.addEventListener("keydown", (e) => {
 
         // Initial visual update (no seek yet)
         if (typeof performSkip === 'function') {
-            performSkip(arrowKeyHoldDirection, 0, false);
+            performSkip(arrowKeyHoldDirection, 0);
         }
 
         // Start visual acceleration after delay
@@ -843,7 +843,7 @@ document.addEventListener("keydown", (e) => {
             arrowKeyHoldIntervalId = setInterval(() => {
                 if (arrowKeyHoldDirection !== 0 && typeof performSkip === 'function') {
                     const pressDuration = Date.now() - arrowKeyHoldStartTime - ARROW_KEY_HOLD_DELAY;
-                    performSkip(arrowKeyHoldDirection, pressDuration, false); // visual updates only
+                    performSkip(arrowKeyHoldDirection, pressDuration); // visual updates only
                 }
             }, ARROW_KEY_FAST_INTERVAL);
         }, ARROW_KEY_HOLD_DELAY);
@@ -858,9 +858,9 @@ document.addEventListener("keyup", (e) => {
             clearInterval(arrowKeyHoldIntervalId);
             arrowKeyHoldIntervalId = null;
         }
-        // Perform final seek
-        if (arrowKeyHoldDirection !== 0 && typeof performSkip === 'function') {
-            performSkip(arrowKeyHoldDirection, 0, true); // force seek
+        // Perform final actual seek
+        if (arrowKeyHoldDirection !== 0 && typeof pendingSeekTarget !== 'undefined' && pendingSeekTarget !== null && typeof seekActivePlayerToTime === 'function') {
+            seekActivePlayerToTime(pendingSeekTarget);
         }
         arrowKeyHoldDirection = 0;
         arrowKeyHoldStartTime = 0;

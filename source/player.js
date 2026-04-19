@@ -1257,7 +1257,7 @@ function getActiveCurrentTime() {
     return video.currentTime;
 }
 
-function performSkip(direction, pressDuration = 0, forceSeek = false) {
+function performSkip(direction, pressDuration = 0) {
     if (pressDuration < 0) pressDuration = 0;
 
     const duration = getActiveDuration();
@@ -1310,11 +1310,11 @@ function performSkip(direction, pressDuration = 0, forceSeek = false) {
     // Update time display immediately (visual feedback)
     updateTimeDisplay(`${formatTime(clampedTime)} / ${formatTime(duration)}`);
 
-    // Only actually seek when forced (on release)
-    if (forceSeek) {
-        seekActivePlayerToTime(clampedTime);
-        pendingSeekTarget = null;
-    }
+    // Update progress bar visually (without triggering seek)
+    progressBar.max = duration;
+    progressBar.value = clampedTime;
+    npProgressBar.max = duration;
+    npProgressBar.value = clampedTime;
 }
 
 function startSkip(direction) {
@@ -1325,7 +1325,7 @@ function startSkip(direction) {
     window.hasControlsPointerActivity = true;
 
     // Initial visual update (no seek)
-    performSkip(direction, 0, false);
+    performSkip(direction, 0);
 
     // Start visual acceleration after LONG_PRESS_DELAY
     skipIntervalId = setTimeout(() => {
@@ -1334,7 +1334,7 @@ function startSkip(direction) {
         skipIntervalId = setInterval(() => {
             // Effective long-press duration (time since acceleration started)
             const pressDuration = Date.now() - accelStartTime;
-            performSkip(direction, pressDuration, false); // visual updates only
+            performSkip(direction, pressDuration); // visual updates only
         }, FAST_SKIP_INTERVAL);
 
     }, LONG_PRESS_DELAY);
