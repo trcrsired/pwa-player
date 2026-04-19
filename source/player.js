@@ -2212,9 +2212,12 @@ function showControls(autoHide = true) {
         const delay = parseInt(localStorage.getItem("controlsAutoHideDelay"), 10) || 10000;
         if (delay > 0) {
             hideTimeout = setTimeout(() => {
-                controls.classList.add("hidden");
-                playerWrapper.classList.add("hide-cursor");
-                updateSubtitlePosition(false);
+                // Check again before hiding - user might be interacting
+                if (!window.hasControlsPointerActivity) {
+                    controls.classList.add("hidden");
+                    playerWrapper.classList.add("hide-cursor");
+                    updateSubtitlePosition(false);
+                }
             }, delay);
         }
     }
