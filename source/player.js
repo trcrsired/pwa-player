@@ -1240,7 +1240,7 @@ npStopBtn.onclick = toggleStopBtn;
 // Skip Back/Forward buttons with exponential long press support
 // =====================================================
 const LONG_PRESS_DELAY = 500; // ms before acceleration starts
-const FAST_SKIP_INTERVAL = 100; // ms between skips when accelerating
+const SKIP_INTERVAL = 5000; // ms between skips (5 seconds)
 
 let skipIntervalId = null;
 let skipDirection = 0;
@@ -1321,7 +1321,7 @@ function startSkip(direction) {
             // Effective long-press duration (time since acceleration started)
             const pressDuration = Date.now() - accelStartTime;
             performSkip(direction, pressDuration);
-        }, FAST_SKIP_INTERVAL);
+        }, SKIP_INTERVAL);
 
     }, LONG_PRESS_DELAY);
 }
@@ -1331,6 +1331,11 @@ function stopSkip() {
         clearTimeout(skipIntervalId);
         clearInterval(skipIntervalId);
         skipIntervalId = null;
+    }
+    // Perform final skip on release
+    if (skipDirection !== 0) {
+        const pressDuration = Date.now() - skipPressStartTime - LONG_PRESS_DELAY;
+        performSkip(skipDirection, pressDuration > 0 ? pressDuration : 0);
     }
     skipDirection = 0;
     skipPressStartTime = 0;

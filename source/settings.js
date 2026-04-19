@@ -818,7 +818,7 @@ let arrowKeyHoldStartTime = 0;
 let arrowKeyHoldDirection = 0;
 let arrowKeyHoldIntervalId = null;
 const ARROW_KEY_HOLD_DELAY = 500; // ms before acceleration starts
-const ARROW_KEY_FAST_INTERVAL = 100; // ms between skips when accelerating
+const ARROW_KEY_SKIP_INTERVAL = 5000; // ms between skips (5 seconds)
 
 document.addEventListener("keydown", (e) => {
     // Ignore if typing in input/textarea
@@ -836,14 +836,19 @@ document.addEventListener("keydown", (e) => {
                     const pressDuration = Date.now() - arrowKeyHoldStartTime - ARROW_KEY_HOLD_DELAY;
                     performSkip(arrowKeyHoldDirection, pressDuration);
                 }
-            }, ARROW_KEY_FAST_INTERVAL);
+            }, ARROW_KEY_SKIP_INTERVAL);
         }, ARROW_KEY_HOLD_DELAY);
     }
 });
 
 document.addEventListener("keyup", (e) => {
-    // Stop arrow key acceleration
+    // Stop arrow key acceleration and perform final skip
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        // Perform final skip on release
+        if (arrowKeyHoldDirection !== 0 && typeof performSkip === 'function') {
+            const pressDuration = Date.now() - arrowKeyHoldStartTime - ARROW_KEY_HOLD_DELAY;
+            performSkip(arrowKeyHoldDirection, pressDuration > 0 ? pressDuration : 0);
+        }
         if (arrowKeyHoldIntervalId) {
             clearTimeout(arrowKeyHoldIntervalId);
             clearInterval(arrowKeyHoldIntervalId);
