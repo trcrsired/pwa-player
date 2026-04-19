@@ -224,6 +224,44 @@ function isRotateBtnDisabled() {
 }
 
 // =====================================================
+// Button Size Control
+// =====================================================
+const buttonSizeSelect = document.getElementById("buttonSizeSelect");
+const controlsEl = document.getElementById("controls");
+const npControlsEl = document.querySelector(".np-controls");
+
+function applyButtonSize(size) {
+    // Remove existing size classes
+    document.body.classList.remove("controls-compact", "controls-normal", "controls-large");
+    controlsEl.classList.remove("compact", "normal", "large");
+    if (npControlsEl) {
+        npControlsEl.classList.remove("compact", "normal", "large");
+    }
+
+    // Add new size class
+    document.body.classList.add(`controls-${size}`);
+    controlsEl.classList.add(size);
+    if (npControlsEl) {
+        npControlsEl.classList.add(size);
+    }
+}
+
+// Load saved preference (default: normal)
+const savedButtonSize = localStorage.getItem("buttonSize") || "normal";
+buttonSizeSelect.value = savedButtonSize;
+applyButtonSize(savedButtonSize);
+
+buttonSizeSelect.addEventListener("change", () => {
+    const size = buttonSizeSelect.value;
+    localStorage.setItem("buttonSize", size);
+    applyButtonSize(size);
+});
+
+function getButtonSize() {
+    return localStorage.getItem("buttonSize") || "normal";
+}
+
+// =====================================================
 // Playback Speed Control
 // =====================================================
 const speedSlider = document.getElementById("speedSlider");

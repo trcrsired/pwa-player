@@ -11,7 +11,7 @@
   --button-radius: 6px;
 
   --control-gap: 16px;
-  --group-gap: 4px;
+  --group-gap: 0px;
   --row-gap: 8px;
 
   --volume-width: 100px;
@@ -24,6 +24,25 @@
   --progress-z: 999;
 
   --controls-ui-bg: rgba(255, 255, 255, 0);
+}
+
+/* Button size variants */
+.controls-compact {
+  --button-font-size: 20px;
+  --button-padding: 4px 8px;
+  --group-gap: 0px;
+}
+
+.controls-normal {
+  --button-font-size: 24px;
+  --button-padding: 6px 10px;
+  --group-gap: 0px;
+}
+
+.controls-large {
+  --button-font-size: 28px;
+  --button-padding: 10px 14px;
+  --group-gap: 4px;
 }
 
 /* Layout Reset */
@@ -298,7 +317,7 @@ button:hover,
   :root {
     --button-font-size: 20px;
     --button-padding: 12px 16px;
-    --group-gap: 10px;
+    --group-gap: 0px;
     --volume-width: 120px;
     --progress-width: 90%;
     --controls-padding: 8px 12px;

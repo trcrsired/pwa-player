@@ -687,11 +687,23 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
+    gap: 0px;
     padding: 16px;
     background: var(--card-bg);
     border-radius: 12px;
     margin-bottom: 16px;
+}
+
+.np-controls.compact {
+    gap: 0px;
+}
+
+.np-controls.normal {
+    gap: 0px;
+}
+
+.np-controls.large {
+    gap: 4px;
 }
 
 .np-controls button {
@@ -708,6 +720,27 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.np-controls.compact button {
+    font-size: 16px;
+    padding: 8px;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+.np-controls.normal button {
+    font-size: 18px;
+    padding: 12px;
+    min-width: 48px;
+    min-height: 48px;
+}
+
+.np-controls.large button {
+    font-size: 22px;
+    padding: 16px;
+    min-width: 56px;
+    min-height: 56px;
 }
 
 .np-controls button:hover {

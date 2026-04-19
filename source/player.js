@@ -289,6 +289,10 @@ const playBtn = document.getElementById("playBtn");
 const npPlayBtn = document.getElementById("npPlayBtn");
 const stopBtn = document.getElementById("stopBtn");
 const npStopBtn = document.getElementById("npStopBtn");
+const skipBackBtn = document.getElementById("skipBackBtn");
+const skipForwardBtn = document.getElementById("skipForwardBtn");
+const npSkipBackBtn = document.getElementById("npSkipBackBtn");
+const npSkipForwardBtn = document.getElementById("npSkipForwardBtn");
 const pickerBtn = document.getElementById("pickerBtn");
 const volumeSlider = document.getElementById("volumeSlider");
 const npVolumeSlider = document.getElementById("npVolumeSlider");
@@ -1214,6 +1218,83 @@ async function toggleStopBtn()
 
 stopBtn.onclick = toggleStopBtn;
 npStopBtn.onclick = toggleStopBtn;
+
+// =====================================================
+// Skip Back/Forward buttons with long press support
+// =====================================================
+const SKIP_INTERVAL = 5; // seconds
+const SKIP_FAST_MULTIPLIER = 3; // faster skip when long pressing
+const LONG_PRESS_DELAY = 500; // ms before fast skip starts
+const FAST_SKIP_INTERVAL = 100; // ms between fast skips
+
+let skipIntervalId = null;
+let isLongPress = false;
+let skipDirection = 0;
+
+function getActiveCurrentTime() {
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        if (typeof getEmbeddedCurrentTime === 'function') {
+            return getEmbeddedCurrentTime();
+        }
+        return 0;
+    }
+    return video.currentTime;
+}
+
+function performSkip(direction, fastMode = false) {
+    const duration = getActiveDuration();
+    const currentTime = getActiveCurrentTime();
+    const skipAmount = fastMode ? SKIP_INTERVAL * SKIP_FAST_MULTIPLIER : SKIP_INTERVAL;
+    const newTime = currentTime + (direction * skipAmount);
+
+    // Clamp to valid range
+    const clampedTime = Math.max(0, Math.min(newTime, duration || 0));
+    seekActivePlayerToTime(clampedTime);
+}
+
+function startSkip(direction) {
+    skipDirection = direction;
+    isLongPress = false;
+
+    // Initial skip
+    performSkip(direction);
+
+    // Start timer for long press detection
+    skipIntervalId = setTimeout(() => {
+        isLongPress = true;
+        // Fast skip mode
+        skipIntervalId = setInterval(() => {
+            performSkip(direction, true);
+        }, FAST_SKIP_INTERVAL);
+    }, LONG_PRESS_DELAY);
+}
+
+function stopSkip() {
+    if (skipIntervalId) {
+        clearTimeout(skipIntervalId);
+        clearInterval(skipIntervalId);
+        skipIntervalId = null;
+    }
+    isLongPress = false;
+    skipDirection = 0;
+}
+
+// Setup skip button event handlers using pointer events for VR compatibility
+function setupSkipButton(btn, direction) {
+    btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        btn.setPointerCapture(e.pointerId);
+        startSkip(direction);
+    });
+    btn.addEventListener('pointerup', stopSkip);
+    btn.addEventListener('pointerleave', stopSkip);
+    btn.addEventListener('pointercancel', stopSkip);
+}
+
+setupSkipButton(skipBackBtn, -1);
+setupSkipButton(skipForwardBtn, 1);
+setupSkipButton(npSkipBackBtn, -1);
+setupSkipButton(npSkipForwardBtn, 1);
 
 function pickFileSafariFallback(accept = "*/*") {
   return new Promise(resolve => {
