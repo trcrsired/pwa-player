@@ -1240,11 +1240,12 @@ npStopBtn.onclick = toggleStopBtn;
 // Skip Back/Forward buttons with exponential long press support
 // =====================================================
 const LONG_PRESS_DELAY = 500; // ms before acceleration starts
-const SKIP_INTERVAL = 5000; // ms between skips (5 seconds)
+const FAST_SKIP_INTERVAL = 100; // ms between visual updates
 
 let skipIntervalId = null;
 let skipDirection = 0;
 let skipPressStartTime = 0;
+let pendingSeekTarget = null; // track where we want to seek to
 
 function getActiveCurrentTime() {
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
@@ -1256,7 +1257,7 @@ function getActiveCurrentTime() {
     return video.currentTime;
 }
 
-function performSkip(direction, pressDuration = 0) {
+function performSkip(direction, pressDuration = 0, forceSeek = false) {
     if (pressDuration < 0) pressDuration = 0;
 
     const duration = getActiveDuration();
@@ -1302,26 +1303,39 @@ function performSkip(direction, pressDuration = 0) {
 
     const newTime = currentTime + direction * skipAmount;
     const clampedTime = Math.max(0, Math.min(newTime, duration || 0));
-    seekActivePlayerToTime(clampedTime);
+
+    // Store pending seek target
+    pendingSeekTarget = clampedTime;
+
+    // Update time display immediately (visual feedback)
+    updateTimeDisplay(`${formatTime(clampedTime)} / ${formatTime(duration)}`);
+
+    // Only actually seek when forced (on release)
+    if (forceSeek) {
+        seekActivePlayerToTime(clampedTime);
+        pendingSeekTarget = null;
+    }
 }
 
 function startSkip(direction) {
     skipDirection = direction;
     skipPressStartTime = Date.now();
+    lastSeekTime = 0;
+    pendingSeekTarget = null;
     window.hasControlsPointerActivity = true;
 
-    // Initial skip (short press behavior)
-    performSkip(direction);
+    // Initial visual update (no seek)
+    performSkip(direction, 0, false);
 
-    // Start acceleration after LONG_PRESS_DELAY
+    // Start visual acceleration after LONG_PRESS_DELAY
     skipIntervalId = setTimeout(() => {
         const accelStartTime = Date.now(); // acceleration begins now
 
         skipIntervalId = setInterval(() => {
             // Effective long-press duration (time since acceleration started)
             const pressDuration = Date.now() - accelStartTime;
-            performSkip(direction, pressDuration);
-        }, SKIP_INTERVAL);
+            performSkip(direction, pressDuration, false); // visual updates only
+        }, FAST_SKIP_INTERVAL);
 
     }, LONG_PRESS_DELAY);
 }
@@ -1332,10 +1346,10 @@ function stopSkip() {
         clearInterval(skipIntervalId);
         skipIntervalId = null;
     }
-    // Perform final skip on release
-    if (skipDirection !== 0) {
-        const pressDuration = Date.now() - skipPressStartTime - LONG_PRESS_DELAY;
-        performSkip(skipDirection, pressDuration > 0 ? pressDuration : 0);
+    // Perform final actual seek to pending target
+    if (pendingSeekTarget !== null) {
+        seekActivePlayerToTime(pendingSeekTarget);
+        pendingSeekTarget = null;
     }
     skipDirection = 0;
     skipPressStartTime = 0;
@@ -1731,6 +1745,11 @@ rotationBtn.addEventListener("click", () => {
 video.addEventListener("timeupdate", () => {
   // Skip when embedded player is active - let embedded player handle progress
   if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+    return;
+  }
+
+  // Don't update display while we're showing skip preview
+  if (pendingSeekTarget !== null) {
     return;
   }
 

@@ -818,7 +818,9 @@ let arrowKeyHoldStartTime = 0;
 let arrowKeyHoldDirection = 0;
 let arrowKeyHoldIntervalId = null;
 const ARROW_KEY_HOLD_DELAY = 500; // ms before acceleration starts
-const ARROW_KEY_SKIP_INTERVAL = 5000; // ms between skips (5 seconds)
+const ARROW_KEY_FAST_INTERVAL = 100; // ms between visual updates
+
+let arrowKeyHoldStarted = false; // track if hold/acceleration started
 
 document.addEventListener("keydown", (e) => {
     // Ignore if typing in input/textarea
@@ -828,34 +830,41 @@ document.addEventListener("keydown", (e) => {
     if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !e.repeat) {
         arrowKeyHoldDirection = e.key === "ArrowLeft" ? -1 : 1;
         arrowKeyHoldStartTime = Date.now();
+        arrowKeyHoldStarted = false;
 
-        // Start acceleration after delay
+        // Initial visual update (no seek yet)
+        if (typeof performSkip === 'function') {
+            performSkip(arrowKeyHoldDirection, 0, false);
+        }
+
+        // Start visual acceleration after delay
         arrowKeyHoldIntervalId = setTimeout(() => {
+            arrowKeyHoldStarted = true; // mark that hold/acceleration started
             arrowKeyHoldIntervalId = setInterval(() => {
                 if (arrowKeyHoldDirection !== 0 && typeof performSkip === 'function') {
                     const pressDuration = Date.now() - arrowKeyHoldStartTime - ARROW_KEY_HOLD_DELAY;
-                    performSkip(arrowKeyHoldDirection, pressDuration);
+                    performSkip(arrowKeyHoldDirection, pressDuration, false); // visual updates only
                 }
-            }, ARROW_KEY_SKIP_INTERVAL);
+            }, ARROW_KEY_FAST_INTERVAL);
         }, ARROW_KEY_HOLD_DELAY);
     }
 });
 
 document.addEventListener("keyup", (e) => {
-    // Stop arrow key acceleration and perform final skip
+    // Stop arrow key acceleration and perform final seek
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-        // Perform final skip on release
-        if (arrowKeyHoldDirection !== 0 && typeof performSkip === 'function') {
-            const pressDuration = Date.now() - arrowKeyHoldStartTime - ARROW_KEY_HOLD_DELAY;
-            performSkip(arrowKeyHoldDirection, pressDuration > 0 ? pressDuration : 0);
-        }
         if (arrowKeyHoldIntervalId) {
             clearTimeout(arrowKeyHoldIntervalId);
             clearInterval(arrowKeyHoldIntervalId);
             arrowKeyHoldIntervalId = null;
         }
+        // Perform final seek
+        if (arrowKeyHoldDirection !== 0 && typeof performSkip === 'function') {
+            performSkip(arrowKeyHoldDirection, 0, true); // force seek
+        }
         arrowKeyHoldDirection = 0;
         arrowKeyHoldStartTime = 0;
+        arrowKeyHoldStarted = false;
     }
 });
 
