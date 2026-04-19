@@ -3372,16 +3372,48 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
 
     if (!url.endsWith('/')) url += '/';
 
-    const friendlyName = prompt(t('friendlyNameOptional', "Friendly name for this server (optional):"),
-                               new URL(url).hostname || t('remote', "Remote"));
+    // Name is required - prompt until valid name provided (max 3 attempts)
+    let displayName = null;
+    let attempts = 0;
+    const maxAttempts = 3;
 
-    const displayName = friendlyName && friendlyName.trim() ? friendlyName.trim() : url;
+    while (attempts < maxAttempts) {
+        ++attempts;
+        const input = prompt(t('enterRemoteName', "Enter a name for this remote server (no special characters like . / \\ : * ? \" < > |):"));
 
-    // Validate storage name - no special characters
-    if (!isValidStorageName(displayName)) {
-        alert(t('invalidStorageName', "Name cannot contain . / \\ : * ? \" < > | or be empty."));
-        return;
+        if (!input) {
+            if (attempts < maxAttempts) {
+                alert(t('nameRequired', "Name is required. Please try again."));
+                continue;
+            }
+            alert(t('cancelledAfterAttempts', "Operation cancelled after failed attempts."));
+            return;
+        }
+
+        const trimmed = input.trim();
+        if (!trimmed) {
+            if (attempts < maxAttempts) {
+                alert(t('nameRequired', "Name is required. Please try again."));
+                continue;
+            }
+            alert(t('cancelledAfterAttempts', "Operation cancelled after failed attempts."));
+            return;
+        }
+
+        if (!isValidStorageName(trimmed)) {
+            if (attempts < maxAttempts) {
+                alert(t('invalidStorageName', "Name cannot contain . / \\ : * ? \" < > | or be empty. Please try again."));
+                continue;
+            }
+            alert(t('cancelledAfterAttempts', "Operation cancelled after failed attempts."));
+            return;
+        }
+
+        displayName = trimmed;
+        break;
     }
+
+    if (!displayName) return;
 
     let roots = await loadRemoteRoots();
     if (roots[displayName]) {
