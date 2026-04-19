@@ -1245,17 +1245,7 @@ const FAST_SKIP_INTERVAL = 100; // ms between visual updates
 let skipIntervalId = null;
 let skipDirection = 0;
 let skipPressStartTime = 0;
-let pendingSeekTarget = null; // track where we want to seek to
-
-function getActiveCurrentTime() {
-    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
-        if (typeof getEmbeddedCurrentTime === 'function') {
-            return getEmbeddedCurrentTime();
-        }
-        return 0;
-    }
-    return video.currentTime;
-}
+window.pendingSeekTarget = null; // track where we want to seek to (global for settings.js)
 
 function performSkip(direction, pressDuration = 0) {
     if (pressDuration < 0) pressDuration = 0;
@@ -1300,12 +1290,11 @@ function performSkip(direction, pressDuration = 0) {
 
         if (skipAmount < skipMid) skipAmount = skipMid;
     }
-
     const newTime = currentTime + direction * skipAmount;
     const clampedTime = Math.max(0, Math.min(newTime, duration || 0));
 
     // Store pending seek target
-    pendingSeekTarget = clampedTime;
+    window.pendingSeekTarget = clampedTime;
 
     // Update time display immediately (visual feedback)
     updateTimeDisplay(`${formatTime(clampedTime)} / ${formatTime(duration)}`);
@@ -1320,20 +1309,19 @@ function performSkip(direction, pressDuration = 0) {
 function startSkip(direction) {
     skipDirection = direction;
     skipPressStartTime = Date.now();
-    lastSeekTime = 0;
-    pendingSeekTarget = null;
+    window.pendingSeekTarget = null;
     window.hasControlsPointerActivity = true;
+    skippingTime = null;
 
     // Initial visual update (no seek)
     performSkip(direction, 0);
 
     // Start visual acceleration after LONG_PRESS_DELAY
     skipIntervalId = setTimeout(() => {
-        const accelStartTime = Date.now(); // acceleration begins now
 
         skipIntervalId = setInterval(() => {
             // Effective long-press duration (time since acceleration started)
-            const pressDuration = Date.now() - accelStartTime;
+            const pressDuration = Date.now() - skipPressStartTime;
             performSkip(direction, pressDuration); // visual updates only
         }, FAST_SKIP_INTERVAL);
 
@@ -1347,12 +1335,13 @@ function stopSkip() {
         skipIntervalId = null;
     }
     // Perform final actual seek to pending target
-    if (pendingSeekTarget !== null) {
-        seekActivePlayerToTime(pendingSeekTarget);
-        pendingSeekTarget = null;
+    if (window.pendingSeekTarget !== null) {
+        seekActivePlayerToTime(window.pendingSeekTarget);
+        window.pendingSeekTarget = null;
     }
     skipDirection = 0;
     skipPressStartTime = 0;
+    skippingTime = null;
     window.hasControlsPointerActivity = false;
     // Restart auto-hide timer after interaction ends
     if (hasActiveSource) {
@@ -1749,7 +1738,7 @@ video.addEventListener("timeupdate", () => {
   }
 
   // Don't update display while we're showing skip preview
-  if (pendingSeekTarget !== null) {
+  if (window.pendingSeekTarget !== null) {
     return;
   }
 

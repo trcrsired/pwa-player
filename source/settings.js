@@ -631,6 +631,9 @@ if (videoForABLoop) {
 
 // Get active player current time (handles both video and embedded)
 function getActiveCurrentTime() {
+    if (window.pendingSeekTarget) {
+      return window.pendingSeekTarget;
+    }
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
         if (typeof getEmbeddedCurrentTime === 'function') {
             const time = getEmbeddedCurrentTime();
@@ -859,8 +862,9 @@ document.addEventListener("keyup", (e) => {
             arrowKeyHoldIntervalId = null;
         }
         // Perform final actual seek
-        if (arrowKeyHoldDirection !== 0 && typeof pendingSeekTarget !== 'undefined' && pendingSeekTarget !== null && typeof seekActivePlayerToTime === 'function') {
-            seekActivePlayerToTime(pendingSeekTarget);
+        if (arrowKeyHoldDirection !== 0 && window.pendingSeekTarget !== null && typeof seekActivePlayerToTime === 'function') {
+            seekActivePlayerToTime(window.pendingSeekTarget);
+            window.pendingSeekTarget = null;
         }
         arrowKeyHoldDirection = 0;
         arrowKeyHoldStartTime = 0;
