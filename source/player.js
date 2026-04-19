@@ -309,6 +309,23 @@ const rotationBtn = document.getElementById("rotationBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const controls = document.getElementById("controls");
 const volumeToggleBtn = document.getElementById("volumeToggle");
+
+// Block context menu on all control buttons (prevents Edge long-press gesture menu)
+controls.addEventListener('contextmenu', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+        e.preventDefault();
+    }
+});
+
+// Also block for Now Playing controls
+const npControls = document.querySelector('.np-controls');
+if (npControls) {
+    npControls.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            e.preventDefault();
+        }
+    });
+}
 const npVolumeToggleBtn = document.getElementById("npVolumeToggle");
 const burgerBtn = document.getElementById('burgerBtn');
 const configOptions = document.getElementById('configOptions');
