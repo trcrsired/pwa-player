@@ -1157,15 +1157,15 @@ async function togglePlayBtn()
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
         return;
     }
-    // If a video is already loaded → toggle play/pause
-    if (hasActiveSource) {
+    // If a video is already loaded and not ended → toggle play/pause
+    if (hasActiveSource && !video.ended) {
         if (video.readyState < 3) return;
         video.paused ? video.play() : video.pause();
         playBtn.textContent = video.paused ? "▶️" : "⏸️";
         npPlayBtn.textContent = playBtn.textContent;
         return;
     }
-    // Try to restore last playlist or last file
+    // Video ended, stopped, or no source → try to restore or play default playlist
     const restored = await restoreLastPlayback();
     if (restored) return;
     // Nothing to restore → open picker

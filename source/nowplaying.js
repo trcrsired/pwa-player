@@ -27,7 +27,7 @@ async function nowPlaying_playIndex(index) {
 
     // Check if we should skip iframe entries when in background
     const isBackground = document.visibilityState === 'hidden';
-    const isIframe = typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(entry.path);
+    const isIframe = entry.path && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(entry.path);
     const shouldSkip = typeof isSkipIframesInBackgroundEnabled === 'function' && isSkipIframesInBackgroundEnabled();
 
     if (isBackground && isIframe && shouldSkip) {
@@ -39,7 +39,7 @@ async function nowPlaying_playIndex(index) {
         // Search forward from current position
         while (nextIndex < queue.length) {
             const nextEntry = queue[nextIndex];
-            if (nextEntry && !(typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
+            if (nextEntry && !(nextEntry.path && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
                 found = true;
                 break;
             }
@@ -54,7 +54,7 @@ async function nowPlaying_playIndex(index) {
                 nextIndex = 0;
                 while (nextIndex < shuffledQueue.length) {
                     const nextEntry = shuffledQueue[nextIndex];
-                    if (nextEntry && !(typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
+                    if (nextEntry && !(nextEntry.path && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
                         found = true;
                         break;
                     }
@@ -65,7 +65,7 @@ async function nowPlaying_playIndex(index) {
                 nextIndex = 0;
                 while (nextIndex < nowPlayingQueue.length) {
                     const nextEntry = nowPlayingQueue[nextIndex];
-                    if (nextEntry && !(typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
+                    if (nextEntry && !(nextEntry.path && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(nextEntry.path))) {
                         found = true;
                         break;
                     }
@@ -82,6 +82,28 @@ async function nowPlaying_playIndex(index) {
         // Found a playable entry - play it
         nowPlayingIndex = nextIndex;
         await nowPlaying_playIndex(nextIndex);
+        return;
+    }
+
+    // Handle temporary entries with handle property (from dropped directories/files)
+    if (entry.handle && typeof entry.handle.getFile === 'function') {
+        await play_source(entry, {
+            entryName: entry.name,
+            index,
+        });
+        nowPlayingIndex = index;
+        renderNowPlayingQueue();
+        return;
+    }
+
+    // Handle temporary entries with file property (from dropped files)
+    if (entry.file && (entry.file instanceof File || entry.file instanceof Blob)) {
+        await play_source(entry, {
+            entryName: entry.name,
+            index,
+        });
+        nowPlayingIndex = index;
+        renderNowPlayingQueue();
         return;
     }
 
