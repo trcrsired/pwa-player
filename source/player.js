@@ -1210,27 +1210,27 @@ window.clearVideoSource = clearVideoSource;
 
 async function toggleStopBtn()
 {
-  video.pause();
-  video.currentTime = 0;
-  video.removeAttribute("src");
-  video.load();
-  hasActiveSource = false;
-  clearVideoPreview();
-  revokeBlobURL();
-  currentMediaMetadata = null;
-  playBtn.textContent = "▶️";
-  npPlayBtn.textContent = playBtn.textContent;
-  // Clear subtitles
-  clearSubtitles();
-  navigator.mediaSession.metadata = new MediaMetadata({});
-  document.title = `PWA Player`;
-  // Clear last played/playlist so default playlist can take over on next play
-  kv_delete("lastplaylist").catch(() => {});
-  kv_delete("lastplayed").catch(() => {});
-  // Clear A-B loop
-  if (typeof clearABLoop === 'function') clearABLoop();
-  // Show controls when nothing is playing
-  ensureControlsVisibility();
+    video.pause();
+    video.currentTime = 0;
+    video.removeAttribute("src");
+    video.load();
+    hasActiveSource = false;
+    clearVideoPreview();
+    revokeBlobURL();
+    currentMediaMetadata = null;
+    playBtn.textContent = "▶️";
+    npPlayBtn.textContent = playBtn.textContent;
+    // Clear subtitles
+    clearSubtitles();
+    navigator.mediaSession.metadata = new MediaMetadata({});
+    document.title = `PWA Player`;
+    // Clear last played/playlist so default playlist can take over on next play
+    kv_delete("lastplaylist").catch(() => {});
+    kv_delete("lastplayed").catch(() => {});
+    // Clear A-B loop
+    if (typeof clearABLoop === 'function') clearABLoop();
+    // Show controls when nothing is playing
+    ensureControlsVisibility();
 }
 
 stopBtn.onclick = toggleStopBtn;
@@ -1257,29 +1257,51 @@ function getActiveCurrentTime() {
 }
 
 function performSkip(direction, pressDuration = 0) {
+    if (pressDuration < 0) pressDuration = 0;
+
     const duration = getActiveDuration();
     const currentTime = getActiveCurrentTime();
 
-    // Get settings values (from settings.js)
-    const skipInitial = typeof getSkipInitial === 'function' ? getSkipInitial() : 5;
-    const skipMax = typeof getSkipMax === 'function' ? getSkipMax() : 15;
-    const skipPercentMax = typeof getSkipPercentMax === 'function' ? getSkipPercentMax() : 5;
-    const skipAccelTime = typeof getSkipAccelTime === 'function' ? getSkipAccelTime() : 30;
+    // Fixed skip parameters
+    const skipShortBack = 2;        // backward only, 0–1s
+    const skipMedium = 5;           // 1–3s
+    const skipMid = 15;             // minimum after 3s
+    const skipPercentMax = 2;       // max skip as percentage of video duration
 
-    // Calculate skip amount with exponential acceleration
-    let skipAmount = skipInitial;
+    const t1 = 1000;                // 1 second
+    const t2 = 3000;                // 3 seconds
+    const accelEnd = 30000;         // 30 seconds
 
-    if (pressDuration > 0) {
-        // Max skip is configured max or percent of video duration
-        const maxSkip = Math.min(skipMax, (duration || Infinity) * (skipPercentMax / 100));
-        // Exponential growth: starts at initial, reaches max after configured accel time
-        const accelerationFactor = Math.exp(pressDuration / (skipAccelTime * 1000));
-        skipAmount = Math.min(maxSkip, skipInitial * accelerationFactor);
+    const maxSkip = duration * (skipPercentMax / 100);
+
+    let skipAmount;
+
+    if (pressDuration <= t1) {
+        // Phase 1: 0–1s
+        skipAmount = direction < 0 ? skipShortBack : skipMedium;
+
+    } else if (pressDuration <= t2) {
+        // Phase 2: 1–3s → always 5s
+        skipAmount = skipMedium;
+
+    } else if (pressDuration >= accelEnd) {
+        // Phase 4: cap at max skip
+        skipAmount = maxSkip;
+
+    } else {
+        // Phase 3: logarithmic growth from 15 → maxSkip
+        const t = (pressDuration - t2) / (accelEnd - t2); // normalized 0 → 1
+
+        // Logarithmic smoothing (0 → 1)
+        const smooth = Math.log(1 + 9 * t) / Math.log(10);
+
+        skipAmount = skipMid + (maxSkip - skipMid) * smooth;
+
+        if (skipAmount < skipMid) skipAmount = skipMid;
     }
+    console.log(`pressDuration=${pressDuration} skipAmount=${skipAmount}`);
 
-    const newTime = currentTime + (direction * skipAmount);
-
-    // Clamp to valid range
+    const newTime = currentTime + direction * skipAmount;
     const clampedTime = Math.max(0, Math.min(newTime, duration || 0));
     seekActivePlayerToTime(clampedTime);
 }
@@ -1288,16 +1310,19 @@ function startSkip(direction) {
     skipDirection = direction;
     skipPressStartTime = Date.now();
 
-    // Initial skip
+    // Initial skip (short press behavior)
     performSkip(direction);
 
-    // Start timer for acceleration mode
+    // Start acceleration after LONG_PRESS_DELAY
     skipIntervalId = setTimeout(() => {
-        // Accelerating skip mode
+        const accelStartTime = Date.now(); // acceleration begins now
+
         skipIntervalId = setInterval(() => {
-            const pressDuration = Date.now() - skipPressStartTime - LONG_PRESS_DELAY;
+            // Effective long-press duration (time since acceleration started)
+            const pressDuration = Date.now() - accelStartTime;
             performSkip(direction, pressDuration);
         }, FAST_SKIP_INTERVAL);
+
     }, LONG_PRESS_DELAY);
 }
 
