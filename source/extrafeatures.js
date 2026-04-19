@@ -610,6 +610,65 @@ const screenshotBtn = document.getElementById("screenshotBtn");
 screenshotBtn.addEventListener("click", async () => {
     const t = (key) => window.i18n ? window.i18n.t(key) : key;
 
+    // Check if image viewer is active
+    if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
+        const imageEl = document.getElementById('imageDisplay');
+        if (!imageEl || !imageEl.src) {
+            alert(t('imageNotReady') || "Image is not ready yet.");
+            return;
+        }
+
+        // Get current transforms from imageviewer
+        const transforms = typeof window.getImageTransforms === 'function' ? window.getImageTransforms() : null;
+        const rotation = transforms?.rotation || 0;
+        const flipH = transforms?.flipHorizontal || false;
+        const flipV = transforms?.flipVertical || false;
+
+        // Wait for image to load if needed
+        if (!imageEl.complete) {
+            await new Promise(resolve => {
+                imageEl.onload = resolve;
+                imageEl.onerror = resolve;
+            });
+        }
+
+        // Calculate canvas size based on rotation
+        const naturalWidth = imageEl.naturalWidth;
+        const naturalHeight = imageEl.naturalHeight;
+
+        // Swap dimensions if rotated 90 or 270 degrees
+        const isRotated90or270 = rotation === 90 || rotation === 270;
+        const canvasWidth = isRotated90or270 ? naturalHeight : naturalWidth;
+        const canvasHeight = isRotated90or270 ? naturalWidth : naturalHeight;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        const ctx = canvas.getContext("2d");
+
+        // Apply transforms
+        ctx.save();
+        ctx.translate(canvasWidth / 2, canvasHeight / 2);
+        ctx.rotate(rotation * Math.PI / 180);
+        ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+        ctx.drawImage(imageEl, -naturalWidth / 2, -naturalHeight / 2, naturalWidth, naturalHeight);
+        ctx.restore();
+
+        canvas.toBlob(blob => {
+            if (!blob) {
+                alert(t('screenshotFailed') || "Screenshot failed.");
+                return;
+            }
+            const filename = `image-${Date.now()}.webp`;
+            if (typeof saveFileToConfiguredLocation === 'function') {
+                saveFileToConfiguredLocation('screenshot', blob, filename);
+            } else {
+                fallbackDownload(blob, filename);
+            }
+        }, "image/webp");
+        return;
+    }
+
     // Ensure video is ready
     if (video.readyState < 2) {
         alert(t('videoNotReady') || "Video is not ready yet. Please start playing the video first.");

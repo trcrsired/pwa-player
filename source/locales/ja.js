@@ -316,6 +316,7 @@ const JA_TRANSLATIONS = {
     saveLocationSet: "保存場所を設定しました",
     useScreenRecordForEmbedded: "埋め込みコンテンツ（YouTube、Vimeo等）には画面キャプチャを使用してください。",
     videoNotReady: "ビデオが準備できていません。先に再生を開始してください。",
+    imageNotReady: "画像が準備できていません。",
     browserNoRecordSupport: "このブラウザはビデオ録画をサポートしていません。",
     videoRecordFailed: "このビデオを録画できません。クロスオリジンまたは許可されていません。",
     recordingStarted: "録画開始。",

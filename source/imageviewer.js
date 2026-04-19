@@ -814,9 +814,21 @@ function jumpToImageIndex(targetIndex) {
     if (typeof nowPlaying_playIndex === 'function') nowPlaying_playIndex(targetIndex);
 }
 
+function getImageTransforms() {
+    return {
+        rotation: rotationAngle,
+        flipHorizontal: flipHorizontal,
+        flipVertical: flipVertical,
+        scale: getCurrentScale(),
+        panX: panOffsetX,
+        panY: panOffsetY
+    };
+}
+
 window.viewImage = viewImage;
 window.hideImageViewer = hideImageViewer;
 window.isImageViewerActive = isImageViewerActive;
+window.getImageTransforms = getImageTransforms;
 window.startSlideshow = startSlideshow;
 window.stopSlideshow = stopSlideshow;
 window.getSlideshowInterval = getSlideshowInterval;

@@ -319,6 +319,7 @@ const EN_TRANSLATIONS = {
     saveLocationSet: "save location set to",
     useScreenRecordForEmbedded: "Use Screen Capture for embedded content (YouTube, Vimeo, etc.).",
     videoNotReady: "Video is not ready yet. Please start playing the video first.",
+    imageNotReady: "Image is not ready yet.",
     browserNoRecordSupport: "Your browser does not support video recording.",
     videoRecordFailed: "Unable to record this video. It may be cross-origin or not allowed.",
     recordingStarted: "Recording started.",

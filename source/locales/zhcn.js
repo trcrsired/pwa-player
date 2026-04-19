@@ -319,6 +319,7 @@ const ZHCN_TRANSLATIONS = {
     saveLocationSet: "保存位置已设为",
     useScreenRecordForEmbedded: "嵌入内容（YouTube、Vimeo等）请使用屏幕录制。",
     videoNotReady: "视频未就绪。请先开始播放视频。",
+    imageNotReady: "图片未就绪。",
     browserNoRecordSupport: "您的浏览器不支持视频录制。",
     videoRecordFailed: "无法录制此视频。可能是跨域或不允许录制。",
     recordingStarted: "录制已开始。",
