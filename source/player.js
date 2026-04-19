@@ -1237,16 +1237,15 @@ stopBtn.onclick = toggleStopBtn;
 npStopBtn.onclick = toggleStopBtn;
 
 // =====================================================
-// Skip Back/Forward buttons with long press support
+// Skip Back/Forward buttons with exponential long press support
 // =====================================================
-const SKIP_INTERVAL = 5; // seconds
-const SKIP_FAST_MULTIPLIER = 3; // faster skip when long pressing
-const LONG_PRESS_DELAY = 500; // ms before fast skip starts
-const FAST_SKIP_INTERVAL = 100; // ms between fast skips
+const SKIP_BASE = 5; // initial skip seconds
+const LONG_PRESS_DELAY = 500; // ms before acceleration starts
+const FAST_SKIP_INTERVAL = 100; // ms between skips when accelerating
 
 let skipIntervalId = null;
-let isLongPress = false;
 let skipDirection = 0;
+let skipPressStartTime = 0;
 
 function getActiveCurrentTime() {
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
@@ -1258,10 +1257,21 @@ function getActiveCurrentTime() {
     return video.currentTime;
 }
 
-function performSkip(direction, fastMode = false) {
+function performSkip(direction, pressDuration = 0) {
     const duration = getActiveDuration();
     const currentTime = getActiveCurrentTime();
-    const skipAmount = fastMode ? SKIP_INTERVAL * SKIP_FAST_MULTIPLIER : SKIP_INTERVAL;
+
+    // Calculate skip amount with exponential acceleration
+    let skipAmount = SKIP_BASE;
+
+    if (pressDuration > 0) {
+        // Max skip is 15 seconds or 2% of video duration
+        const maxSkip = Math.min(15, (duration || Infinity) * 0.02);
+        // Exponential growth: starts at 5, reaches max after ~30 seconds of long press
+        const accelerationFactor = Math.exp(pressDuration / 30000);
+        skipAmount = Math.min(maxSkip, SKIP_BASE * accelerationFactor);
+    }
+
     const newTime = currentTime + (direction * skipAmount);
 
     // Clamp to valid range
@@ -1271,17 +1281,17 @@ function performSkip(direction, fastMode = false) {
 
 function startSkip(direction) {
     skipDirection = direction;
-    isLongPress = false;
+    skipPressStartTime = Date.now();
 
     // Initial skip
     performSkip(direction);
 
-    // Start timer for long press detection
+    // Start timer for acceleration mode
     skipIntervalId = setTimeout(() => {
-        isLongPress = true;
-        // Fast skip mode
+        // Accelerating skip mode
         skipIntervalId = setInterval(() => {
-            performSkip(direction, true);
+            const pressDuration = Date.now() - skipPressStartTime - LONG_PRESS_DELAY;
+            performSkip(direction, pressDuration);
         }, FAST_SKIP_INTERVAL);
     }, LONG_PRESS_DELAY);
 }
@@ -1292,8 +1302,8 @@ function stopSkip() {
         clearInterval(skipIntervalId);
         skipIntervalId = null;
     }
-    isLongPress = false;
     skipDirection = 0;
+    skipPressStartTime = 0;
 }
 
 // Setup skip button event handlers using pointer events for VR compatibility
