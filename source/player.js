@@ -1239,7 +1239,6 @@ npStopBtn.onclick = toggleStopBtn;
 // =====================================================
 // Skip Back/Forward buttons with exponential long press support
 // =====================================================
-const SKIP_BASE = 5; // initial skip seconds
 const LONG_PRESS_DELAY = 500; // ms before acceleration starts
 const FAST_SKIP_INTERVAL = 100; // ms between skips when accelerating
 
@@ -1261,15 +1260,21 @@ function performSkip(direction, pressDuration = 0) {
     const duration = getActiveDuration();
     const currentTime = getActiveCurrentTime();
 
+    // Get settings values (from settings.js)
+    const skipInitial = typeof getSkipInitial === 'function' ? getSkipInitial() : 5;
+    const skipMax = typeof getSkipMax === 'function' ? getSkipMax() : 15;
+    const skipPercentMax = typeof getSkipPercentMax === 'function' ? getSkipPercentMax() : 5;
+    const skipAccelTime = typeof getSkipAccelTime === 'function' ? getSkipAccelTime() : 30;
+
     // Calculate skip amount with exponential acceleration
-    let skipAmount = SKIP_BASE;
+    let skipAmount = skipInitial;
 
     if (pressDuration > 0) {
-        // Max skip is 15 seconds or 2% of video duration
-        const maxSkip = Math.min(15, (duration || Infinity) * 0.02);
-        // Exponential growth: starts at 5, reaches max after ~30 seconds of long press
-        const accelerationFactor = Math.exp(pressDuration / 30000);
-        skipAmount = Math.min(maxSkip, SKIP_BASE * accelerationFactor);
+        // Max skip is configured max or percent of video duration
+        const maxSkip = Math.min(skipMax, (duration || Infinity) * (skipPercentMax / 100));
+        // Exponential growth: starts at initial, reaches max after configured accel time
+        const accelerationFactor = Math.exp(pressDuration / (skipAccelTime * 1000));
+        skipAmount = Math.min(maxSkip, skipInitial * accelerationFactor);
     }
 
     const newTime = currentTime + (direction * skipAmount);

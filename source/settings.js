@@ -262,6 +262,72 @@ function getButtonSize() {
 }
 
 // =====================================================
+// Skip Settings Control
+// =====================================================
+const skipInitialInput = document.getElementById("skipInitialInput");
+const skipMaxInput = document.getElementById("skipMaxInput");
+const skipPercentMaxInput = document.getElementById("skipPercentMaxInput");
+const skipAccelTimeInput = document.getElementById("skipAccelTimeInput");
+const skipFormulaDisplay = document.getElementById("skipFormulaDisplay");
+
+// Default values
+const DEFAULT_SKIP_INITIAL = 5;
+const DEFAULT_SKIP_MAX = 15;
+const DEFAULT_SKIP_PERCENT_MAX = 5;
+const DEFAULT_SKIP_ACCEL_TIME = 30;
+
+// Update formula display
+function updateSkipFormulaDisplay() {
+    const initial = parseFloat(skipInitialInput.value) || DEFAULT_SKIP_INITIAL;
+    const max = parseFloat(skipMaxInput.value) || DEFAULT_SKIP_MAX;
+    const percent = parseFloat(skipPercentMaxInput.value) || DEFAULT_SKIP_PERCENT_MAX;
+    const accel = parseFloat(skipAccelTimeInput.value) || DEFAULT_SKIP_ACCEL_TIME;
+    skipFormulaDisplay.textContent = `f(t) = min(${max}, duration×${percent}%) ; skip(t) = ${initial}×exp(t/${accel})`;
+}
+
+// Load saved preferences
+skipInitialInput.value = localStorage.getItem("skipInitial") || DEFAULT_SKIP_INITIAL;
+skipMaxInput.value = localStorage.getItem("skipMax") || DEFAULT_SKIP_MAX;
+skipPercentMaxInput.value = localStorage.getItem("skipPercentMax") || DEFAULT_SKIP_PERCENT_MAX;
+skipAccelTimeInput.value = localStorage.getItem("skipAccelTime") || DEFAULT_SKIP_ACCEL_TIME;
+updateSkipFormulaDisplay();
+
+// Save on change and update formula
+skipInitialInput.addEventListener("change", () => {
+    localStorage.setItem("skipInitial", skipInitialInput.value);
+    updateSkipFormulaDisplay();
+});
+skipMaxInput.addEventListener("change", () => {
+    localStorage.setItem("skipMax", skipMaxInput.value);
+    updateSkipFormulaDisplay();
+});
+skipPercentMaxInput.addEventListener("change", () => {
+    localStorage.setItem("skipPercentMax", skipPercentMaxInput.value);
+    updateSkipFormulaDisplay();
+});
+skipAccelTimeInput.addEventListener("change", () => {
+    localStorage.setItem("skipAccelTime", skipAccelTimeInput.value);
+    updateSkipFormulaDisplay();
+});
+
+// Getter functions
+function getSkipInitial() {
+    return parseFloat(localStorage.getItem("skipInitial")) || DEFAULT_SKIP_INITIAL;
+}
+
+function getSkipMax() {
+    return parseFloat(localStorage.getItem("skipMax")) || DEFAULT_SKIP_MAX;
+}
+
+function getSkipPercentMax() {
+    return parseFloat(localStorage.getItem("skipPercentMax")) || DEFAULT_SKIP_PERCENT_MAX;
+}
+
+function getSkipAccelTime() {
+    return parseFloat(localStorage.getItem("skipAccelTime")) || DEFAULT_SKIP_ACCEL_TIME;
+}
+
+// =====================================================
 // Playback Speed Control
 // =====================================================
 const speedValue = document.getElementById("speedValue");
@@ -810,6 +876,47 @@ document.addEventListener("keydown", (e) => {
                 showABLoopStatus("Loop cleared");
             }
             break;
+    }
+});
+
+// Arrow key hold tracking for exponential acceleration
+let arrowKeyHoldStartTime = 0;
+let arrowKeyHoldDirection = 0;
+let arrowKeyHoldIntervalId = null;
+const ARROW_KEY_HOLD_DELAY = 500; // ms before acceleration starts
+const ARROW_KEY_FAST_INTERVAL = 100; // ms between skips when accelerating
+
+document.addEventListener("keydown", (e) => {
+    // Ignore if typing in input/textarea
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+    // Handle arrow key hold start
+    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !e.repeat) {
+        arrowKeyHoldDirection = e.key === "ArrowLeft" ? -1 : 1;
+        arrowKeyHoldStartTime = Date.now();
+
+        // Start acceleration after delay
+        arrowKeyHoldIntervalId = setTimeout(() => {
+            arrowKeyHoldIntervalId = setInterval(() => {
+                if (arrowKeyHoldDirection !== 0 && typeof performSkip === 'function') {
+                    const pressDuration = Date.now() - arrowKeyHoldStartTime - ARROW_KEY_HOLD_DELAY;
+                    performSkip(arrowKeyHoldDirection, pressDuration);
+                }
+            }, ARROW_KEY_FAST_INTERVAL);
+        }, ARROW_KEY_HOLD_DELAY);
+    }
+});
+
+document.addEventListener("keyup", (e) => {
+    // Stop arrow key acceleration
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        if (arrowKeyHoldIntervalId) {
+            clearTimeout(arrowKeyHoldIntervalId);
+            clearInterval(arrowKeyHoldIntervalId);
+            arrowKeyHoldIntervalId = null;
+        }
+        arrowKeyHoldDirection = 0;
+        arrowKeyHoldStartTime = 0;
     }
 });
 

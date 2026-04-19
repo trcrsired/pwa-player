@@ -337,6 +337,27 @@
                 </label>
                 <p class="setting-hint" data-i18n="buttonSizeHint">Adjust the size of control buttons. Compact removes gaps between buttons.</p>
 
+                <label class="setting-label">
+                    <span data-i18n="skipInitial">Skip Initial (sec)</span>
+                    <input type="number" id="skipInitialInput" min="1" max="30" step="1" value="5" style="width:70px;margin-left:10px;font-family:monospace;text-align:right;">
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="skipMax">Skip Max (sec)</span>
+                    <input type="number" id="skipMaxInput" min="5" max="60" step="1" value="15" style="width:70px;margin-left:10px;font-family:monospace;text-align:right;">
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="skipPercentMax">Skip Percent Max (%)</span>
+                    <input type="number" id="skipPercentMaxInput" min="1" max="100" step="0.5" value="5" style="width:70px;margin-left:10px;font-family:monospace;text-align:right;">
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="skipAccelTime">Skip Accel Time (sec)</span>
+                    <input type="number" id="skipAccelTimeInput" min="5" max="60" step="1" value="30" style="width:70px;margin-left:10px;font-family:monospace;text-align:right;">
+                </label>
+                <p class="setting-hint" data-i18n="skipSettingsHint">Skip forward/backward: initial skip amount, maximum skip, percentage of video duration, and time to reach maximum speed.</p>
+                <div id="skipFormulaDisplay" class="setting-hint" style="font-family:monospace;background:#f5f5f5;padding:8px 12px;border-radius:4px;margin-top:5px;">
+                    f(t) = min(max, min(max, duration × %) × exp(t / accel))
+                </div>
+
                 <h3 data-i18n="keyboardShortcuts">Keyboard Shortcuts</h3>
                 <label class="setting-toggle">
                     <input type="checkbox" id="shortcutSpeedEnabled" checked>
