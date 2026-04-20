@@ -393,7 +393,7 @@ const JA_TRANSLATIONS = {
     // Remote Storage
     mountRemote: "リモートをマウント",
     mountRemoteHint: "リモートHTTP/HTTPSサーバーをマウントして、ファイルを直接ブラウズ・再生します。",
-    enterRemoteUrl: "リモートサーバーURLを入力（末尾は/が必要）",
+    enterRemoteUrl: "リモートサーバーURLを入力",
     examples: "例",
     onlyHttpSupported: "http://、https:// URLのみサポートされています。",
     invalidUrl: "無効なURL。",

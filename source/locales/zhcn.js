@@ -396,7 +396,7 @@ const ZHCN_TRANSLATIONS = {
     // Remote Storage
     mountRemote: "挂载远程",
     mountRemoteHint: "挂载远程HTTP/HTTPS服务器，直接浏览和播放文件。",
-    enterRemoteUrl: "输入远程服务器URL（必须以/结尾）",
+    enterRemoteUrl: "输入远程服务器URL",
     examples: "示例",
     onlyHttpSupported: "仅支持 http:// 和 https:// URL。",
     invalidUrl: "无效URL。",

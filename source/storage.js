@@ -1686,16 +1686,8 @@ function showStorageDirMenu(entry, dirName, button) {
                 }
 
                 // Validate URL
-                try {
-                    const u = new URL(newUrl);
-                    if (!u.protocol.startsWith('http')) {
-                        alert(t('onlyHttpSupported', "Only http:// and https:// URLs are supported."));
-                        closeMenu();
-                        return;
-                    }
-                } catch {
-                    alert(t('invalidUrl', "Invalid URL."));
-                    closeMenu();
+                if (!newUrl.startsWith("http://") || !newUrl.startsWith("https://")) {
+                    alert(t('onlyHttpSupported', "Only http:// and https:// URLs are supported."));
                     return;
                 }
 
@@ -3349,15 +3341,20 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     let url = prompt(
-        `${t('enterRemoteUrl', 'Enter remote server URL (must end with /)')}:\n\n` +
+        `${t('enterRemoteUrl', 'Enter remote server URL')}:\n\n` +
         `${t('examples', 'Examples')}:\n` +
         `• http://192.168.1.100:8080/\n` +
         `• http://mydevice.local:8080/\n` +
-        `• http://[fe80::1%25en0]:8080/`,
+        `• http://[fe80::1]:8080/`,
         "https://"
     );
 
     if (!url) return;
+
+    if (!url.startsWith("http://") || !url.startsWith("https://")) {
+        alert(t('onlyHttpSupported', "Only http:// and https:// URLs are supported."));
+        return;
+    }
 
     if (!url.endsWith('/')) url += '/';
 

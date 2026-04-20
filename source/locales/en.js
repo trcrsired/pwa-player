@@ -396,7 +396,7 @@ const EN_TRANSLATIONS = {
     // Remote Storage
     mountRemote: "Mount Remote",
     mountRemoteHint: "Mount a remote HTTP/HTTPS server to browse and stream files directly.",
-    enterRemoteUrl: "Enter remote server URL (must end with /)",
+    enterRemoteUrl: "Enter remote server URL",
     examples: "Examples",
     onlyHttpSupported: "Only http:// and https:// URLs are supported.",
     invalidUrl: "Invalid URL.",
