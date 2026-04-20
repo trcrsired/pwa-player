@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "394";
+const PWAPLAYER_VERSION = "395";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "/",
@@ -56,25 +56,29 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
+  const host = url.hostname;
 
-  // Detect loopback/local network requests
   const isLocal =
-      url.hostname === "localhost" ||
-      url.hostname === "127.0.0.1" ||
-      url.hostname.startsWith("192.168.") ||
-      url.hostname.startsWith("10.") ||
-      url.hostname.endsWith(".local");
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.startsWith("192.168.") ||
+    host.startsWith("10.") ||
+    host.endsWith(".local") ||
+    host.endsWith(".lan") ||
+    host.endsWith(".internal") ||
+    host.startsWith("fe80:") ||   // IPv6 link-local
+    host.startsWith("fc") ||      // IPv6 ULA
+    host.startsWith("fd");        // IPv6 ULA
 
   if (isLocal) {
-      // Let the browser handle it directly
-      return;
+    return; // Let browser handle LAN traffic
   }
 
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).catch(() => {
-        return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
+        return new Response("Offline", { status: 503 });
       });
     })
   );

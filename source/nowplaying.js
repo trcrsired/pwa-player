@@ -270,7 +270,18 @@ async function restoreLastPlayback() {
         return true;
     }
 
-    // Case 1: restore last playlist
+    // Case 1: play from default playlist
+    const defaultPlaylist = localStorage.getItem("defaultPlaylist");
+    if (defaultPlaylist) {
+        const playlists = await playlists_load();
+        const list = playlists[defaultPlaylist];
+        if (list && list.length > 0) {
+            await startNowPlayingFromPlaylist(defaultPlaylist, 0);
+            return true;
+        }
+    }
+
+    // Case 2: restore last playlist
     const lastplaylist = await kv_get("lastplaylist");
     if (lastplaylist) {
         const { playlistName, index } = lastplaylist;
@@ -280,22 +291,11 @@ async function restoreLastPlayback() {
         return true;
     }
 
-    // Case 2: restore last single file
+    // Case 3: restore last single file
     const lastplayed = await kv_get("lastplayed");
     if (lastplayed) {
         play_source(lastplayed).catch(() => {});
         return true;
-    }
-
-    // Case 3: play from default playlist
-    const defaultPlaylist = localStorage.getItem("defaultPlaylist");
-    if (defaultPlaylist) {
-        const playlists = await playlists_load();
-        const list = playlists[defaultPlaylist];
-        if (list && list.length > 0) {
-            await startNowPlayingFromPlaylist(defaultPlaylist, 0);
-            return true;
-        }
     }
 
     // Nothing to restore

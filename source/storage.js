@@ -3352,7 +3352,10 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
         `${t('enterRemoteUrl', 'Enter remote server URL (must end with /)')}:\n\n` +
         `${t('examples', 'Examples')}:\n` +
         `• http://192.168.1.100:8080/\n` +
-        `• https://myserver.com/`,
+        `• http://mydevice.local:8080/\n` +
+        `• http://router.lan/\n` +
+        `• http://mydevice.internal:8080/\n` +
+        `• http://[fe80::1%25en0]:8080/`,
         "https://"
     );
 
