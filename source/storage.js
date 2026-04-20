@@ -3410,38 +3410,62 @@ function parseRemoteDirectoryListing(htmlText, baseUrl) {
     const dirs = [];
     const files = [];
 
+    const base = new URL(baseUrl);
+    const basePath = base.pathname.endsWith('/')
+        ? base.pathname
+        : base.pathname + '/';
+
     const doc = new DOMParser().parseFromString(htmlText, "text/html");
     const links = doc.querySelectorAll('a[href]');
 
     for (const link of links) {
         let href = link.getAttribute('href') || '';
-        const name = link.textContent.trim();
+        if (!href) continue;
 
-        if (!href || href === '../' || href === './' || href === '/') continue;
+        // Skip parent/self/sorting links
+        if (href === '../' || href === './' || href === '/' || href.startsWith('?')) continue;
 
-        // Convert relative link to absolute URL
-        let fullUrl;
+        // Build absolute URL
+        let url;
         try {
-            fullUrl = new URL(href, baseUrl).href;
-        } catch (e) {
+            url = new URL(href, baseUrl);
+        } catch {
             continue;
         }
 
-        if (href.endsWith('/') || name.endsWith('/')) {
-            const folderName = name.replace(/\/$/, '');
-            if (folderName) {
-                dirs.push({ name: folderName });
-            }
-        } 
-        else if (isPlayableOrImageFile(name) || isSubtitleFile(name)) {
+        // Skip external links
+        if (url.origin !== base.origin) continue;
+
+        // Skip links outside the served directory
+        if (!url.pathname.startsWith(basePath)) continue;
+
+        // Extract last path segment
+        const segments = url.pathname.split('/').filter(Boolean);
+        if (segments.length === 0) continue;
+
+        let name = decodeURIComponent(segments[segments.length - 1]);
+
+        // SECURITY: reject traversal or invalid names
+        if (name === '.' || name === '..') continue;
+        if (name.includes('/') || name.includes('\\')) continue;
+
+        // Detect directory:
+        // cargo-http-server uses "/folder" (no slash)
+        const isDir =
+            href.endsWith('/') ||
+            url.pathname.endsWith('/') ||
+            !name.includes('.'); // heuristic: no dot → likely folder
+
+        if (isDir) {
+            dirs.push({ name });
+        } else if (isPlayableOrImageFile(name) || isSubtitleFile(name)) {
             files.push({
-                name: name,
-                url: fullUrl
+                name,
+                url: url.href
             });
         }
     }
 
-    // Sort
     dirs.sort((a, b) => compareString(a.name, b.name));
     files.sort((a, b) => compareString(a.name, b.name));
 
