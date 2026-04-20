@@ -3359,18 +3359,6 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
 
     if (!url) return;
 
-    // Basic validation
-    try {
-        const u = new URL(url);
-        if (!u.protocol.startsWith('http')) {
-            alert(t('onlyHttpSupported', "Only http:// and https:// URLs are supported."));
-            return;
-        }
-    } catch {
-        alert(t('invalidUrl', "Invalid URL."));
-        return;
-    }
-
     if (!url.endsWith('/')) url += '/';
 
     // Name is required - prompt until valid name provided (max 3 attempts)

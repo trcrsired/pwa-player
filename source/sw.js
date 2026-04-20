@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "396";
+const PWAPLAYER_VERSION = "397";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "/",
@@ -57,7 +57,13 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   const host = url.hostname;
-
+/*
+https://wicg.github.io/local-network-access/
+For some reasons, LNA only accepts .local
+See issue:
+https://github.com/WICG/local-network-access/issues/3
+We treat .local, .lan, .internal for future expansions
+*/
   const isLocal =
     host === "localhost" ||
     host === "127.0.0.1" ||
