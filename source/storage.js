@@ -1685,12 +1685,6 @@ function showStorageDirMenu(entry, dirName, button) {
                     return;
                 }
 
-                // Validate URL
-                if (!newUrl.startsWith("http://") || !newUrl.startsWith("https://")) {
-                    alert(t('onlyHttpSupported', "Only http:// and https:// URLs are supported."));
-                    return;
-                }
-
                 let finalUrl = newUrl;
                 if (!finalUrl.endsWith('/')) finalUrl += '/';
 
@@ -3350,11 +3344,6 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
     );
 
     if (!url) return;
-
-    if (!url.startsWith("http://") || !url.startsWith("https://")) {
-        alert(t('onlyHttpSupported', "Only http:// and https:// URLs are supported."));
-        return;
-    }
 
     if (!url.endsWith('/')) url += '/';
 
