@@ -333,8 +333,8 @@ const fileWebRow = document.getElementById('fileWebRow');
 const subtitleBtn = document.getElementById('subtitleBtn');
 
 // Make timeDisplay clickable to seek to a specific time
-let timeInputActive = false;
-let npTimeInputActive = false;
+window.timeInputActive = false;
+window.npTimeInputActive = false;
 
 function getActiveDuration() {
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
@@ -356,106 +356,63 @@ function seekActivePlayerToTime(seconds) {
     }
 }
 
-if (timeDisplay) {
-    timeDisplay.style.cursor = 'pointer';
-    timeDisplay.addEventListener('click', () => {
-        // Check if embedded player or normal video is active
-        const isEmbedded = typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive();
-        const duration = getActiveDuration();
+function handleTimeEdit(displayElement, activeFlagName) {
+    const isEmbedded = typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive();
+    const duration = getActiveDuration();
 
-        // Only allow if something is playing and duration is valid
-        if (!hasActiveSource && !isEmbedded) return;
-        if (!isFinite(duration) || duration <= 0) return;
-        if (timeInputActive) return;
+    // Only allow if something is playing and duration is valid
+    if (!hasActiveSource && !isEmbedded) return;
+    if (!isFinite(duration) || duration <= 0) return;
+    if (window[activeFlagName]) return;
 
-        timeInputActive = true;
-        window.timeInputActive = true; // Global flag for platforms
-        const originalText = timeDisplay.textContent;
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = originalText.split(' / ')[0]; // Just the current time part
-        input.style.cssText = 'width: 80px; font-size: 12px; padding: 2px 4px; border: 1px solid #666; border-radius: 4px; background: rgba(0,0,0,0.8); color: #fff; text-align: center;';
-        input.placeholder = 'mm:ss';
+    window[activeFlagName] = true;
 
-        timeDisplay.textContent = '';
-        timeDisplay.appendChild(input);
-        input.focus();
-        input.select();
+    const originalText = displayElement.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = originalText.split(' / ')[0];
+    input.placeholder = 'mm:ss';
+    input.style.cssText =
+        'width: 80px; font-size: 12px; padding: 2px 4px; border: 1px solid #666;' +
+        'border-radius: 4px; background: rgba(0,0,0,0.8); color: #fff; text-align: center;';
 
-        const finishEdit = () => {
-            timeInputActive = false;
-            window.timeInputActive = false;
-            timeDisplay.textContent = originalText;
-        };
+    displayElement.textContent = '';
+    displayElement.appendChild(input);
+    input.focus();
+    input.select();
 
-        input.addEventListener('blur', finishEdit);
+    const finishEdit = () => finishTimeEdit(displayElement, originalText, activeFlagName);
 
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                finishEdit();
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                const timeStr = input.value.trim();
-                const seconds = parseTimeString(timeStr);
-                if (seconds !== null && seconds >= 0 && seconds <= duration) {
-                    seekActivePlayerToTime(seconds);
-                }
-                finishEdit();
+    input.addEventListener('blur', finishEdit);
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            finishEdit();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const seconds = parseTimeString(input.value.trim());
+            if (seconds !== null && seconds >= 0 && seconds <= duration) {
+                seekActivePlayerToTime(seconds);
             }
-        });
+            finishEdit();
+        }
     });
 }
 
-// Make npTimeDisplay (Now Playing) also clickable to seek
-if (npTimeDisplay) {
-    npTimeDisplay.style.cursor = 'pointer';
-    npTimeDisplay.addEventListener('click', () => {
-        // Check if embedded player or normal video is active
-        const isEmbedded = typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive();
-        const duration = getActiveDuration();
-
-        // Only allow if something is playing and duration is valid
-        if (!hasActiveSource && !isEmbedded) return;
-        if (!isFinite(duration) || duration <= 0) return;
-        if (npTimeInputActive) return;
-
-        npTimeInputActive = true;
-        window.npTimeInputActive = true; // Global flag for platforms
-        const originalText = npTimeDisplay.textContent;
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = originalText.split(' / ')[0]; // Just the current time part
-        input.style.cssText = 'width: 80px; font-size: 12px; padding: 2px 4px; border: 1px solid #666; border-radius: 4px; background: rgba(0,0,0,0.8); color: #fff; text-align: center;';
-        input.placeholder = 'mm:ss';
-
-        npTimeDisplay.textContent = '';
-        npTimeDisplay.appendChild(input);
-        input.focus();
-        input.select();
-
-        const finishEdit = () => {
-            npTimeInputActive = false;
-            window.npTimeInputActive = false;
-            npTimeDisplay.textContent = originalText;
-        };
-
-        input.addEventListener('blur', finishEdit);
-
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                finishEdit();
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                const timeStr = input.value.trim();
-                const seconds = parseTimeString(timeStr);
-                if (seconds !== null && seconds >= 0 && seconds <= duration) {
-                    seekActivePlayerToTime(seconds);
-                }
-                finishEdit();
-            }
-        });
-    });
+function finishTimeEdit(displayElement, originalText, activeFlagName) {
+    window[activeFlagName] = false;
+    displayElement.textContent = originalText;
 }
+
+function setupTimeDisplay(displayElement, activeFlagName) {
+    if (!displayElement) return;
+    displayElement.style.cursor = 'pointer';
+    displayElement.addEventListener('click', () => handleTimeEdit(displayElement, activeFlagName));
+}
+
+// Apply to both
+setupTimeDisplay(timeDisplay, 'timeInputActive');
+setupTimeDisplay(npTimeDisplay, 'npTimeInputActive');
 
 // Parse time string like "1:23:45" or "12:34" or "45" (seconds)
 function parseTimeString(str) {
@@ -513,10 +470,10 @@ function updateTimeDisplay(txtct)
     const screenElapsed = window.getScreenRecordingElapsedTime();
     if (screenElapsed !== null) {
       const elapsedStr = window.formatRecordingTimeShort(screenElapsed);
-      if (!timeInputActive) {
+      if (!window.timeInputActive) {
         timeDisplay.textContent = `🖥️ ${elapsedStr}`;
       }
-      if (!npTimeInputActive) {
+      if (!window.npTimeInputActive) {
         npTimeDisplay.textContent = txtct; // npTimeDisplay shows normal time
       }
       return;
@@ -544,10 +501,10 @@ function updateTimeDisplay(txtct)
     }
   }
 
-  if (!timeInputActive) {
+  if (!window.timeInputActive) {
     timeDisplay.textContent = finalText;
   }
-  if (!npTimeInputActive) {
+  if (!window.npTimeInputActive) {
     npTimeDisplay.textContent = txtct; // npTimeDisplay shows normal time without recording indicator
   }
 }
