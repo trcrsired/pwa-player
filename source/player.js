@@ -1357,7 +1357,12 @@ function stopSkip() {
     skipDirection = 0;
     skipPressStartTime = 0;
     skippingTime = null;
+    window.pendingSeekTarget = null;
     window.hasControlsPointerActivity = false;
+}
+
+function stopSkipPointer() {
+    stopSkip();
     // Restart auto-hide timer after interaction ends
     if (hasActiveSource) {
         showControls(true);
@@ -1371,9 +1376,9 @@ function setupSkipButton(btn, direction) {
         btn.setPointerCapture(e.pointerId);
         startSkip(direction);
     });
-    btn.addEventListener('pointerup', stopSkip);
-    btn.addEventListener('pointerleave', stopSkip);
-    btn.addEventListener('pointercancel', stopSkip);
+    btn.addEventListener('pointerup', stopSkipPointer);
+    btn.addEventListener('pointerleave', stopSkipPointer);
+    btn.addEventListener('pointercancel', stopSkipPointer);
 }
 
 setupSkipButton(skipBackBtn, -1);
@@ -2125,24 +2130,45 @@ if (npProgressBar) {
   setupProgressBarPointerEvents(npProgressBar, null);
 }
 
+function showVideoTimeSeek(pendingSeekTarget,duration) {
+  if (!videoStatusOverlay) return;
+  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+  videoStatusIcon.className = "";
+  videoStatusIcon.textContent = "";
+  let textcontent = pendingSeekTarget?formatPreviewTime(pendingSeekTarget):"";
+  if(pendingSeekTarget && duration) {
+    textcontent = `${textcontent} / ${formatPreviewTime(duration)}`;
+  }
+  videoStatusText.textContent = textcontent;
+  videoStatusOverlay.classList.remove("hidden");
+}
+
+let isKeyDown = false;
+let isArrowKeyDown = false;
+
 document.addEventListener("keydown", (e) => {
   // First check for open context menu - close it on Escape
-  if (e.code === "Escape") {
-    const openMenu = document.querySelector(".context-menu");
-    if (openMenu) {
-      openMenu.remove();
-      e.preventDefault();
+  if (!isKeyDown)
+  {
+    if (e.code === "Escape") {
+      const openMenu = document.querySelector(".context-menu");
+      if (openMenu) {
+        openMenu.remove();
+        e.preventDefault();
+        isKeyDown = true;
+        return;
+      }
+    }
+
+    const activeView = getActiveView();
+
+    if (activeView) {
+      if (e.code === "Escape") {
+        closeActiveView();
+      }
+      isKeyDown = true;
       return;
     }
-  }
-
-  const activeView = getActiveView();
-
-  if (activeView) {
-    if (e.code === "Escape") {
-      closeActiveView();
-    }
-    return;
   }
 
   switch (e.code) {
@@ -2153,14 +2179,14 @@ document.addEventListener("keydown", (e) => {
       break;
 
     case "ArrowRight":
-      if (video.readyState >= 3 && hasActiveSource) {
-        video.currentTime = Math.min(video.duration, video.currentTime + 5);
-      }
-      break;
-
     case "ArrowLeft":
       if (video.readyState >= 3 && hasActiveSource) {
-        video.currentTime = Math.max(0, video.currentTime - 5);
+        if (!isArrowKeyDown)
+        {
+          isArrowKeyDown = (e.code=="ArrowLeft"?-1:1);
+          startSkip(isArrowKeyDown);
+        }
+        showVideoTimeSeek(window.pendingSeekTarget, getActiveDuration());
       }
       break;
     case "KeyF":
@@ -2172,6 +2198,19 @@ document.addEventListener("keydown", (e) => {
         document.exitFullscreen();
       }
       break;
+  }
+  isKeyDown = true;
+});
+
+document.addEventListener("keyup", (e) => {
+  isKeyDown = false;
+  if(e.code == "ArrowRight" || e.code == "ArrowLeft")
+  {
+    if (isArrowKeyDown && video.readyState >= 3 && hasActiveSource) {
+      stopSkip();
+    }
+    hideVideoStatus();
+    isArrowKeyDown = 0;
   }
 });
 
