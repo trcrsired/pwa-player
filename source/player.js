@@ -767,6 +767,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     video.load();
 
     playBtn.textContent = "⏸️";
+    npPlayBtn.textContent = playBtn.textContent;
 
     // Store original metadata for subtitle updates
     currentMediaMetadata = { ...mediametadata };
@@ -989,6 +990,7 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
 
     // Update UI
     playBtn.textContent = "⏸️";
+    npPlayBtn.textContent = playBtn.textContent;
     currentMediaMetadata = { title };
     navigator.mediaSession.metadata = new MediaMetadata({ title });
     document.title = `PWA Player ▶️ ${title}`;

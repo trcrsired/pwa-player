@@ -11,9 +11,9 @@ let controlsHideTimer = null;
 let isInteractingWithControls = false; // Flag to prevent hiding when using controls
 let slideshowControlsVisible = false; // Track whether user wants controls visible during slideshow
 
-// Scale levels for magnifier button cycling
-const SCALE_LEVELS = [1, 1.5, 2, 3, 0.75];
-let currentScaleIndex = 0;
+// Sorted from zoom-out to zoom-in
+const SCALE_LEVELS = [0.5, 0.75, 1, 1.5, 2, 3, 4, 5]; 
+let currentScaleIndex = 2; // Default to '1' (the 3rd element)
 
 // Rotation and flip state
 let rotationAngle = 0; // 0, 90, 180, 270
@@ -311,103 +311,117 @@ function handleWheel(event) {
     else zoomOut();
 }
 
-function zoomIn(clientX, clientY) {
-    // If in pinch-zoom mode, snap to nearest predefined scale first
-    if (currentScaleIndex === -1) {
-        const currentScale = getCurrentScale();
-        // Find the next higher predefined scale
-        for (let i = 0; i < SCALE_LEVELS.length; ++i) {
-            if (SCALE_LEVELS[i] > currentScale) {
-                currentScaleIndex = i;
-                if (clientX !== undefined && clientY !== undefined) {
-                    const rect = imageElement.getBoundingClientRect();
-                    const xPercent = ((clientX - rect.left) / rect.width) * 100;
-                    const yPercent = ((clientY - rect.top) / rect.height) * 100;
-                    imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
-                }
-                applyScale();
-                updateCursor();
-                updateMagnifierButton();
-                return;
-            }
-        }
-        return; // Already at max scale
+function calculateAndSetOrigin(t, n) {
+    const rect = imageElement.getBoundingClientRect();
+    // Get relative click position (0 to 1)
+    let xRel = (t - rect.left) / rect.width;
+    let yRel = (n - rect.top) / rect.height;
+
+    // 1. Adjust for Flips
+    if (flipHorizontal) xRel = 1 - xRel;
+    if (flipVertical) yRel = 1 - yRel;
+
+    // 2. Adjust for Rotation (Normalization)
+    let finalX, finalY;
+    const angle = rotationAngle % 360;
+
+    if (angle === 90 || angle === -270) {
+        finalX = yRel;
+        finalY = 1 - xRel;
+    } else if (angle === 180 || angle === -180) {
+        finalX = 1 - xRel;
+        finalY = 1 - yRel;
+    } else if (angle === 270 || angle === -90) {
+        finalX = 1 - yRel;
+        finalY = xRel;
+    } else {
+        finalX = xRel;
+        finalY = yRel;
     }
 
-    if (currentScaleIndex < SCALE_LEVELS.length - 1 && SCALE_LEVELS[currentScaleIndex + 1] > SCALE_LEVELS[currentScaleIndex]) {
+    imageElement.style.transformOrigin = `${finalX * 100}% ${finalY * 100}%`;
+}
+
+function updateTransformOrigin(clientX, clientY) {
+    const rect = imageElement.getBoundingClientRect();
+
+    // 1. Calculate relative position within the visible box (0.0 to 1.0)
+    let xRel = (clientX - rect.left) / rect.width;
+    let yRel = (clientY - rect.top) / rect.height;
+
+    // 2. Adjust for Horizontal/Vertical Flips
+    if (flipHorizontal) xRel = 1 - xRel;
+    if (flipVertical) yRel = 1 - yRel;
+
+    // 3. Normalize for Rotation
+    // We use modulo to handle negative angles or angles > 360
+    const angle = ((rotationAngle % 360) + 360) % 360;
+
+    let finalX, finalY;
+
+    if (angle === 90) {
+        // Screen X becomes Image Y; Screen Y becomes Image (1-X)
+        finalX = yRel;
+        finalY = 1 - xRel;
+    } else if (angle === 180) {
+        // Everything is inverted
+        finalX = 1 - xRel;
+        finalY = 1 - yRel;
+    } else if (angle === 270) {
+        // Screen X becomes Image (1-Y); Screen Y becomes Image X
+        finalX = 1 - yRel;
+        finalY = xRel;
+    } else {
+        // 0 or 360 degrees
+        finalX = xRel;
+        finalY = yRel;
+    }
+
+    // Apply the corrected percentage to the transform-origin
+    imageElement.style.transformOrigin = `${finalX * 100}% ${finalY * 100}%`;
+}
+
+function resetView() {
+    panOffsetX = 0;
+    panOffsetY = 0;
+    imageElement.style.transformOrigin = "center center";
+}
+
+function zoomIn(clientX, clientY) {
+    if (!isImageViewerActive()) return;
+
+    // Ensure we always move UP the array
+    if (currentScaleIndex < SCALE_LEVELS.length - 1) {
         ++currentScaleIndex;
+
+        // Only update origin if coordinates are provided (e.g., mouse wheel/click)
         if (clientX !== undefined && clientY !== undefined) {
-            const rect = imageElement.getBoundingClientRect();
-            const xPercent = ((clientX - rect.left) / rect.width) * 100;
-            const yPercent = ((clientY - rect.top) / rect.height) * 100;
-            imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+            updateTransformOrigin(clientX, clientY);
         }
+
         applyScale();
         updateCursor();
         updateMagnifierButton();
-    } else if (SCALE_LEVELS[currentScaleIndex] === 1) {
-        for (let i = 0; i < SCALE_LEVELS.length; ++i) {
-            if (SCALE_LEVELS[i] > 1) {
-                currentScaleIndex = i;
-                applyScale();
-                updateCursor();
-                updateMagnifierButton();
-                break;
-            }
-        }
     }
 }
 
 function zoomOut() {
-    // If in pinch-zoom mode, snap to nearest predefined scale first
-    if (currentScaleIndex === -1) {
-        const currentScale = getCurrentScale();
-        // Find the next lower predefined scale
-        for (let i = SCALE_LEVELS.length; i--;) {
-            if (SCALE_LEVELS[i] < currentScale) {
-                currentScaleIndex = i;
-                if (SCALE_LEVELS[currentScaleIndex] === 1) {
-                    imageElement.style.transformOrigin = 'center center';
-                }
-                applyScale();
-                updateCursor();
-                updateMagnifierButton();
-                return;
-            }
-        }
-        currentScaleIndex = 0; // Go to minimum
-        panOffsetX = 0;
-        panOffsetY = 0;
-        imageElement.style.transformOrigin = 'center center';
-        applyScale();
-        updateCursor();
-        updateMagnifierButton();
-        return;
-    }
+    if (!isImageViewerActive()) return;
 
-    if (currentScaleIndex > 0 && SCALE_LEVELS[currentScaleIndex - 1] < SCALE_LEVELS[currentScaleIndex]) {
+    // Ensure we always move DOWN the array
+    if (currentScaleIndex > 0) {
         --currentScaleIndex;
-        if (SCALE_LEVELS[currentScaleIndex] === 1) {
+
+        // Reset panning/origin if we return to original size to keep it clean
+        if (SCALE_LEVELS[currentScaleIndex] <= 1) {
             panOffsetX = 0;
             panOffsetY = 0;
-            imageElement.style.transformOrigin = 'center center';
+            imageElement.style.transformOrigin = "center center";
         }
+
         applyScale();
         updateCursor();
         updateMagnifierButton();
-    } else if (SCALE_LEVELS[currentScaleIndex] > 1) {
-        for (let i = currentScaleIndex; i--; ) {
-            if (SCALE_LEVELS[i] < SCALE_LEVELS[currentScaleIndex]) {
-                currentScaleIndex = i;
-                if (SCALE_LEVELS[currentScaleIndex] === 1) {
-                    imageElement.style.transformOrigin = 'center center';
-                }
-                applyScale();
-                updateCursor();
-                updateMagnifierButton();
-                break;
-            }
-        }
     }
 }
 
