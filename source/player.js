@@ -2137,21 +2137,9 @@ document.addEventListener("keydown", (e) => {
       togglePlayBtn();
       e.preventDefault(); // prevent scroll or default behavior
       break;
-
     case "ArrowRight":
     case "ArrowLeft":
       if (video.readyState >= 3 && hasActiveSource) {
-        if (e.ctrlKey) {
-          if(e.code=="ArrowLeft")
-          {
-            playPrevious();
-          }
-          else
-          {
-            playNext();
-          }
-          return;
-        }
         if (!isArrowKeyDown)
         {
           isArrowKeyDown = (e.code=="ArrowLeft"?-1:1);
@@ -2162,6 +2150,15 @@ document.addEventListener("keydown", (e) => {
       break;
     case "KeyF":
       fullscreencallback();
+      break;
+    case "KeyM":
+      volumeToggleBtnClick();
+      break;
+    case "KeyP":
+      playPrevious();
+      break;
+    case "KeyN":
+      playNext();
       break;
     // optional: Esc to exit fullscreen
     case "Escape":
@@ -2174,7 +2171,10 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("keyup", (e) => {
-  isKeyDown = false;
+  if (!isKeyDown)
+  {
+    return;
+  }
   if(e.code == "ArrowRight" || e.code == "ArrowLeft")
   {
     if (isArrowKeyDown && video.readyState >= 3 && hasActiveSource) {

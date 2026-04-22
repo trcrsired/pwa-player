@@ -159,8 +159,13 @@ async function startNowPlayingFromPlaylist(playlistName, startIndex) {
 }
 
 async function playPrevious() {
-    if (nowPlayingQueue.length === 0) return;
+    if (nowPlayingQueue.length === 0)
+    {
+        nowPlayingIndex = 0;
+        return;
+    }
     stopSkip(true);
+    let toplay = true;
     switch (playMode) {
 
         case "shuffle":
@@ -182,18 +187,32 @@ async function playPrevious() {
 
         case "once":
             if (--nowPlayingIndex < 0) {
-                return; // stop playback
+                nowPlayingIndex = 0;
             }
+            toplay = false;
             break;
     }
-
-    await nowPlaying_playIndex(nowPlayingIndex);
+    if (nowPlayingIndex >= nowPlayingQueue.length) {
+        nowPlayingIndex = nowPlayingQueue.length - 1;
+    }
+    if (nowPlayingIndex < 0) {
+        nowPlayingIndex = 0;
+    }
+    if (toplay)
+    {
+        await nowPlaying_playIndex(nowPlayingIndex);
+    }
 }
 
 
 async function playNext() {
-    if (nowPlayingQueue.length === 0) return;
+    if (nowPlayingQueue.length === 0)
+    {
+        nowPlayingIndex = 0;
+        return;
+    }
     stopSkip(true);
+    let toplay = true;
     switch (playMode) {
 
         case "shuffle":
@@ -217,11 +236,17 @@ async function playNext() {
 
         case "once":
             if (++nowPlayingIndex >= nowPlayingQueue.length) {
-                return;
+                nowPlayingIndex = nowPlayingQueue.length - 1;
             }
+            toplay = false;
             break;
     }
-
+    if (nowPlayingIndex >= nowPlayingQueue.length) {
+        nowPlayingIndex = nowPlayingQueue.length - 1;
+    }
+    if (nowPlayingIndex < 0) {
+        nowPlayingIndex = 0;
+    }
     await nowPlaying_playIndex(nowPlayingIndex);
 }
 
