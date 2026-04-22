@@ -160,7 +160,7 @@ async function startNowPlayingFromPlaylist(playlistName, startIndex) {
 
 async function playPrevious() {
     if (nowPlayingQueue.length === 0) return;
-
+    stopSkip(true);
     switch (playMode) {
 
         case "shuffle":
@@ -193,7 +193,7 @@ async function playPrevious() {
 
 async function playNext() {
     if (nowPlayingQueue.length === 0) return;
-
+    stopSkip(true);
     switch (playMode) {
 
         case "shuffle":

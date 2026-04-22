@@ -1300,7 +1300,7 @@ function startSkip(direction) {
     }, LONG_PRESS_DELAY);
 }
 
-function stopSkip() {
+function stopSkip(noseek) {
     if (skipIntervalId) {
         clearTimeout(skipIntervalId);
         clearInterval(skipIntervalId);
@@ -1308,8 +1308,11 @@ function stopSkip() {
     }
     // Perform final actual seek to pending target
     if (window.pendingSeekTarget !== null) {
+      if(!noseek)
+      {
         seekActivePlayerToTime(window.pendingSeekTarget);
-        window.pendingSeekTarget = null;
+      }
+      window.pendingSeekTarget = null;
     }
     skipDirection = 0;
     skipPressStartTime = 0;
@@ -2138,6 +2141,17 @@ document.addEventListener("keydown", (e) => {
     case "ArrowRight":
     case "ArrowLeft":
       if (video.readyState >= 3 && hasActiveSource) {
+        if (e.ctrlKey) {
+          if(e.code=="ArrowLeft")
+          {
+            playPrevious();
+          }
+          else
+          {
+            playNext();
+          }
+          return;
+        }
         if (!isArrowKeyDown)
         {
           isArrowKeyDown = (e.code=="ArrowLeft"?-1:1);
