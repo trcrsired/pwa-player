@@ -26,9 +26,11 @@ class BilibiliPlatform extends BasePlatform {
 
             // b23.tv/VIDEO_ID (short URL - BV ID)
             if (hostname === 'b23.tv') {
+                console.log("29");
                 // Could be BVxxxxxx or just path
                 return urlObj.pathname.slice(1).split('?')[0];
             }
+            console.log("33");
 
             // bilibili.com/video/BVxxxxxx or bilibili.com/video/avxxxxxx
             if (hostname.endsWith('bilibili.com') || hostname.endsWith('bilibili.tv')) {
@@ -36,11 +38,13 @@ class BilibiliPlatform extends BasePlatform {
                     // Extract BV or AV ID
                     const pathParts = urlObj.pathname.slice(7).split('/');
                     const videoId = pathParts[0]?.split('?')[0];
-
+                    console.log("40");
                     // Handle BV IDs (base64-like) and AV IDs (numeric with av prefix)
                     if (videoId && (videoId.startsWith('BV') || videoId.startsWith('av'))) {
+                        console.log("44here", videoId);
                         return videoId;
                     }
+                    console.log("47",videoId);
                     return videoId;
                 }
             }
@@ -57,8 +61,8 @@ class BilibiliPlatform extends BasePlatform {
         this.apiReady = true;
     }
 
-    createPlayer(videoId, container, options = {}) {
-        this.currentVideoId = videoId;
+    createPlayer(contentInfo, container, options = {}) {
+
 
         // Get container element
         const containerEl = typeof container === 'string'
@@ -66,6 +70,9 @@ class BilibiliPlatform extends BasePlatform {
             : container;
 
         if (!containerEl) return null;
+
+        const videoId = contentInfo.videoId;
+        this.currentVideoId = videoId;
 
         // Clear container
         containerEl.innerHTML = '';

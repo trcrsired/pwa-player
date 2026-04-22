@@ -61,11 +61,13 @@ class KickPlatform extends BasePlatform {
         containerEl.innerHTML = '';
         const videoId = contentInfo.videoId;
 
+
         let embedSrc;
         let displayName;
 
         if (typeof videoId === 'object') {
             const { type, id } = videoId;
+            this.currentVideoId = id;
 
             if (type === 'channel') {
                 embedSrc = `https://player.kick.com/${id}`;
@@ -83,6 +85,7 @@ class KickPlatform extends BasePlatform {
         } else {
             embedSrc = `https://player.kick.com/${videoId}`;
             displayName = `Kick: ${videoId}`;
+            this.currentVideoId = videoId;
         }
 
         const iframe = document.createElement('iframe');

@@ -61,6 +61,7 @@ class TikTokPlatform extends BasePlatform {
         // Clear container
         containerEl.innerHTML = '';
         const videoId = contentInfo.videoId;
+        this.currentVideoId = videoId;
 
         // TikTok embed URL format:
         // https://www.tiktok.com/embed/v2/VIDEO_ID
