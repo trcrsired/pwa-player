@@ -50,8 +50,7 @@ class KickPlatform extends BasePlatform {
         this.apiReady = true;
     }
 
-    createPlayer(videoId, container, options = {}) {
-        this.currentVideoId = videoId;
+    createPlayer(contentInfo, container, options = {}) {
 
         const containerEl = typeof container === 'string'
             ? document.getElementById(container)
@@ -60,6 +59,7 @@ class KickPlatform extends BasePlatform {
         if (!containerEl) return null;
 
         containerEl.innerHTML = '';
+        const videoId = contentInfo.videoId;
 
         let embedSrc;
         let displayName;
