@@ -57,7 +57,6 @@ class AppleMusicPlatform extends BasePlatform {
     }
 
     createPlayer(videoId, container, options = {}) {
-        this.currentVideoId = videoId;
 
         const containerEl = typeof container === 'string'
             ? document.getElementById(container)
@@ -72,6 +71,7 @@ class AppleMusicPlatform extends BasePlatform {
 
         if (typeof videoId === 'object') {
             const { type, id, country, albumId } = videoId;
+            this.currentVideoId = id;
 
             if (type === 'song' && albumId) {
                 embedSrc = `https://embed.music.apple.com/${country}/album/${albumId}?i=${id}& autoplay=true`;
@@ -83,6 +83,7 @@ class AppleMusicPlatform extends BasePlatform {
         } else {
             embedSrc = `https://embed.music.apple.com/us/album/${videoId}?autoplay=true`;
             displayName = `Apple Music: ${videoId}`;
+            this.currentVideoId = videoId;
         }
 
         const iframe = document.createElement('iframe');
