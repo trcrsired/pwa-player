@@ -49,8 +49,7 @@ class TikTokPlatform extends BasePlatform {
         this.apiReady = true;
     }
 
-    createPlayer(videoId, container, options = {}) {
-        this.currentVideoId = videoId;
+    createPlayer(contentInfo, container, options = {}) {
 
         // Get container element
         const containerEl = typeof container === 'string'
@@ -61,6 +60,7 @@ class TikTokPlatform extends BasePlatform {
 
         // Clear container
         containerEl.innerHTML = '';
+        const videoId = contentInfo.videoId;
 
         // TikTok embed URL format:
         // https://www.tiktok.com/embed/v2/VIDEO_ID
