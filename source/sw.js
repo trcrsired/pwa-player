@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "407";
+const PWAPLAYER_VERSION = "408";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "/",
@@ -27,17 +27,15 @@ const urlsToCache = [
   "/platforms/base.js",
   "/platforms/youtube.js",
   "/platforms/spotify.js",
-/*
+  "/platforms/twitch.js",
   "/platforms/vimeo.js",
   "/platforms/bilibili.js",
   "/platforms/douyin.js",
   "/platforms/tiktok.js",
-  "/platforms/twitch.js",
   "/platforms/soundcloud.js",
   "/platforms/applemusic.js",
   "/platforms/kick.js",
   "/platforms/neteasemusic.js"
-*/
 ];
 
 self.addEventListener("install", event => {
