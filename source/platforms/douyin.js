@@ -1,5 +1,5 @@
 // ===============================
-// Douyin Platform (抖音)
+// Douyin Platform (抖音) - Updated with API Support
 // ===============================
 
 class DouyinPlatform extends BasePlatform {
@@ -13,10 +13,15 @@ class DouyinPlatform extends BasePlatform {
             'douyin.com',
             '*.iesdouyin.com',
             'iesdouyin.com',
-            'v.douyin.com'  // Short URL domain
+            'v.douyin.com',
+            'live.douyin.com'
         ];
     }
 
+    /**
+     * Extracts video or live ID from Douyin URLs
+     * Supports: live.douyin.com, v.douyin.com, and standard video paths
+     */
     static extractVideoId(url) {
         if (!url) return null;
 
@@ -24,175 +29,163 @@ class DouyinPlatform extends BasePlatform {
             const urlObj = new URL(url);
             const hostname = urlObj.hostname;
 
-            // v.douyin.com/xxxxxx (short URL - typically redirects)
+            // Handle Short URLs (v.douyin.com/abcde)
             if (hostname === 'v.douyin.com') {
-                return urlObj.pathname.slice(1).split('?')[0];
+                return { type: 'video', id: urlObj.pathname.slice(1).split('?')[0] };
             }
 
-            // douyin.com/video/xxxxxx or douyin.com/note/xxxxxx
+            // Handle Live URLs (live.douyin.com/123456)
+            if (hostname === 'live.douyin.com') {
+                const roomId = urlObj.pathname.slice(1).split('?')[0];
+                return roomId ? { type: 'live', id: roomId } : null;
+            }
+
+            // Handle Standard Video/Note URLs
             if (hostname.endsWith('douyin.com') || hostname.endsWith('iesdouyin.com')) {
-                if (urlObj.pathname.startsWith('/video/') || urlObj.pathname.startsWith('/note/')) {
-                    const pathParts = urlObj.pathname.split('/');
-                    return pathParts[2]?.split('?')[0];
+                const pathParts = urlObj.pathname.split('/');
+                
+                // Check for /video/ or /note/ paths
+                if (urlObj.pathname.includes('/video/')) {
+                    const idx = pathParts.indexOf('video');
+                    return { type: 'video', id: pathParts[idx + 1]?.split('?')[0] };
                 }
 
-                // Handle modal_id parameter (common in douyin URLs)
+                // Handle modal_id param (common in search results)
                 const modalId = urlObj.searchParams.get('modal_id');
-                if (modalId) {
-                    return modalId;
-                }
+                if (modalId) return { type: 'video', id: modalId };
             }
         } catch (e) {
             return null;
         }
-
         return null;
     }
 
-    loadApi() {
-        // Douyin doesn't have a proper iframe API
-        // We use direct iframe embed approach
-        this.apiReady = true;
-    }
-
-    createPlayer(videoId, container, options = {}) {
-        this.currentVideoId = videoId;
-
-        // Get container element
-        const containerEl = typeof container === 'string'
-            ? document.getElementById(container)
+    /**
+     * Attempts to fetch IFrame code from Open Douyin API
+     * Falls back to a "Bridge UI" if API fails
+     */
+    async createPlayer(contentInfo, container, options = {}) {
+        const containerEl = typeof container === 'string' 
+            ? document.getElementById(container) 
             : container;
 
         if (!containerEl) return null;
 
-        // Clear container
-        containerEl.innerHTML = '';
+        const videoData = contentInfo.videoId;
+        const finalId = typeof videoData === 'object' ? videoData.id : videoData;
+        const finalType = typeof videoData === 'object' ? videoData.type : 'video';
+        
+        this.currentVideoId = videoData;
 
-        // Douyin embed URL
-        // Note: Douyin doesn't have a public embed player like YouTube
-        // We can try to use their share/embed page if available
-        // For now, show a message that direct playback isn't supported
+        // Reset and show container
+        containerEl.innerHTML = '<div style="color:#fff; text-align:center; padding-top:20%;">Loading Douyin Player...</div>';
+        containerEl.classList.remove('hidden');
+        
+        // Ensure container fills the wrapper
+        containerEl.style.width = "100%";
+        containerEl.style.height = "100%";
+        containerEl.style.display = "block";
 
-        const messageDiv = document.createElement('div');
-        messageDiv.style.cssText = `
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #fff;
-            background: #000;
-            text-align: center;
-            padding: 20px;
-        `;
+        // Logic branching: Live vs Video
+        if (finalType === 'live') {
+            this.renderFallbackUI(containerEl, finalId, 'live');
+        } else {
+            try {
+                // Official Open Douyin API endpoint
+                const apiUrl = `https://open.douyin.com/api/douyin/v1/video/get_iframe_by_video?video_id=${finalId}`;
+                
+                // Use the PWA's CORS Proxy from localStorage if available
+                const proxy = localStorage.getItem('corsBypassUrl') || '';
+                const response = await fetch(proxy + apiUrl);
+                const result = await response.json();
 
-        messageDiv.innerHTML = `
-            <div style="font-size: 24px; margin-bottom: 20px;">🎵 抖音视频</div>
-            <div style="font-size: 14px; margin-bottom: 10px;">视频ID: ${videoId}</div>
-            <div style="font-size: 12px; color: #888;">
-                抖音暂不支持外部嵌入播放<br>
-                请在抖音APP或网站中观看
-            </div>
-            <a href="${this.getVideoUrl(videoId)}" target="_blank" style="
-                margin-top: 20px;
-                padding: 10px 20px;
-                background: #fe2c55;
-                color: #fff;
-                border-radius: 4px;
-                text-decoration: none;
-            ">打开抖音观看</a>
-        `;
-
-        containerEl.appendChild(messageDiv);
-
-        this.player = messageDiv;
-
-        // Update title
-        document.title = '抖音视频 - PWA Player';
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: `抖音: ${videoId}`,
-            artist: '抖音',
-            album: '抖音'
-        });
-
-        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
-        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
-        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
-        if (titleEl) titleEl.textContent = `抖音: ${videoId}`;
-        if (artistEl) artistEl.textContent = '抖音';
-        if (urlEl) urlEl.textContent = this.getVideoUrl(videoId);
-
-        // Set play button state
-        const playBtn = document.getElementById("playBtn");
-        const npPlayBtn = document.getElementById("npPlayBtn");
-        if (playBtn) playBtn.textContent = "▶️";
-        if (npPlayBtn) npPlayBtn.textContent = "▶️";
-        navigator.mediaSession.playbackState = 'paused';
+                if (result.err_no === 0 && result.data.iframe_code) {
+                    // Success: Inject the provided iframe code
+                    containerEl.innerHTML = result.data.iframe_code;
+                    const iframe = containerEl.querySelector('iframe');
+                    if (iframe) {
+                        iframe.style.width = '100%';
+                        iframe.style.height = '100%';
+                        iframe.style.border = 'none';
+                        this.player = iframe;
+                    }
+                    this.updateMetadata('video', finalId, result.data.video_title);
+                } else {
+                    throw new Error(result.err_msg || 'Privacy restriction or API error');
+                }
+            } catch (err) {
+                console.warn("Douyin API blocked or failed. Using fallback UI.", err);
+                this.renderFallbackUI(containerEl, finalId, 'video');
+            }
+        }
 
         if (options.onReady) options.onReady();
-
         return this.player;
     }
 
-    destroyPlayerInternal() {
-        if (this.player && this.player.parentNode) {
-            this.player.parentNode.removeChild(this.player);
+    /**
+     * UI used when IFrame cannot be embedded (CORS, Private Video, or Live)
+     */
+    renderFallbackUI(container, id, type) {
+        const label = type === 'live' ? 'Douyin Live' : 'Douyin Video';
+        const icon = type === 'live' ? '📺' : '🎵';
+        
+        container.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:#000; color:#fff; text-align:center;">
+                <div style="font-size:40px; margin-bottom:10px;">${icon}</div>
+                <div style="font-size:20px; font-weight:bold; margin-bottom:5px;">${label}</div>
+                <div style="font-size:12px; color:#888; margin-bottom:25px;">ID: ${id}</div>
+                <a href="${this.getVideoUrl({type, id})}" target="_blank" style="
+                    padding:12px 30px; background:#fe2c55; color:#fff; 
+                    border-radius:25px; text-decoration:none; font-weight:bold;
+                    box-shadow: 0 4px 15px rgba(254,44,85,0.3);
+                ">Open in App / Browser</a>
+            </div>
+        `;
+        this.player = container;
+    }
+
+    updateMetadata(type, id, title = null) {
+        const labels = { channel: 'Douyin', video: 'Douyin Video', live: 'Douyin Live' };
+        const displayName = title || `${labels[type] || 'Douyin'}: ${id}`;
+        
+        document.title = `${displayName} - PWA Player`;
+        
+        if (navigator.mediaSession) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: displayName,
+                artist: 'Douyin',
+                album: type === 'live' ? 'Live Stream' : 'Short Video'
+            });
+            navigator.mediaSession.playbackState = 'paused';
         }
-    }
 
-    play() {
-        // Not supported
-    }
-
-    pause() {
-        // Not supported
-    }
-
-    togglePlayPause() {
-        // Not supported
-    }
-
-    stop() {
-        this.destroyPlayer();
-    }
-
-    seekToPercent(percent) {
-        // Not supported
-    }
-
-    seekToTime(seconds) {
-        // Not supported
-    }
-
-    setVolume(percent) {
-        localStorage.setItem('volume', percent.toString());
-    }
-
-    getCurrentTime() {
-        return 0;
-    }
-
-    getDuration() {
-        return 0;
-    }
-
-    getTitle() {
-        return `抖音: ${this.currentVideoId}`;
+        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
+        if (titleEl) titleEl.textContent = displayName;
     }
 
     getVideoUrl(videoId) {
-        if (!videoId) return '抖音';
-        return `https://www.douyin.com/video/${videoId}`;
+        if (!videoId) return 'https://www.douyin.com';
+        const { type, id } = typeof videoId === 'object' ? videoId : { type: 'video', id: videoId };
+        
+        if (type === 'live') return `https://live.douyin.com/${id}`;
+        return `https://www.douyin.com/video/${id}`;
     }
 
-    isPlaying() {
-        return false;
+    destroyPlayerInternal() {
+        const container = document.getElementById('embeddedPlayer');
+        if (container) container.innerHTML = '';
+        this.player = null;
     }
+
+    // Playback control is not possible via IFrame API for Douyin
+    play() {}
+    pause() {}
+    togglePlayPause() {}
+    setVolume(percent) { localStorage.setItem('volume', percent.toString()); }
+    getCurrentTime() { return 0; }
+    getDuration() { return 0; }
+    isPlaying() { return false; }
 }
 
-// Register Douyin platform
 registerPlatform(DouyinPlatform);
-
-// Legacy function names for backwards compatibility
-window.extractDouyinVideoId = DouyinPlatform.extractVideoId;
-window.isDouyinUrl = (url) => DouyinPlatform.isUrl(url);

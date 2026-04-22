@@ -1,26 +1,12 @@
-class DouyinPlatform extends BasePlatform{static get name(){return"douyin"}static get domains(){return["*.douyin.com","douyin.com","*.iesdouyin.com","iesdouyin.com","v.douyin.com"]}static extractVideoId(t){if(t)try{var e=new URL(t),n=e.hostname;if("v.douyin.com"===n)return e.pathname.slice(1).split("?")[0];if(n.endsWith("douyin.com")||n.endsWith("iesdouyin.com")){if(e.pathname.startsWith("/video/")||e.pathname.startsWith("/note/"))return e.pathname.split("/")[2]?.split("?")[0];var i=e.searchParams.get("modal_id");if(i)return i}}catch(t){}return null}loadApi(){this.apiReady=!0}createPlayer(t,e,n={}){this.currentVideoId=t;e="string"==typeof e?document.getElementById(e):e;if(!e)return null;e.innerHTML="";var i=document.createElement("div"),e=(i.style.cssText=`
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #fff;
-            background: #000;
-            text-align: center;
-            padding: 20px;
-        `,i.innerHTML=`
-            <div style="font-size: 24px; margin-bottom: 20px;">🎵 抖音视频</div>
-            <div style="font-size: 14px; margin-bottom: 10px;">视频ID: ${t}</div>
-            <div style="font-size: 12px; color: #888;">
-                抖音暂不支持外部嵌入播放<br>
-                请在抖音APP或网站中观看
+class DouyinPlatform extends BasePlatform{static get name(){return"douyin"}static get domains(){return["*.douyin.com","douyin.com","*.iesdouyin.com","iesdouyin.com","v.douyin.com","live.douyin.com"]}static extractVideoId(e){if(e)try{var t,i=new URL(e),o=i.hostname;if("v.douyin.com"===o)return{type:"video",id:i.pathname.slice(1).split("?")[0]};if("live.douyin.com"===o)return(t=i.pathname.slice(1).split("?")[0])?{type:"live",id:t}:null;if(o.endsWith("douyin.com")||o.endsWith("iesdouyin.com")){var a,n=i.pathname.split("/");if(i.pathname.includes("/video/"))return a=n.indexOf("video"),{type:"video",id:n[a+1]?.split("?")[0]};var r=i.searchParams.get("modal_id");if(r)return{type:"video",id:r}}}catch(e){}return null}async createPlayer(e,t,i={}){t="string"==typeof t?document.getElementById(t):t;if(!t)return null;var e=e.videoId,o="object"==typeof e?e.id:e,a="object"==typeof e?e.type:"video";if(this.currentVideoId=e,t.innerHTML='<div style="color:#fff; text-align:center; padding-top:20%;">Loading Douyin Player...</div>',t.classList.remove("hidden"),t.style.width="100%",t.style.height="100%",t.style.display="block","live"===a)this.renderFallbackUI(t,o,"live");else try{var n="https://open.douyin.com/api/douyin/v1/video/get_iframe_by_video?video_id="+o,r=localStorage.getItem("corsBypassUrl")||"",d=await(await fetch(r+n)).json();if(0!==d.err_no||!d.data.iframe_code)throw new Error(d.err_msg||"Privacy restriction or API error");t.innerHTML=d.data.iframe_code;var l=t.querySelector("iframe");l&&(l.style.width="100%",l.style.height="100%",l.style.border="none",this.player=l),this.updateMetadata("video",o,d.data.video_title)}catch(e){console.warn("Douyin API blocked or failed. Using fallback UI.",e),this.renderFallbackUI(t,o,"video")}return i.onReady&&i.onReady(),this.player}renderFallbackUI(e,t,i){e.innerHTML=`
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:#000; color:#fff; text-align:center;">
+                <div style="font-size:40px; margin-bottom:10px;">${"live"===i?"📺":"🎵"}</div>
+                <div style="font-size:20px; font-weight:bold; margin-bottom:5px;">${"live"===i?"Douyin Live":"Douyin Video"}</div>
+                <div style="font-size:12px; color:#888; margin-bottom:25px;">ID: ${t}</div>
+                <a href="${this.getVideoUrl({type:i,id:t})}" target="_blank" style="
+                    padding:12px 30px; background:#fe2c55; color:#fff; 
+                    border-radius:25px; text-decoration:none; font-weight:bold;
+                    box-shadow: 0 4px 15px rgba(254,44,85,0.3);
+                ">Open in App / Browser</a>
             </div>
-            <a href="${this.getVideoUrl(t)}" target="_blank" style="
-                margin-top: 20px;
-                padding: 10px 20px;
-                background: #fe2c55;
-                color: #fff;
-                border-radius: 4px;
-                text-decoration: none;
-            ">打开抖音观看</a>
-        `,e.appendChild(i),this.player=i,document.title="抖音视频 - PWA Player",navigator.mediaSession.metadata=new MediaMetadata({title:"抖音: "+t,artist:"抖音",album:"抖音"}),document.querySelector("#nowPlayingInfo .track-title")),i=document.querySelector("#nowPlayingInfo .track-artist"),o=document.querySelector("#nowPlayingInfo .track-url"),e=(e&&(e.textContent="抖音: "+t),i&&(i.textContent="抖音"),o&&(o.textContent=this.getVideoUrl(t)),document.getElementById("playBtn")),i=document.getElementById("npPlayBtn");return e&&(e.textContent="▶️"),i&&(i.textContent="▶️"),navigator.mediaSession.playbackState="paused",n.onReady&&n.onReady(),this.player}destroyPlayerInternal(){this.player&&this.player.parentNode&&this.player.parentNode.removeChild(this.player)}play(){}pause(){}togglePlayPause(){}stop(){this.destroyPlayer()}seekToPercent(t){}seekToTime(t){}setVolume(t){localStorage.setItem("volume",t.toString())}getCurrentTime(){return 0}getDuration(){return 0}getTitle(){return"抖音: "+this.currentVideoId}getVideoUrl(t){return t?"https://www.douyin.com/video/"+t:"抖音"}isPlaying(){return!1}}registerPlatform(DouyinPlatform),window.extractDouyinVideoId=DouyinPlatform.extractVideoId,window.isDouyinUrl=t=>DouyinPlatform.isUrl(t);
+        `,this.player=e}updateMetadata(e,t,i=null){i=i||`${{channel:"Douyin",video:"Douyin Video",live:"Douyin Live"}[e]||"Douyin"}: `+t,document.title=i+" - PWA Player",navigator.mediaSession&&(navigator.mediaSession.metadata=new MediaMetadata({title:i,artist:"Douyin",album:"live"===e?"Live Stream":"Short Video"}),navigator.mediaSession.playbackState="paused"),t=document.querySelector("#nowPlayingInfo .track-title");t&&(t.textContent=i)}getVideoUrl(e){var t;return e?({type:e,id:t}="object"==typeof e?e:{type:"video",id:e},"live"===e?"https://live.douyin.com/"+t:"https://www.douyin.com/video/"+t):"https://www.douyin.com"}destroyPlayerInternal(){var e=document.getElementById("embeddedPlayer");e&&(e.innerHTML=""),this.player=null}play(){}pause(){}togglePlayPause(){}setVolume(e){localStorage.setItem("volume",e.toString())}getCurrentTime(){return 0}getDuration(){return 0}isPlaying(){return!1}}registerPlatform(DouyinPlatform);

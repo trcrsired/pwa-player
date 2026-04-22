@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "410";
+const PWAPLAYER_VERSION = "411";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "/",
@@ -30,7 +30,7 @@ const urlsToCache = [
   "/platforms/twitch.js",
   "/platforms/vimeo.js",
   "/platforms/bilibili.js",
-  "/platforms/douyin.js",
+//  "/platforms/douyin.js",
   "/platforms/tiktok.js",
   "/platforms/soundcloud.js",
   "/platforms/applemusic.js",
