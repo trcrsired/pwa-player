@@ -237,7 +237,6 @@ class YouTubePlatform extends BasePlatform {
     }
 
     onReady(event, options) {
-        console.log("line239 ", new Date().toISOString(), " onready");
         event.target.playVideo();
 
         // Set volume from stored preference

@@ -1,5 +1,5 @@
 // ===============================
-// Twitch Platform
+// Twitch Platform - Corrected SDK Implementation
 // ===============================
 
 class TwitchPlatform extends BasePlatform {
@@ -19,31 +19,22 @@ class TwitchPlatform extends BasePlatform {
 
     static extractVideoId(url) {
         if (!url) return null;
-
         try {
             const urlObj = new URL(url);
             const hostname = urlObj.hostname;
 
-            // clips.twitch.tv/CLIP_ID
             if (hostname === 'clips.twitch.tv' || hostname.endsWith('clips.twitch.tv')) {
-                return urlObj.pathname.slice(1).split('?')[0];
+                return { type: 'clip', id: urlObj.pathname.slice(1).split('?')[0] };
             }
 
-            // twitch.tv/CHANNEL_NAME or twitch.tv/videos/VIDEO_ID
             if (hostname.endsWith('twitch.tv')) {
                 const pathParts = urlObj.pathname.slice(1).split('/');
-
-                // twitch.tv/videos/VIDEO_ID
                 if (pathParts[0] === 'videos' && pathParts[1]) {
                     return { type: 'video', id: pathParts[1].split('?')[0] };
                 }
-
-                // twitch.tv/CHANNEL_NAME/clip/CLIP_ID
                 if (pathParts[1] === 'clip' && pathParts[2]) {
                     return { type: 'clip', id: pathParts[2].split('?')[0] };
                 }
-
-                // twitch.tv/CHANNEL_NAME - return channel name
                 if (pathParts[0]) {
                     return { type: 'channel', id: pathParts[0].split('?')[0] };
                 }
@@ -51,125 +42,154 @@ class TwitchPlatform extends BasePlatform {
         } catch (e) {
             return null;
         }
-
         return null;
     }
 
-    loadApi() {
-        // Twitch uses iframe embed, no API needed
-        this.apiReady = true;
+    async loadApi() {
+        if (window.Twitch && window.Twitch.Embed) {
+            return;
+        }
+
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = "https://embed.twitch.tv/embed/v1.js";
+            document.head.appendChild(script);
+            script.onload = () => {
+                // Double-check the object exists before resolving
+                if (window.Twitch) {
+                    resolve();
+                } else {
+                    reject(new Error("Twitch SDK loaded but 'Twitch' object is missing."));
+                }
+            };
+            script.onerror = () => reject(new Error("Twitch SDK failed to load."));
+            return script;
+        });
     }
 
-    createPlayer(videoId, container, options = {}) {
-        this.currentVideoId = videoId;
-
-        const containerEl = typeof container === 'string'
-            ? document.getElementById(container)
-            : container;
-
+    async createPlayer(contentInfo, container, options = {}) {
+        // 1. Target the existing embeddedPlayer from your HTML
+        const containerEl = typeof container === 'string' ? document.getElementById(container) : container;
         if (!containerEl) return null;
 
-        containerEl.innerHTML = '';
-
-        // Handle different video ID types
-        let embedSrc;
-        let displayName;
-
-        if (typeof videoId === 'object') {
-            const { type, id } = videoId;
-
-            if (type === 'channel') {
-                embedSrc = `https://player.twitch.tv/?channel=${id}&parent=${window.location.hostname}&autoplay=true`;
-                displayName = `Twitch: ${id}`;
-            } else if (type === 'video') {
-                embedSrc = `https://player.twitch.tv/?video=${id}&parent=${window.location.hostname}&autoplay=true`;
-                displayName = `Twitch Video: ${id}`;
-            } else if (type === 'clip') {
-                embedSrc = `https://player.twitch.tv/?clip=${id}&parent=${window.location.hostname}&autoplay=true`;
-                displayName = `Twitch Clip: ${id}`;
-            } else {
-                embedSrc = `https://player.twitch.tv/?channel=${id}&parent=${window.location.hostname}&autoplay=true`;
-                displayName = `Twitch: ${id}`;
-            }
-        } else {
-            // Assume it's a channel name if string
-            embedSrc = `https://player.twitch.tv/?channel=${videoId}&parent=${window.location.hostname}&autoplay=true`;
-            displayName = `Twitch: ${videoId}`;
+        // 2. Ensure SDK is ready
+        if (!window.Twitch) {
+            await this.loadApi();
         }
 
-        const iframe = document.createElement('iframe');
-        iframe.src = embedSrc;
-        iframe.setAttribute('allow', 'autoplay; fullscreen');
-        iframe.setAttribute('allowfullscreen', 'true');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.position = 'absolute';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.border = 'none';
-        iframe.id = 'twitch-iframe';
-        containerEl.appendChild(iframe);
+        const videoId = contentInfo.videoId;
+        let finalId, finalType;
+        
+        // Handle both object and string formats
+        if (typeof videoId === 'object' && videoId !== null) {
+            finalId = videoId.id;
+            finalType = videoId.type;
+        } else {
+            finalId = videoId;
+            finalType = 'channel';
+        }
 
-        this.player = iframe;
+        // 3. Prepare the container
+        containerEl.innerHTML = ''; // Clear any previous YouTube/other embeds
+        containerEl.classList.remove('hidden'); // Show the div
+        // Force containerEl to have size so the SDK can inherit it
+        containerEl.style.display = "block";
+        containerEl.style.width = "100%";
+        containerEl.style.height = "100%";
 
-        // Update title
-        document.title = `${displayName} - PWA Player`;
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: displayName,
-            artist: 'Twitch',
-            album: 'Twitch'
+        // The SDK needs an element with an ID to replace
+        const embedId = 'twitch-sdk-target';
+        const targetDiv = document.createElement('div');
+        targetDiv.id = embedId;
+        targetDiv.style.width = "100%";
+        targetDiv.style.height = "100%";
+        containerEl.appendChild(targetDiv);
+
+        // 4. Build options for the SDK
+        const embedOptions = {
+            width: '100%',
+            height: '100%',
+            autoplay: true,
+            layout: 'video', 
+            parent: [window.location.hostname || "localhost"], 
+            theme: 'dark'
+        };
+
+        if (finalType === 'video') embedOptions.video = finalId;
+        else if (finalType === 'clip') embedOptions.clip = finalId;
+        else embedOptions.channel = finalId;
+
+        // 5. Initialize inside the existing wrapper hierarchy
+        this.embed = new window.Twitch.Embed(embedId, embedOptions);
+
+        this.embed.addEventListener(window.Twitch.Embed.VIDEO_READY, () => {
+            this.player = this.embed.getPlayer();
+            if (options.onReady) options.onReady();
         });
 
-        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
-        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
-        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
-        if (titleEl) titleEl.textContent = displayName;
-        if (artistEl) artistEl.textContent = 'Twitch';
-        if (urlEl) urlEl.textContent = this.getVideoUrl(videoId);
-
-        const playBtn = document.getElementById("playBtn");
-        const npPlayBtn = document.getElementById("npPlayBtn");
-        if (playBtn) playBtn.textContent = "⏸️";
-        if (npPlayBtn) npPlayBtn.textContent = "⏸️";
-        navigator.mediaSession.playbackState = 'playing';
-
-        if (options.onReady) options.onReady();
-
-        return this.player;
+        this.updateMetadata(finalType, finalId);
+        return this.embed;
     }
+
+    updateMetadata(type, id) {
+        const labels = { channel: 'Twitch', video: 'Twitch Video', clip: 'Twitch Clip' };
+        const displayName = `${labels[type] || 'Twitch'}: ${id}`;
+        
+        document.title = `${displayName} - PWA Player`;
+        
+        if (navigator.mediaSession) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: displayName,
+                artist: 'Twitch',
+                album: 'Live Stream'
+            });
+            navigator.mediaSession.playbackState = 'playing';
+        }
+
+        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
+        if (titleEl) titleEl.textContent = displayName;
+    }
+
+    // Programmatic Controls via SDK
+    play() { console.log("play twitch"); if (this.player) this.player.play(); }
+    
+    pause() { console.log("pause twitch", this.player);  if (this.player) this.player.pause(); }
+
+    togglePlayPause() {
+        if (!this.player) return;
+        this.player.isPaused() ? this.player.play() : this.player.pause();
+    }
+
+    seekToTime(seconds) { if (this.player) this.player.seek(seconds); }
+
+    setVolume(percent) {
+        if (this.player) {
+            this.player.setVolume(percent / 100);
+            localStorage.setItem('volume', percent.toString());
+        }
+    }
+
+    getCurrentTime() { return this.player ? this.player.getCurrentTime() : 0; }
+    
+    getDuration() { return this.player ? this.player.getDuration() : 0; }
 
     destroyPlayerInternal() {
-        if (this.player && this.player.parentNode) {
-            this.player.parentNode.removeChild(this.player);
-        }
+        // The SDK creates an iframe inside our container, clearing innerHTML is usually sufficient
+        const container = document.getElementById('twitch-embed-container');
+        if (container) container.innerHTML = '';
+        this.player = null;
+        this.embed = null;
     }
-
-    play() { }
-    pause() { }
-    togglePlayPause() { }
-    stop() { this.destroyPlayer(); }
-    seekToPercent(percent) { }
-    seekToTime(seconds) { }
-    setVolume(percent) { localStorage.setItem('volume', percent.toString()); }
-    getCurrentTime() { return 0; }
-    getDuration() { return 0; }
-    getTitle() { return `Twitch: ${this.currentVideoId}`; }
 
     getVideoUrl(videoId) {
-        if (!videoId) return 'Twitch';
-        if (typeof videoId === 'object') {
-            const { type, id } = videoId;
-            if (type === 'video') return `https://www.twitch.tv/videos/${id}`;
-            if (type === 'clip') return `https://clips.twitch.tv/${id}`;
-            return `https://www.twitch.tv/${id}`;
-        }
-        return `https://www.twitch.tv/${videoId}`;
+        if (!videoId) return 'https://www.twitch.tv';
+        const { type, id } = typeof videoId === 'object' ? videoId : { type: 'channel', id: videoId };
+        if (type === 'video') return `https://www.twitch.tv/videos/${id}`;
+        if (type === 'clip') return `https://clips.twitch.tv/${id}`;
+        return `https://www.twitch.tv/${id}`;
     }
 
-    isPlaying() { return true; }
+    isPlaying() { return this.player ? !this.player.isPaused() : false; }
 }
 
 registerPlatform(TwitchPlatform);
-
-window.extractTwitchVideoId = TwitchPlatform.extractVideoId;
-window.isTwitchUrl = (url) => TwitchPlatform.isUrl(url);
