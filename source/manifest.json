@@ -55,13 +55,6 @@
       "accept": {
         "video/*": [".mp4", ".webm", ".mkv", ".mov"]
       }
-    },
-    {
-      "action": "./",
-      "start_in": "images",
-      "accept": {
-        "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".ico", ".avif"]
-      }
     }
   ]
 }
