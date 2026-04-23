@@ -1,4 +1,4 @@
-import { iptvChannels } from "iptvchannels.js";
+import { iptvChannels } from "./iptvchannels.js";
 
 // Elements
 const iptvBtn = document.getElementById("iptvBtn");
