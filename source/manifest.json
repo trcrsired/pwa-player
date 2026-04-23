@@ -2,7 +2,7 @@
   "id": "/",
   "name": "PWA Player",
   "short_name": "PWA Player",
-  "start_url": "/",
+  "start_url": "./",
   "background_color": "#000000",
   "theme_color": "#000000",
   "description": "A Progressive Web APP Media Player",
@@ -43,21 +43,21 @@
   ],
   "file_handlers": [
     {
-      "action": "/",
+      "action": "./",
       "start_in": "music",
       "accept": {
         "audio/*": [".mp3", ".wav", ".m4a", ".flac", ".webm"]
       }
     },
     {
-      "action": "/",
+      "action": "./",
       "start_in": "videos",
       "accept": {
         "video/*": [".mp4", ".webm", ".mkv", ".mov"]
       }
     },
     {
-      "action": "/",
+      "action": "./",
       "start_in": "images",
       "accept": {
         "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".ico", ".avif"]

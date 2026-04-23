@@ -1,4 +1,4 @@
-import { iptvChannels } from "/iptvchannels.js";
+import { iptvChannels } from "iptvchannels.js";
 
 // Elements
 const iptvBtn = document.getElementById("iptvBtn");
@@ -313,14 +313,14 @@ async function renderIPTVList(searchFilter = "") {
     const customChannels = await loadCustomIptvChannels();
     customChannels.forEach((channel, index) => {
         if (renderChannel(channel, searchFilter, true, index)) {
-            renderedCount++;
+            ++renderedCount;
         }
     });
 
     // Render predefined channels
     iptvChannels.forEach(channel => {
         if (renderChannel(channel, searchFilter, false, -1)) {
-            renderedCount++;
+            ++renderedCount;
         }
     });
 
