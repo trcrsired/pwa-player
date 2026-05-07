@@ -336,24 +336,40 @@ const subtitleBtn = document.getElementById('subtitleBtn');
 window.timeInputActive = false;
 window.npTimeInputActive = false;
 
+
+// Get active player duration (handles both video and embedded)
 function getActiveDuration() {
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
-        if (typeof getEmbeddedDuration === 'function') {
-            return getEmbeddedDuration();
-        }
-        return 0;
+      if (typeof getEmbeddedDuration === 'function') {
+          const duration = getEmbeddedDuration();
+          // Handle Promise (Vimeo) or direct value (YouTube)
+          if (duration && typeof duration.then === 'function') {
+              return window._cachedEmbeddedDuration || 0;
+          }
+          return duration || 0;
+      }
+      return 0;
     }
-    return video.duration;
+    const video = document.getElementById("player");
+    return video ? video.duration : 0;
 }
 
+// Seek active player to time (handles both video and embedded)
 function seekActivePlayerToTime(seconds) {
-    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
-        if (typeof seekEmbeddedPlayerToTime === 'function') {
-            seekEmbeddedPlayerToTime(seconds);
-        }
-    } else {
-        video.currentTime = seconds;
+  const activeduration = getActiveDuration();
+  if (!activeduration || !seconds)
+  {
+    return;
+  }
+
+  if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+    if (typeof seekEmbeddedPlayerToTime === 'function') {
+        seekEmbeddedPlayerToTime(seconds);
     }
+  } else {
+    const video = document.getElementById("player");
+    if (video) video.currentTime = seconds;
+  }
 }
 
 function handleTimeEdit(displayElement, activeFlagName) {
@@ -1169,6 +1185,7 @@ window.clearVideoSource = clearVideoSource;
 
 async function toggleStopBtn()
 {
+    stopSkip(true);
     video.pause();
     video.currentTime = 0;
     video.removeAttribute("src");
@@ -1181,6 +1198,7 @@ async function toggleStopBtn()
     npPlayBtn.textContent = playBtn.textContent;
     // Clear subtitles
     clearSubtitles();
+
     navigator.mediaSession.metadata = new MediaMetadata({});
     document.title = `PWA Player`;
     // Clear last played/playlist so default playlist can take over on next play
@@ -1209,9 +1227,9 @@ window.pendingSeekTarget = null; // track where we want to seek to (global for s
 function performSkip(direction, pressDuration = 0) {
     if (pressDuration < 0) pressDuration = 0;
 
-    const duration = getActiveDuration();
+    let duration = getActiveDuration();
     const currentTime = getActiveCurrentTime();
-  
+
     let clampedTime;
     if (currentTime<=0 && direction < 0)
     {
@@ -1265,11 +1283,19 @@ function performSkip(direction, pressDuration = 0) {
       clampedTime = Math.max(0, Math.min(newTime, duration || 0));
 
     }
+    let displaystring;
+    // Update time display immediately (visual feedback)
+    if (Number.isNaN(duration))
+    {
+      duration = 0;
+      clampedTime = 0;
+    }
+    displaystring = `${formatTime(clampedTime)} / ${formatTime(duration)}`;
+
     // Store pending seek target
     window.pendingSeekTarget = clampedTime;
 
-    // Update time display immediately (visual feedback)
-    updateTimeDisplay(`${formatTime(clampedTime)} / ${formatTime(duration)}`);
+    updateTimeDisplay(displaystring);
 
     // Update progress bar visually (without triggering seek)
     progressBar.max = duration;
@@ -1285,6 +1311,11 @@ function startSkip(direction) {
     window.hasControlsPointerActivity = true;
     skippingTime = null;
 
+    let getactiveaction = getActiveDuration();
+    if (!getactiveaction || Number.isNaN(getactiveaction))
+    {
+      return;
+    }
     // Initial visual update (no seek)
     performSkip(direction, 0);
 
@@ -1299,6 +1330,8 @@ function startSkip(direction) {
 
     }, LONG_PRESS_DELAY);
 }
+
+let skippingTime;
 
 function stopSkip(noseek) {
     if (skipIntervalId) {
@@ -1810,12 +1843,6 @@ npProgressBar.onchange = () => {
 let previewLoadedSrc = null;
 let previewLoadedImageQueue = null; // For image preview, store the queue
 
-function formatPreviewTime(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
 function showVideoPreview(time, xPos) {
   // Skip if image viewer is active
   if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
@@ -1842,7 +1869,7 @@ function showVideoPreview(time, xPos) {
 
   // Show preview
   videoPreview.style.display = "block";
-  previewTime.textContent = formatPreviewTime(time);
+  previewTime.textContent = formatTime(time);
 
   // Position preview
   const containerRect = progressContainer.getBoundingClientRect();
@@ -2095,9 +2122,10 @@ function showVideoTimeSeek(pendingSeekTarget,duration) {
   const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
   videoStatusIcon.className = "";
   videoStatusIcon.textContent = "";
-  let textcontent = pendingSeekTarget?formatPreviewTime(pendingSeekTarget):"";
+
+  let textcontent = pendingSeekTarget?formatTime(pendingSeekTarget):"";
   if(pendingSeekTarget && duration) {
-    textcontent = `${textcontent} / ${formatPreviewTime(duration)}`;
+    textcontent = `${textcontent} / ${formatTime(duration)}`;
   }
   videoStatusText.textContent = textcontent;
   videoStatusOverlay.classList.remove("hidden");
@@ -2120,15 +2148,21 @@ document.addEventListener("keydown", (e) => {
       }
     }
 
-    const activeView = getActiveView();
+  }
 
-    if (activeView) {
-      if (e.code === "Escape") {
-        closeActiveView();
-      }
-      isKeyDown = true;
-      return;
+  const activeView = getActiveView();
+
+  if (activeView &&
+      activeView != document.getElementById("nowPlayingView")) {
+    return;
+  }
+
+  if (activeView) {
+    if (e.code === "Escape") {
+      closeActiveView();
     }
+    isKeyDown = false;
+    return;
   }
 
   switch (e.code) {
@@ -2143,9 +2177,13 @@ document.addEventListener("keydown", (e) => {
         if (!isArrowKeyDown)
         {
           isArrowKeyDown = (e.code=="ArrowLeft"?-1:1);
-          startSkip(isArrowKeyDown);
+          startSkip(skippingTime);
         }
         showVideoTimeSeek(window.pendingSeekTarget, getActiveDuration());
+      }
+      else
+      {
+        showVideoTimeSeek(0, 0);
       }
       break;
     case "KeyF":
@@ -2175,6 +2213,7 @@ document.addEventListener("keyup", (e) => {
   {
     return;
   }
+  isKeyDown = false;
   if(e.code == "ArrowRight" || e.code == "ArrowLeft")
   {
     if (isArrowKeyDown && video.readyState >= 3 && hasActiveSource) {
@@ -2185,17 +2224,7 @@ document.addEventListener("keyup", (e) => {
   }
 });
 
-  function formatTime(seconds) {
-    const hrs = Math.floor(seconds / 3600);
-    const min = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
-    const sec = Math.floor(seconds % 60).toString().padStart(2, "0");
-    if (hrs > 0) {
-      return `${hrs}:${min}:${sec}`;
-    }
-    return `${min}:${sec}`;
-  }
-
-  let hideTimeout;
+let hideTimeout;
 
 // Adjust subtitle position to avoid overlap with controls
 function updateSubtitlePosition(controlsVisible) {

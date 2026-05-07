@@ -649,35 +649,6 @@ function getActiveCurrentTime() {
     return video ? video.currentTime : 0;
 }
 
-// Get active player duration (handles both video and embedded)
-function getActiveDuration() {
-    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
-        if (typeof getEmbeddedDuration === 'function') {
-            const duration = getEmbeddedDuration();
-            // Handle Promise (Vimeo) or direct value (YouTube)
-            if (duration && typeof duration.then === 'function') {
-                return window._cachedEmbeddedDuration || 0;
-            }
-            return duration || 0;
-        }
-        return 0;
-    }
-    const video = document.getElementById("player");
-    return video ? video.duration : 0;
-}
-
-// Seek active player to time (handles both video and embedded)
-function seekActivePlayerToTime(seconds) {
-    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
-        if (typeof seekEmbeddedPlayerToTime === 'function') {
-            seekEmbeddedPlayerToTime(seconds);
-        }
-    } else {
-        const video = document.getElementById("player");
-        if (video) video.currentTime = seconds;
-    }
-}
-
 // Check if video is non-live (handles both video and embedded)
 function isNonLiveVideo() {
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
