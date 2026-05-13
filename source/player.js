@@ -610,8 +610,11 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
 }
 
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
+  // Check if this is an M3U8 HLS stream first - HLS should not be treated as embedded player
+  const isM3u8 = typeof window.isM3U8Url === 'function' && window.isM3U8Url(blobURL);
+
   // Check if this is an embedded URL (YouTube, Vimeo, etc.) - use embedded player instead
-  if (typeof playEmbeddedUrl === 'function' && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
+  if (!isM3u8 && typeof playEmbeddedUrl === 'function' && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
     // Use entry name from playlist if provided
     // For embedded URLs without entry name, use the full URL instead of extracted filename
     let entryName = playlist?.entryName;
@@ -646,6 +649,11 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     stopEmbeddedPlayer();
   }
 
+  // Destroy any existing HLS instance before switching source
+  if (typeof window.destroyHlsInstance === 'function') {
+    window.destroyHlsInstance();
+  }
+
   try {
     revokeBlobURL();
     currentBlobURL = blobURL;
@@ -659,85 +667,161 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Show loading indicator
     showVideoLoading();
 
-    // Apply CORS bypass for network URLs
-    let videoSrc = blobURL;
-    const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
-    if (isNetworkUrl && typeof applyCorsBypass === 'function') {
-      videoSrc = applyCorsBypass(blobURL, corsBypass);
+    // Get CORS bypass URL if enabled
+    let corsBypassUrl = null;
+    if (corsBypass && typeof getCorsBypassUrl === 'function') {
+      corsBypassUrl = getCorsBypassUrl();
     }
 
-    video.src = videoSrc;
-    hasActiveSource = true;
-    hideControls();
+    if (isM3u8) {
+      // Use HLS playback (native or hls.js)
+      const hlsSuccess = await window.playHlsStream(video, blobURL, () => {
+        hideVideoStatus();
+        video.currentTime = 0;
+        video.play().catch(err => console.warn("Play failed:", err));
+        if (typeof resizeWindowToVideo === 'function') {
+          resizeWindowToVideo(video.videoWidth, video.videoHeight);
+        }
+      }, corsBypassUrl);
 
-    // Store filename for error messages
-    const filename = mediametadata.title;
-    let retryCount = 0;
-    let srcResetCount = 0; // Separate counter for src reset tracking
-    const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 256) : 0;
-    const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
-    const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
-
-    // Handle video errors with retry for network URLs
-    video.onerror = (e) => {
-      if (isNetworkUrl && retryCount < maxRetries) {
-        ++retryCount;
-        ++srcResetCount;
+      if (!hlsSuccess && !window.supportsNativeHLS()) {
+        // HLS.js failed and no native support - show error
         const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-        const retryMsg = t('retryingLoad', 'Retrying ({count}/{max})...').replace('{count}', retryCount).replace('{max}', maxRetries);
-        showVideoError(retryMsg);
-        videoStatusOverlay.classList.remove("hidden");
-        videoStatusIcon.className = "video-status-icon loading";
-        setTimeout(() => {
-          // Only reset src after configured number of retries
-          if (retryBeforeSrcReset > 0 && srcResetCount >= retryBeforeSrcReset) {
-            srcResetCount = 0; // Reset the counter
-            const oldSrc = video.src;
-            video.src = "";
-            video.load();
-            video.src = oldSrc;
-          } else {
-            video.load();
-          }
-        }, retryDelay);
+        showVideoError(t('hlsNotSupported', 'HLS streaming not supported. Try a different browser or stream.'));
+        hasActiveSource = false;
         return;
       }
-      hideVideoStatus();
-      showVideoError(getUnsupportedVideoMessage(filename));
-      hasActiveSource = false;
-      clearVideoPreview();
-    };
 
-    // Hide loading when video starts playing
-    video.oncanplay = () => {
-      hideVideoStatus();
-      retryCount = 0; // Reset retry count on successful load
-    };
+      hasActiveSource = true;
+      hideControls();
+      playBtn.textContent = "⏸️";
+      npPlayBtn.textContent = playBtn.textContent;
 
-    // Handle stalled/waiting states
-    video.onwaiting = () => {
-      showVideoLoading();
-    };
+      // Store filename for error messages
+      const filename = mediametadata.title;
+      let retryCount = 0;
 
-    video.onplaying = () => {
-      hideVideoStatus();
-      retryCount = 0; // Reset retry count on successful playback
-    };
+      // Handle video errors with retry for network URLs
+      video.onerror = (e) => {
+        const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
+        const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 256) : 0;
+        const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
 
-    // Wait for metadata before playing
-    video.onloadedmetadata = () => {
-      hideVideoStatus(); // Hide loading when metadata loads
-      // Ensure video starts from beginning
-      video.currentTime = 0;
-      video.play().catch(err => console.warn("Play failed:", err));
-      // Resize window to video dimensions if enabled
-      if (typeof resizeWindowToVideo === 'function') {
-        resizeWindowToVideo(video.videoWidth, video.videoHeight);
+        if (isNetworkUrl && retryCount < maxRetries) {
+          ++retryCount;
+          const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+          const retryMsg = t('retryingLoad', 'Retrying ({count}/{max})...').replace('{count}', retryCount).replace('{max}', maxRetries);
+          showVideoError(retryMsg);
+          videoStatusOverlay.classList.remove("hidden");
+          videoStatusIcon.className = "video-status-icon loading";
+          setTimeout(() => {
+            window.destroyHlsInstance();
+            window.playHlsStream(video, blobURL, null, corsBypassUrl);
+          }, retryDelay);
+          return;
+        }
+        hideVideoStatus();
+        showVideoError(getUnsupportedVideoMessage(filename));
+        hasActiveSource = false;
+        clearVideoPreview();
+      };
+
+      // Hide loading when video starts playing
+      video.oncanplay = () => {
+        hideVideoStatus();
+        retryCount = 0;
+      };
+
+      video.onplaying = () => {
+        hideVideoStatus();
+        retryCount = 0;
+      };
+
+      video.onwaiting = () => {
+        showVideoLoading();
+      };
+    } else {
+      // Non-HLS content - standard playback
+      // Apply CORS bypass for network URLs
+      let videoSrc = blobURL;
+      const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
+      if (isNetworkUrl && typeof applyCorsBypass === 'function') {
+        videoSrc = applyCorsBypass(blobURL, corsBypass);
       }
-    };
 
-    // Ensure video loads the new source
-    video.load();
+      video.src = videoSrc;
+      hasActiveSource = true;
+      hideControls();
+
+      // Store filename for error messages
+      const filename = mediametadata.title;
+      let retryCount = 0;
+      let srcResetCount = 0; // Separate counter for src reset tracking
+      const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 256) : 0;
+      const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
+      const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
+
+      // Handle video errors with retry for network URLs
+      video.onerror = (e) => {
+        if (isNetworkUrl && retryCount < maxRetries) {
+          ++retryCount;
+          ++srcResetCount;
+          const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+          const retryMsg = t('retryingLoad', 'Retrying ({count}/{max})...').replace('{count}', retryCount).replace('{max}', maxRetries);
+          showVideoError(retryMsg);
+          videoStatusOverlay.classList.remove("hidden");
+          videoStatusIcon.className = "video-status-icon loading";
+          setTimeout(() => {
+            // Only reset src after configured number of retries
+            if (retryBeforeSrcReset > 0 && srcResetCount >= retryBeforeSrcReset) {
+              srcResetCount = 0; // Reset the counter
+              const oldSrc = video.src;
+              video.src = "";
+              video.load();
+              video.src = oldSrc;
+            } else {
+              video.load();
+            }
+          }, retryDelay);
+          return;
+        }
+        hideVideoStatus();
+        showVideoError(getUnsupportedVideoMessage(filename));
+        hasActiveSource = false;
+        clearVideoPreview();
+      };
+
+      // Hide loading when video starts playing
+      video.oncanplay = () => {
+        hideVideoStatus();
+        retryCount = 0; // Reset retry count on successful load
+      };
+
+      // Handle stalled/waiting states
+      video.onwaiting = () => {
+        showVideoLoading();
+      };
+
+      video.onplaying = () => {
+        hideVideoStatus();
+        retryCount = 0; // Reset retry count on successful playback
+      };
+
+      // Wait for metadata before playing
+      video.onloadedmetadata = () => {
+        hideVideoStatus(); // Hide loading when metadata loads
+        // Ensure video starts from beginning
+        video.currentTime = 0;
+        video.play().catch(err => console.warn("Play failed:", err));
+        // Resize window to video dimensions if enabled
+        if (typeof resizeWindowToVideo === 'function') {
+          resizeWindowToVideo(video.videoWidth, video.videoHeight);
+        }
+      };
+
+      // Ensure video loads the new source
+      video.load();
+    }
 
     playBtn.textContent = "⏸️";
     npPlayBtn.textContent = playBtn.textContent;
@@ -874,23 +958,24 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
     clearSubtitles();
     showVideoLoading();
 
-    // Apply CORS bypass
-    let videoSrc = url;
-    const isNetworkUrl = typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
-    if (isNetworkUrl && typeof applyCorsBypass === 'function') {
-      videoSrc = applyCorsBypass(url, corsBypass);
+    // Destroy any existing HLS instance
+    if (typeof window.destroyHlsInstance === 'function') {
+      window.destroyHlsInstance();
     }
 
-    video.src = videoSrc;
-    hasActiveSource = true;
-    hideControls();
+    // Check if this is an M3U8 HLS stream
+    const isM3u8 = typeof window.isM3U8Url === 'function' && window.isM3U8Url(url);
+
+    // Get CORS bypass URL if enabled
+    let corsBypassUrl = null;
+    if (corsBypass && typeof getCorsBypassUrl === 'function') {
+      corsBypassUrl = getCorsBypassUrl();
+    }
 
     let retryCount = 0;
-    let srcResetCount = 0; // Separate counter for src reset tracking
     let resolved = false;
 
     const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
-    const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
 
     const cleanup = () => {
       video.onerror = null;
@@ -903,6 +988,7 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
       if (resolved) return;
       resolved = true;
       cleanup();
+      window.destroyHlsInstance();
       video.removeAttribute('src');
       video.load();
       resolve(false);
@@ -915,51 +1001,115 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
       resolve(true);
     };
 
-    video.onerror = () => {
-      if (retryCount < maxRetries) {
-        ++retryCount;
-        ++srcResetCount;
-        const retryMsg = totalSources > 1
-          ? t('retryingSource', `Source ${sourceNum}/${totalSources} - Retry ${retryCount}/${maxRetries}`)
-          : t('retryingLoad', `Retrying (${retryCount}/${maxRetries})...`);
-        showVideoError(retryMsg);
-        setTimeout(() => {
-          // Only reset src after configured number of retries
-          if (retryBeforeSrcReset > 0 && srcResetCount >= retryBeforeSrcReset) {
-            srcResetCount = 0; // Reset the counter
-            const oldSrc = video.src;
-            video.src = "";
-            video.load();
-            video.src = oldSrc;
-          } else {
-            video.load();
-          }
-        }, retryDelay);
-      } else {
+    const doRetry = () => {
+      if (retryCount >= maxRetries) {
         fail();
+        return;
       }
+      ++retryCount;
+      const retryMsg = totalSources > 1
+        ? t('retryingSource', `Source ${sourceNum}/${totalSources} - Retry ${retryCount}/${maxRetries}`)
+        : t('retryingLoad', `Retrying (${retryCount}/${maxRetries})...`);
+      showVideoError(retryMsg);
+      setTimeout(() => {
+        window.destroyHlsInstance();
+        if (isM3u8) {
+          window.playHlsStream(video, url, null, corsBypassUrl).then(() => {
+            video.play().catch(err => console.warn("Play failed:", err));
+          });
+        } else {
+          video.load();
+        }
+      }, retryDelay);
     };
 
-    video.oncanplay = () => {
-      hideVideoStatus();
-      succeed();
-    };
+    if (isM3u8) {
+      // HLS stream - use HLS handler
+      window.playHlsStream(video, url, () => {
+        hideVideoStatus();
+        video.play().catch(err => console.warn("Play failed:", err));
+        if (typeof resizeWindowToVideo === 'function') {
+          resizeWindowToVideo(video.videoWidth, video.videoHeight);
+        }
+        succeed();
+      }, corsBypassUrl).then(hlsSuccess => {
+        if (!hlsSuccess && !window.supportsNativeHLS()) {
+          showVideoError(t('hlsNotSupported', 'HLS streaming not supported'));
+          fail();
+        } else {
+          hasActiveSource = true;
+          hideControls();
 
-    video.onplaying = () => {
-      hideVideoStatus();
-      succeed();
-    };
-
-    video.onloadedmetadata = () => {
-      hideVideoStatus();
-      video.play().catch(err => console.warn("Play failed:", err));
-      if (typeof resizeWindowToVideo === 'function') {
-        resizeWindowToVideo(video.videoWidth, video.videoHeight);
+          video.onerror = () => doRetry();
+          video.oncanplay = () => { hideVideoStatus(); succeed(); };
+          video.onplaying = () => { hideVideoStatus(); succeed(); };
+        }
+      }).catch(err => {
+        console.error('[HLS] Playback error:', err);
+        fail();
+      });
+    } else {
+      // Non-HLS content - standard playback
+      // Apply CORS bypass
+      let videoSrc = url;
+      const isNetworkUrl = typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
+      if (isNetworkUrl && typeof applyCorsBypass === 'function') {
+        videoSrc = applyCorsBypass(url, corsBypass);
       }
-      succeed();
-    };
 
-    video.load();
+      video.src = videoSrc;
+      hasActiveSource = true;
+      hideControls();
+
+      let srcResetCount = 0;
+      const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
+
+      video.onerror = () => {
+        if (retryCount < maxRetries) {
+          ++retryCount;
+          ++srcResetCount;
+          const retryMsg = totalSources > 1
+            ? t('retryingSource', `Source ${sourceNum}/${totalSources} - Retry ${retryCount}/${maxRetries}`)
+            : t('retryingLoad', `Retrying (${retryCount}/${maxRetries})...`);
+          showVideoError(retryMsg);
+          setTimeout(() => {
+            // Only reset src after configured number of retries
+            if (retryBeforeSrcReset > 0 && srcResetCount >= retryBeforeSrcReset) {
+              srcResetCount = 0; // Reset the counter
+              const oldSrc = video.src;
+              video.src = "";
+              video.load();
+              video.src = oldSrc;
+            } else {
+              video.load();
+            }
+          }, retryDelay);
+        } else {
+          fail();
+        }
+      };
+
+      video.oncanplay = () => {
+        hideVideoStatus();
+        succeed();
+      };
+
+      video.onplaying = () => {
+        hideVideoStatus();
+        succeed();
+      };
+
+      video.onloadedmetadata = () => {
+        hideVideoStatus();
+        video.play().catch(err => console.warn("Play failed:", err));
+        if (typeof resizeWindowToVideo === 'function') {
+          resizeWindowToVideo(video.videoWidth, video.videoHeight);
+        }
+        succeed();
+      };
+
+      video.load();
+    }
 
     // Update UI
     playBtn.textContent = "⏸️";
@@ -1179,6 +1329,10 @@ function clearVideoSource() {
   hasActiveSource = false;
   clearVideoPreview();
   revokeBlobURL();
+  // Destroy HLS instance if active
+  if (typeof window.destroyHlsInstance === 'function') {
+    window.destroyHlsInstance();
+  }
 }
 // Make it globally accessible for embedded player
 window.clearVideoSource = clearVideoSource;
@@ -1198,6 +1352,10 @@ async function toggleStopBtn()
     npPlayBtn.textContent = playBtn.textContent;
     // Clear subtitles
     clearSubtitles();
+    // Destroy HLS instance if active
+    if (typeof window.destroyHlsInstance === 'function') {
+      window.destroyHlsInstance();
+    }
 
     navigator.mediaSession.metadata = new MediaMetadata({});
     document.title = `PWA Player`;
@@ -2239,6 +2397,7 @@ function updateSubtitlePosition(controlsVisible) {
   for (let i = 0; i != tracks.length; ++i) {
     const track = tracks[i];
     if (track.kind === 'subtitles' || track.kind === 'captions') {
+      if (!track.cues) continue; // Skip if cues not loaded yet
       for (let j = 0; j != track.cues.length; ++j) {
         const cue = track.cues[j];
         if (controlsVisible) {
