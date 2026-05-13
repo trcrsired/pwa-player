@@ -704,7 +704,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       // Handle video errors with retry for network URLs
       video.onerror = (e) => {
         const isNetworkUrl = typeof blobURL === 'string' && (blobURL.startsWith('http://') || blobURL.startsWith('https://'));
-        const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 256) : 0;
+        const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 8) : 0;
         const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
 
         if (isNetworkUrl && retryCount < maxRetries) {
@@ -757,7 +757,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       const filename = mediametadata.title;
       let retryCount = 0;
       let srcResetCount = 0; // Separate counter for src reset tracking
-      const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 256) : 0;
+      const maxRetries = isNetworkUrl ? (typeof getNetworkRetryCount === 'function' ? getNetworkRetryCount() : 8) : 0;
       const retryDelay = typeof getRetryDelay === 'function' ? getRetryDelay() : 0;
       const retryBeforeSrcReset = typeof getRetryBeforeSrcReset === 'function' ? getRetryBeforeSrcReset() : 8;
 
