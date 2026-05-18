@@ -263,7 +263,7 @@ class YouTubePlatform extends BasePlatform {
                 ? entryName
                 : videoData.title;
 
-            document.title = displayTitle + ' - PWA Player';
+            document.title = displayTitle;
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: displayTitle,
                 artist: videoData.author || 'YouTube',
