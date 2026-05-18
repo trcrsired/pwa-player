@@ -896,22 +896,6 @@ function applyCorsBypass(url, corsBypass) {
     return url;
 }
 
-// HLS.js preference setting - prefer hls.js over native HLS (default: true)
-const preferHlsJsInput = document.getElementById("preferHlsJs");
-
-if (preferHlsJsInput) {
-    preferHlsJsInput.checked = localStorage.getItem("preferHlsJs") !== "false"; // Default true
-    preferHlsJsInput.addEventListener("change", () => {
-        localStorage.setItem("preferHlsJs", preferHlsJsInput.checked ? "true" : "false");
-    });
-}
-
-function getPreferHlsJs() {
-    return localStorage.getItem("preferHlsJs") !== "false"; // Default true
-}
-window.getPreferHlsJs = getPreferHlsJs;
-window.getCorsBypassUrl = getCorsBypassUrl;
-
 // Network retry count setting
 const networkRetryInput = document.getElementById("networkRetryCount");
 

@@ -353,11 +353,6 @@
                     <input type="text" id="corsBypassUrl" class="setting-input" placeholder="http://localhost:8432/">
                 </label>
                 <p class="setting-hint" data-i18n="corsBypassHint">Server URL for IPTV streams that require CORS bypass. Leave empty if not needed.</p>
-                <label class="setting-toggle">
-                    <input type="checkbox" id="preferHlsJs" checked="checked">
-                    <span data-i18n="preferHlsJs">Prefer HLS.js over native HLS</span>
-                </label>
-                <p class="setting-hint" data-i18n="preferHlsJsHint">Use HLS.js library for HLS streaming instead of browser's native support. HLS.js provides more consistent playback across browsers and better error recovery. Disable to use native HLS (Safari/iOS).</p>
                 <label class="setting-label">
                     <span data-i18n="networkRetryCount">Retry Count</span>
                     <input type="number" id="networkRetryCount" class="setting-input-small" min="0">
@@ -503,8 +498,6 @@
         <script src="platforms/kick.js"></script>
         <script src="platforms/neteasemusic.js"></script>
         <script src="embeddedplayer.js"></script>
-        <!-- HLS.js support (lazy loaded at runtime for M3U8 streams) -->
-        <script src="hls.js"></script>
         <script src="player.js"></script>
         <script src="iptv.js" type="module"></script>
 
