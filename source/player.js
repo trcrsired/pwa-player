@@ -530,41 +530,50 @@ function updateTimeDisplay(txtct)
   }
 }
 
-// Try to auto-load subtitle from storage path
-async function tryAutoLoadSubtitleFromPath(entryPath) {
+// Try to auto-load sidecar files (subtitles + cover image) from storage path
+async function tryAutoLoadSidecars(entryPath) {
   if (!entryPath) return;
 
-  // Check if auto-load is enabled
-  if (typeof isAutoLoadSubtitleEnabled === 'function' && !isAutoLoadSubtitleEnabled()) {
-    return;
-  }
+  const subtitleEnabled = typeof isAutoLoadSubtitleEnabled === 'function' && isAutoLoadSubtitleEnabled();
+  const coverEnabled = typeof isAutoLoadCoverEnabled === 'function' && isAutoLoadCoverEnabled();
+  if (!subtitleEnabled && !coverEnabled) return;
 
   // Get the path without extension
   const lastDot = entryPath.lastIndexOf('.');
   if (lastDot === -1) return;
 
   const basePath = entryPath.substring(0, lastDot);
-// 1. Handle REMOTE_STORAGE (HTTP/HTTPS URLs)
+
+  // 1. Handle REMOTE_STORAGE (HTTP/HTTPS URLs)
   if (entryPath.startsWith('http://') || entryPath.startsWith('https://')) {
-    const vttUrl = basePath + '.vtt';
-    try {
-      // Use a HEAD request to check if the .vtt file actually exists
-      const response = await fetch(vttUrl, { method: 'HEAD', mode: "cors" });
-      if (response.ok) {
-        // If it exists, pass the URL directly to loadSubtitle
-        // Note: loadSubtitle must be able to handle a string URL
-        await loadSubtitle(vttUrl);
-        return;
+    // Try subtitle in parallel with cover
+    if (subtitleEnabled) {
+      const vttUrl = basePath + '.vtt';
+      try {
+        const response = await fetch(vttUrl, { method: 'HEAD', mode: "cors" });
+        if (response.ok) {
+          await loadSubtitle(vttUrl);
+        }
+      } catch (err) {
+        console.warn("Remote subtitle auto-load failed:", err);
       }
-    } catch (err) {
-      console.warn("Remote subtitle auto-load failed (likely CORS or 404):", err);
+    }
+    if (coverEnabled) {
+      const coverUrl = basePath + '.cover.webp';
+      try {
+        const response = await fetch(coverUrl, { method: 'HEAD', mode: "cors" });
+        if (response.ok) {
+          await setCoverFromUrl(coverUrl);
+        }
+      } catch (err) {
+        console.warn("Remote cover auto-load failed:", err);
+      }
     }
     return;
   }
 
   // Handle IndexedDB paths
   if (entryPath.startsWith('indexeddb://')) {
-    // Parse the path: indexeddb://idb/folder/filename.ext
     const pathParts = entryPath.replace('indexeddb://idb/', '').split('/');
     if (pathParts.length < 1) return;
 
@@ -572,20 +581,21 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
     const filename = pathParts[pathParts.length - 1];
     const baseFilename = filename.substring(0, filename.lastIndexOf('.'));
 
-    // Query IndexedDB for subtitle file in same folder
     try {
       const files = await window.idb_getFilesInFolder(folder);
       if (files) {
         for (const file of files) {
-          if (file.name === baseFilename + '.vtt') {
+          if (subtitleEnabled && file.name === baseFilename + '.vtt') {
             const vttFile = new File([file.blob], file.name, { type: file.type || 'text/vtt' });
             await loadSubtitle(vttFile);
-            return; // Success
+          }
+          if (coverEnabled && file.name === baseFilename + '.cover.webp') {
+            await setCoverFromBlob(file.blob);
           }
         }
       }
     } catch (err) {
-      // Subtitle not found in IndexedDB
+      // Sidecar files not found in IndexedDB
     }
     return;
   }
@@ -595,96 +605,30 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
     return;
   }
 
-  // Try .vtt
-  const vttExtensions = ['.vtt'];
-
-  for (const ext of vttExtensions) {
-    const vttPath = basePath + ext;
-
+  // Try subtitle (.vtt)
+  if (subtitleEnabled) {
     try {
-      const vttHandle = await storage_resolvePath(vttPath);
+      const vttHandle = await storage_resolvePath(basePath + '.vtt');
       if (vttHandle && vttHandle instanceof FileSystemFileHandle) {
         const file = await vttHandle.getFile();
         await loadSubtitle(file);
-        return; // Success, stop trying
       }
     } catch (err) {
-      // Subtitle file doesn't exist - try next extension
+      // Subtitle file doesn't exist
     }
   }
-}
 
-// Try to auto-load cover image from storage path
-async function tryAutoLoadCoverFromPath(entryPath) {
-  if (!entryPath) return;
-
-  // Check if auto-load is enabled
-  if (typeof isAutoLoadCoverEnabled === 'function' && !isAutoLoadCoverEnabled()) {
-    return;
-  }
-
-  // Get the path without extension
-  const lastDot = entryPath.lastIndexOf('.');
-  if (lastDot === -1) return;
-
-  const basePath = entryPath.substring(0, lastDot);
-
-  // Handle REMOTE_STORAGE (HTTP/HTTPS URLs)
-  if (entryPath.startsWith('http://') || entryPath.startsWith('https://')) {
-    const coverUrl = basePath + '.cover.webp';
+  // Try cover (.cover.webp)
+  if (coverEnabled) {
     try {
-      const response = await fetch(coverUrl, { method: 'HEAD', mode: "cors" });
-      if (response.ok) {
-        await setCoverFromUrl(coverUrl);
-        return;
+      const coverHandle = await storage_resolvePath(basePath + '.cover.webp');
+      if (coverHandle && coverHandle instanceof FileSystemFileHandle) {
+        const file = await coverHandle.getFile();
+        await setCoverFromBlob(file);
       }
     } catch (err) {
-      console.warn("Remote cover auto-load failed:", err);
+      // Cover file doesn't exist
     }
-    return;
-  }
-
-  // Handle IndexedDB paths
-  if (entryPath.startsWith('indexeddb://')) {
-    const pathParts = entryPath.replace('indexeddb://idb/', '').split('/');
-    if (pathParts.length < 1) return;
-
-    const folder = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : pathParts[0];
-    const filename = pathParts[pathParts.length - 1];
-    const baseFilename = filename.substring(0, filename.lastIndexOf('.'));
-
-    try {
-      const files = await window.idb_getFilesInFolder(folder);
-      if (files) {
-        for (const file of files) {
-          if (file.name === baseFilename + '.cover.webp') {
-            await setCoverFromBlob(file.blob);
-            return;
-          }
-        }
-      }
-    } catch (err) {
-      // Cover not found in IndexedDB
-    }
-    return;
-  }
-
-  // Handle navigator_storage and external_storage paths
-  if (!entryPath.startsWith('navigator_storage://') && !entryPath.startsWith('external_storage://')) {
-    return;
-  }
-
-  const coverPath = basePath + '.cover.webp';
-
-  try {
-    const coverHandle = await storage_resolvePath(coverPath);
-    if (coverHandle && coverHandle instanceof FileSystemFileHandle) {
-      const file = await coverHandle.getFile();
-      await setCoverFromBlob(file);
-      return;
-    }
-  } catch (err) {
-    // Cover file doesn't exist
   }
 }
 
@@ -699,14 +643,14 @@ async function setCoverFromUrl(url) {
   }
 }
 
-// Set cover from a Blob/File
+// Set cover from a Blob/File — always sets MediaSession artwork,
+// and shows full-window cover in the UI for audio-only files
 async function setCoverFromBlob(blob) {
   if (!blob || !currentMediaMetadata) return;
 
   const url = URL.createObjectURL(blob);
   currentCoverURL = url;
 
-  // Create an Image to get dimensions
   const img = new Image();
   img.onload = () => {
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -715,20 +659,22 @@ async function setCoverFromBlob(blob) {
       album: currentMediaMetadata.album || '',
       artwork: [{ src: url, type: 'image/webp', sizes: `${img.naturalWidth}x${img.naturalHeight}` }]
     });
+    // Show cover in UI (checks audio-only after metadata is available)
+    showAudioCover();
   };
   img.onerror = () => {
-    // Fallback without dimensions
     navigator.mediaSession.metadata = new MediaMetadata({
       title: currentMediaMetadata.title || '',
       artist: currentMediaMetadata.artist || '',
       album: currentMediaMetadata.album || '',
       artwork: [{ src: url, type: 'image/webp' }]
     });
+    showAudioCover();
   };
   img.src = url;
 }
 
-// Show/hide audio cover in the player UI (only for audio-only, fills the window)
+// Show/hide audio cover in the player UI (only for audio-only, fills the viewport)
 function showAudioCover() {
   const coverEl = document.getElementById("audioCover");
   if (!coverEl || !currentCoverURL) return;
@@ -739,12 +685,14 @@ function showAudioCover() {
 
   if (isAudioOnly) {
     coverEl.src = currentCoverURL;
-    coverEl.style.width = '100%';
-    coverEl.style.height = '100%';
-    coverEl.style.position = 'absolute';
+    coverEl.style.position = 'fixed';
     coverEl.style.top = '0';
     coverEl.style.left = '0';
+    coverEl.style.width = '100vw';
+    coverEl.style.height = '100vh';
     coverEl.style.objectFit = 'contain';
+    coverEl.style.zIndex = '1';
+    coverEl.style.background = 'black';
     coverEl.classList.remove("hidden");
   } else {
     hideAudioCover();
@@ -925,8 +873,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     // Try to auto-load subtitle for storage paths
     if (playlist?.entryPath) {
-      tryAutoLoadSubtitleFromPath(playlist.entryPath);
-      tryAutoLoadCoverFromPath(playlist.entryPath);
+      tryAutoLoadSidecars(playlist.entryPath);
     }
 
     if (playlist) {

@@ -84,16 +84,22 @@ python build/m3u8_to_channels.py
 - **Entry point**: `play_source(sourceobject, playlist)` → `play_source_internal(blobURL, mediametadata, sourceobject, playlist)` — this is the canonical playback path
 - **Embedded URLs** (YouTube, Spotify, etc.) are detected via `isEmbeddedUrl()` and routed to `playEmbeddedUrl()` instead
 - **Image files** are routed to `window.viewImage()` instead of video playback
-- **MediaSession**: `navigator.mediaSession.metadata` is set in `play_source_internal` with title/artist/album from the entry
-- **Subtitles**: auto-loaded via `tryAutoLoadSubtitleFromPath()` which looks for `.vtt` alongside the media file across HTTP, IndexedDB, and file system paths. The `isSubtitleInMediaSessionEnabled()` toggle controls whether subtitle text appears in MediaSession (using cuechange to update title/artist fields)
-- **Cover images**: auto-loaded via `tryAutoLoadCoverFromPath()` which looks for `.cover.webp` alongside the media file. Always set as MediaSession `artwork`. Shown full-window in the player UI only for audio-only files (detected by `videoWidth === 0` or `videoHeight === 0`)
-- **Cover files are excluded from storage listings** by `isCoverFile()` in `storage.js`, so they don't appear as separate items in bulk directory-add operations. Manual single-file play/add of `.cover.webp` is still allowed
+- **MediaSession**: `navigator.mediaSession.metadata` is set in `play_source_internal` with title/artist/album from the entry. When a cover image is loaded, `artwork` is added to the metadata
+- **Sidecar files** (subtitles + covers): auto-loaded via `tryAutoLoadSidecars()` which looks for `.vtt` and `.cover.webp` alongside the media file across HTTP, IndexedDB, and file system paths
+  - Subtitles: controlled by `isSubtitleInMediaSessionEnabled()` — subtitle text appears in MediaSession by replacing title/artist fields
+  - Covers: controlled by `isAutoLoadCoverEnabled()` — always set as MediaSession `artwork`, shown full-viewport for audio-only files (same detection as `speedAudioOnly`: `videoWidth === 0 || videoHeight === 0`)
+  - Cover display: `showAudioCover()` uses `position: fixed; inset: 0; z-index: 1` to fill the viewport on top of the video element
+- **Cover files are excluded from storage listings** by `isCoverFile()` in `storage.js`, so they don't appear as separate items in bulk directory-add operations or remote storage listings. Manual single-file play/add of `.cover.webp` is still allowed
 
 ## Key Helpers
 
+- `tryAutoLoadSidecars(entryPath)` — merged function that loads both `.vtt` subtitles and `.cover.webp` images alongside a media file
 - `isPlayableOrImageFile(name)` — filters for storage listings and bulk playlist adds; excludes `.cover.webp`
 - `isCoverFile(name)` — detects `*.cover.webp` files; used to exclude from listings but allow manual operations
 - `isImageFile(name)` — detects image extensions; used for routing and filtering
 - `isSubtitleFile(name)` — detects `.vtt` files; allows manual "load subtitle" menu action
+- `setCoverFromBlob(blob)` / `setCoverFromUrl(url)` — loads a cover image, sets MediaSession `artwork`, and calls `showAudioCover()`
+- `showAudioCover()` / `hideAudioCover()` — shows/hides the `#audioCover` element; only shown for audio-only files (no video dimensions), fills the viewport with `object-fit: contain`
+- `currentCoverURL` — global that stores the current cover image blob URL; `hideAudioCover()` sets it to null
 - `getMediaMetadataFromSource(sourceobject)` — resolves various source types (File, FileSystemFileHandle, URL, Blob, MediaSource) into `[source, blobURL, metadata]`
 
