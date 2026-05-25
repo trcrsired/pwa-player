@@ -115,6 +115,21 @@ function isAutoLoadSubtitleEnabled() {
     return localStorage.getItem("autoLoadSubtitle") !== "false";
 }
 
+// Auto-load cover image toggle
+const autoLoadCoverCheckbox = document.getElementById("autoLoadCover");
+
+// Load saved preference (default: true)
+autoLoadCoverCheckbox.checked = localStorage.getItem("autoLoadCover") !== "false";
+
+autoLoadCoverCheckbox.addEventListener("change", () => {
+    localStorage.setItem("autoLoadCover", autoLoadCoverCheckbox.checked ? "true" : "false");
+});
+
+// Helper function to check if auto-load cover is enabled
+function isAutoLoadCoverEnabled() {
+    return localStorage.getItem("autoLoadCover") !== "false";
+}
+
 // Auto-hide panel toggle
 const autoHidePanelCheckbox = document.getElementById("autoHidePanel");
 
@@ -1029,6 +1044,7 @@ function getProfileSettingsKeys() {
         "startupView",
         "subtitleInMediaSession",
         "autoLoadSubtitle",
+        "autoLoadCover",
         "autoHidePanel",
         "autoResizeWindow",
         "disableRotateBtn",
@@ -1080,6 +1096,7 @@ function createDefaultProfileData() {
             startupView: "player",
             subtitleInMediaSession: "true",
             autoLoadSubtitle: "true",
+            autoLoadCover: "true",
             autoHidePanel: "false",
             autoResizeWindow: "false",
             disableRotateBtn: "false",

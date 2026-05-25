@@ -230,6 +230,7 @@ const video = document.getElementById("player");
 let hasActiveSource = false;
 let currentBlobURL = null;
 let currentMediaMetadata = null; // Store original metadata for subtitle updates
+let currentCoverURL = null; // Store cover image URL for showing after metadata loads
 
 // Video status overlay elements
 const videoStatusOverlay = document.getElementById("videoStatusOverlay");
@@ -469,13 +470,17 @@ function clearSubtitles() {
     t.remove();
   });
   subtitleBtn.textContent = '📝';
-  // Restore original metadata with transparent artwork
+  // Restore original metadata without subtitle text, but preserve artwork if set
   if (currentMediaMetadata) {
-    navigator.mediaSession.metadata = new MediaMetadata({
+    const metadata = {
       title: currentMediaMetadata.title,
       artist: currentMediaMetadata.artist || '',
       album: currentMediaMetadata.album || ''
-    });
+    };
+    if (currentCoverURL) {
+      metadata.artwork = [{ src: currentCoverURL, type: 'image/webp' }];
+    }
+    navigator.mediaSession.metadata = new MediaMetadata(metadata);
   }
 }
 
@@ -609,6 +614,152 @@ async function tryAutoLoadSubtitleFromPath(entryPath) {
   }
 }
 
+// Try to auto-load cover image from storage path
+async function tryAutoLoadCoverFromPath(entryPath) {
+  if (!entryPath) return;
+
+  // Check if auto-load is enabled
+  if (typeof isAutoLoadCoverEnabled === 'function' && !isAutoLoadCoverEnabled()) {
+    return;
+  }
+
+  // Get the path without extension
+  const lastDot = entryPath.lastIndexOf('.');
+  if (lastDot === -1) return;
+
+  const basePath = entryPath.substring(0, lastDot);
+
+  // Handle REMOTE_STORAGE (HTTP/HTTPS URLs)
+  if (entryPath.startsWith('http://') || entryPath.startsWith('https://')) {
+    const coverUrl = basePath + '.cover.webp';
+    try {
+      const response = await fetch(coverUrl, { method: 'HEAD', mode: "cors" });
+      if (response.ok) {
+        await setCoverFromUrl(coverUrl);
+        return;
+      }
+    } catch (err) {
+      console.warn("Remote cover auto-load failed:", err);
+    }
+    return;
+  }
+
+  // Handle IndexedDB paths
+  if (entryPath.startsWith('indexeddb://')) {
+    const pathParts = entryPath.replace('indexeddb://idb/', '').split('/');
+    if (pathParts.length < 1) return;
+
+    const folder = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : pathParts[0];
+    const filename = pathParts[pathParts.length - 1];
+    const baseFilename = filename.substring(0, filename.lastIndexOf('.'));
+
+    try {
+      const files = await window.idb_getFilesInFolder(folder);
+      if (files) {
+        for (const file of files) {
+          if (file.name === baseFilename + '.cover.webp') {
+            await setCoverFromBlob(file.blob);
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      // Cover not found in IndexedDB
+    }
+    return;
+  }
+
+  // Handle navigator_storage and external_storage paths
+  if (!entryPath.startsWith('navigator_storage://') && !entryPath.startsWith('external_storage://')) {
+    return;
+  }
+
+  const coverPath = basePath + '.cover.webp';
+
+  try {
+    const coverHandle = await storage_resolvePath(coverPath);
+    if (coverHandle && coverHandle instanceof FileSystemFileHandle) {
+      const file = await coverHandle.getFile();
+      await setCoverFromBlob(file);
+      return;
+    }
+  } catch (err) {
+    // Cover file doesn't exist
+  }
+}
+
+// Set cover from a URL (for remote sources)
+async function setCoverFromUrl(url) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    await setCoverFromBlob(blob);
+  } catch (err) {
+    console.warn("Failed to load cover from URL:", err);
+  }
+}
+
+// Set cover from a Blob/File
+async function setCoverFromBlob(blob) {
+  if (!blob || !currentMediaMetadata) return;
+
+  const url = URL.createObjectURL(blob);
+  currentCoverURL = url;
+
+  // Create an Image to get dimensions
+  const img = new Image();
+  img.onload = () => {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentMediaMetadata.title || '',
+      artist: currentMediaMetadata.artist || '',
+      album: currentMediaMetadata.album || '',
+      artwork: [{ src: url, type: 'image/webp', sizes: `${img.naturalWidth}x${img.naturalHeight}` }]
+    });
+  };
+  img.onerror = () => {
+    // Fallback without dimensions
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentMediaMetadata.title || '',
+      artist: currentMediaMetadata.artist || '',
+      album: currentMediaMetadata.album || '',
+      artwork: [{ src: url, type: 'image/webp' }]
+    });
+  };
+  img.src = url;
+}
+
+// Show/hide audio cover in the player UI (only for audio-only, fills the window)
+function showAudioCover() {
+  const coverEl = document.getElementById("audioCover");
+  if (!coverEl || !currentCoverURL) return;
+
+  const vW = video.videoWidth;
+  const vH = video.videoHeight;
+  const isAudioOnly = !vW || !vH || vW === 0 || vH === 0;
+
+  if (isAudioOnly) {
+    coverEl.src = currentCoverURL;
+    coverEl.style.width = '100%';
+    coverEl.style.height = '100%';
+    coverEl.style.position = 'absolute';
+    coverEl.style.top = '0';
+    coverEl.style.left = '0';
+    coverEl.style.objectFit = 'contain';
+    coverEl.classList.remove("hidden");
+  } else {
+    hideAudioCover();
+  }
+}
+
+function hideAudioCover() {
+  const coverEl = document.getElementById("audioCover");
+  if (coverEl) {
+    coverEl.classList.add("hidden");
+    coverEl.removeAttribute("src");
+  }
+  currentCoverURL = null;
+}
+
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
   // Check if this is an embedded URL (YouTube, Vimeo, etc.) - use embedded player instead
   if (typeof playEmbeddedUrl === 'function' && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
@@ -652,6 +803,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     // Clear previous subtitles
     clearSubtitles();
+    hideAudioCover();
 
     // Reset video position to start
     video.currentTime = 0;
@@ -734,6 +886,8 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       if (typeof resizeWindowToVideo === 'function') {
         resizeWindowToVideo(video.videoWidth, video.videoHeight);
       }
+      // Show cover image in UI only for audio-only files
+      showAudioCover();
     };
 
     // Ensure video loads the new source
@@ -772,6 +926,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
     // Try to auto-load subtitle for storage paths
     if (playlist?.entryPath) {
       tryAutoLoadSubtitleFromPath(playlist.entryPath);
+      tryAutoLoadCoverFromPath(playlist.entryPath);
     }
 
     if (playlist) {
@@ -1179,6 +1334,7 @@ function clearVideoSource() {
   hasActiveSource = false;
   clearVideoPreview();
   revokeBlobURL();
+  hideAudioCover();
 }
 // Make it globally accessible for embedded player
 window.clearVideoSource = clearVideoSource;
@@ -1198,6 +1354,7 @@ async function toggleStopBtn()
     npPlayBtn.textContent = playBtn.textContent;
     // Clear subtitles
     clearSubtitles();
+    hideAudioCover();
 
     navigator.mediaSession.metadata = new MediaMetadata({});
     document.title = `PWA Player`;
@@ -1470,14 +1627,21 @@ function updateMediaSessionSubtitle(subtitleText) {
       artist: remainingLines,
       album: currentMediaMetadata.album || ''
     };
+    if (currentCoverURL) {
+      updatedMetadata.artwork = [{ src: currentCoverURL, type: 'image/webp' }];
+    }
     navigator.mediaSession.metadata = new MediaMetadata(updatedMetadata);
   } else {
     // No active subtitle - show space to prevent Android showing URL
-    navigator.mediaSession.metadata = new MediaMetadata({
+    const metadata = {
       title: ' ',
       artist: ' ',
       album: currentMediaMetadata.album || ''
-    });
+    };
+    if (currentCoverURL) {
+      metadata.artwork = [{ src: currentCoverURL, type: 'image/webp' }];
+    }
+    navigator.mediaSession.metadata = new MediaMetadata(metadata);
   }
 }
 
@@ -1496,6 +1660,22 @@ function setupSubtitleMediaSession(textTrack) {
     }
   });
 }
+
+// Force subtitle MediaSession update on seek (browsers may not fire cuechange on seek)
+video.addEventListener('seeked', () => {
+  const tracks = video.textTracks;
+  for (let i = 0; i < tracks.length; i++) {
+    if (tracks[i].mode === 'showing') {
+      const activeCues = tracks[i].activeCues;
+      if (activeCues && activeCues.length > 0) {
+        updateMediaSessionSubtitle(activeCues[0].text || '');
+      } else {
+        updateMediaSessionSubtitle('');
+      }
+      break;
+    }
+  }
+});
 
 // Subtitle loader
 async function loadSubtitle(file) {

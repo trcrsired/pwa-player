@@ -23,6 +23,8 @@
         <div id="playerContainer">
             <div id="playerWrapper">
                 <video id="player" crossorigin="anonymous" autoplay></video>
+                <!-- Audio cover image (shown for audio-only webm files) -->
+                <img id="audioCover" class="hidden" style="max-width:100%;max-height:100%;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
                 <!-- Image display for image viewing -->
                 <img id="imageDisplay" class="hidden" style="max-width:100%;max-height:100%;object-fit:contain;cursor:pointer;user-select:none;touch-action:none;">
                 <!-- Embedded player container (YouTube, etc.) -->
@@ -261,6 +263,10 @@
                 <label class="setting-toggle">
                     <input type="checkbox" id="autoLoadSubtitle" checked>
                     <span data-i18n="autoLoadSubtitles">Auto-load subtitles with same filename</span>
+                </label>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="autoLoadCover" checked>
+                    <span>Auto-load cover image (.cover.webp) for audio files</span>
                 </label>
 
                 <h3 data-i18n="mediaSession">Media Session</h3>

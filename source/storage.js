@@ -556,12 +556,22 @@ function isImageFile(name) {
 
 function isPlayableOrImageFile(name) {
     // Check if file can be played or viewed (media + images)
+    // Exclude .cover.webp — these are auto-attached, never shown as standalone items
+    if (isCoverFile(name)) return false;
     return isPlaylistFile(name) || isImageFile(name);
+}
+
+function isCoverFile(name) {
+    // Check if file is a cover image (e.g., song.webm → song.cover.webp)
+    if (typeof name !== "string") return false;
+    const lower = name.trim().toLowerCase();
+    return lower.endsWith(".cover.webp");
 }
 
 // Expose isImageFile globally for other modules
 window.isImageFile = isImageFile;
 window.isPlayableOrImageFile = isPlayableOrImageFile;
+window.isCoverFile = isCoverFile;
 
 // ============================================================
 // Copy a directory (from SAF) into private storage
@@ -2007,7 +2017,7 @@ function showSaveLocationSubMenu(entry, dirName, parentButton) {
 function showStorageFileMenu(entry, name, handle, fullPath, button) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
-    const isPlayable = isPlayableOrImageFile(name);
+    const isPlayable = isPlayableOrImageFile(name) || isCoverFile(name);
     const isSubtitle = isSubtitleFile(name);
 
     const menuItems = [];
@@ -2050,7 +2060,9 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
 
             const actionisplay = action === "play";
             if (actionisplay || action === "play-keep-open") {
-                if (isPlayableOrImageFile(name)) {
+                // Allow cover files for manual play/viewing
+                const canPlay = isPlayableOrImageFile(name) || isCoverFile(name);
+                if (canPlay) {
                     let entryPath;
                     if (isRemote)
                     {
@@ -2072,7 +2084,9 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
             }
 
             if (action === "add") {
-                if (!isPlayableOrImageFile(name)) {
+                // Allow cover files for manual single-file adds
+                const canAdd = isPlayableOrImageFile(name) || isCoverFile(name);
+                if (!canAdd) {
                     alert(t('fileCannotBeAdded', "This file type cannot be added to playlist."));
                     closeMenu();
                     return;
@@ -2361,7 +2375,7 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
 
     const fullPath = currentPath ? `${currentPath}/${name}` : name;
 
-    const isPlayable = isPlayableOrImageFile(name);
+    const isPlayable = isPlayableOrImageFile(name) || isCoverFile(name);
     const isSubtitle = isSubtitleFile(name);
 
     li.innerHTML = `
@@ -2435,7 +2449,7 @@ function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "
     const li = document.createElement("li");
     li.className = "storage-file-item";
 
-    const isPlayable = isPlayableOrImageFile(name);
+    const isPlayable = isPlayableOrImageFile(name) || isCoverFile(name);
     const isSubtitle = isSubtitleFile(name);
 
     // Build full path: indexeddb://idb/folder/filename.ext
@@ -2505,7 +2519,7 @@ function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "
 function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
-    const isPlayable = isPlayableOrImageFile(name);
+    const isPlayable = isPlayableOrImageFile(name) || isCoverFile(name);
     const isSubtitle = isSubtitleFile(name);
 
     // Build full path
@@ -2548,7 +2562,8 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
             const action = item.dataset.action;
 
             if (action === "play" || action === "play-keep-open") {
-                if (isPlayableOrImageFile(name)) {
+                const canPlay = isPlayableOrImageFile(name) || isCoverFile(name);
+                if (canPlay) {
                     try {
                         const file = new File([fileEntry.blob], fileEntry.name, { type: fileEntry.type || "application/octet-stream" });
                         await play_source(file, { entryPath });
@@ -2567,7 +2582,9 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
             }
 
             if (action === "add") {
-                if (!isPlayableOrImageFile(name)) {
+                // Allow cover files for manual single-file adds
+                const canAdd = isPlayableOrImageFile(name) || isCoverFile(name);
+                if (!canAdd) {
                     alert(t('fileCannotBeAdded', "This file type cannot be added to playlist."));
                     closeMenu();
                     return;
@@ -3458,7 +3475,7 @@ function parseRemoteDirectoryListing(htmlText, baseUrl) {
 
         if (isDir) {
             dirs.push({ name });
-        } else if (isPlayableOrImageFile(name) || isSubtitleFile(name)) {
+        } else if ((isPlayableOrImageFile(name) || isSubtitleFile(name)) && !isCoverFile(name)) {
             files.push({
                 name,
                 url: url.href
