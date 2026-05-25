@@ -2,7 +2,7 @@ const settingsYearEl = document.getElementById("settingsYear");
 settingsYearEl.textContent = `2025–${new Date().getFullYear()}`;
 
 // Default network retry count (used across the project)
-const DEFAULT_NETWORK_RETRY_COUNT = 8;
+const DEFAULT_NETWORK_RETRY_COUNT = 256;
 const DEFAULT_RETRY_DELAY = 0; // 0ms - retry immediately
 const DEFAULT_RETRY_BEFORE_SRC_RESET = 8; // Reset src after this many retries
 
@@ -895,22 +895,6 @@ function applyCorsBypass(url, corsBypass) {
     }
     return url;
 }
-
-// HLS.js preference setting - prefer hls.js over native HLS (default: true)
-const preferHlsJsInput = document.getElementById("preferHlsJs");
-
-if (preferHlsJsInput) {
-    preferHlsJsInput.checked = localStorage.getItem("preferHlsJs") !== "false"; // Default true
-    preferHlsJsInput.addEventListener("change", () => {
-        localStorage.setItem("preferHlsJs", preferHlsJsInput.checked ? "true" : "false");
-    });
-}
-
-function getPreferHlsJs() {
-    return localStorage.getItem("preferHlsJs") !== "false"; // Default true
-}
-window.getPreferHlsJs = getPreferHlsJs;
-window.getCorsBypassUrl = getCorsBypassUrl;
 
 // Network retry count setting
 const networkRetryInput = document.getElementById("networkRetryCount");

@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "438";
+const PWAPLAYER_VERSION = "440";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "./",
@@ -23,7 +23,6 @@ const urlsToCache = [
   "./locales/en.js",
   "./locales/zhcn.js",
   "./locales/ja.js",
-  "./hls.js",
   // Platform support for embedded players
   "./platforms/base.js",
   "./platforms/youtube.js",
@@ -37,11 +36,6 @@ const urlsToCache = [
   "./platforms/applemusic.js",
   "./platforms/kick.js",
   "./platforms/neteasemusic.js"
-];
-
-// CDN URLs to cache at runtime (when first fetched)
-const cdnUrlsToCache = [
-  "https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"
 ];
 
 self.addEventListener("install", event => {
@@ -86,26 +80,10 @@ We treat .local, .lan, .internal for future expansions
     return; // Let browser handle LAN traffic
   }
 
-  // Check if this is a CDN URL we want to cache (like hls.js)
-  const isCdnCacheable = cdnUrlsToCache.some(cdnUrl =>
-    event.request.url.startsWith(cdnUrl) ||
-    url.href.startsWith(cdnUrl.split('@')[0]) // Match without version for hls.js updates
-  );
-
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
-
-      return fetch(event.request).then(response => {
-        // Cache successful CDN responses for future use
-        if (isCdnCacheable && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return response;
-      }).catch(() => {
+      return fetch(event.request).catch(() => {
         return new Response("Offline", { status: 503 });
       });
     })
