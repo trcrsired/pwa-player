@@ -88,8 +88,9 @@ python build/m3u8_to_channels.py
 - **Sidecar files** (subtitles + covers): auto-loaded via `tryAutoLoadSidecars()` which looks for `.vtt` and `.cover.webp` alongside the media file across HTTP, IndexedDB, and file system paths
   - Subtitles: controlled by `isSubtitleInMediaSessionEnabled()` — subtitle text appears in MediaSession by replacing title/artist fields
   - Covers: controlled by `isAutoLoadCoverEnabled()` — always set as MediaSession `artwork`, shown full-viewport for audio-only files (same detection as `speedAudioOnly`: `videoWidth === 0 || videoHeight === 0`)
-  - Cover display: `showAudioCover()` uses `position: fixed; inset: 0; z-index: 1` to fill the viewport on top of the video element
-- **Cover files are excluded from storage listings** by `isCoverFile()` in `storage.js`, so they don't appear as separate items in bulk directory-add operations or remote storage listings. Manual single-file play/add of `.cover.webp` is still allowed
+  - Cover display: `showAudioCover()` uses `position: absolute; inset: 0` within `#playerWrapper` to fill the viewport on top of the video element. Video element gets `position: relative; z-index: 1; background: transparent` so subtitles render above the cover. Cover uses `object-fit: contain` for correct display on any screen orientation.
+- **Cover files are excluded from storage listings** by `isCoverFile()` in `storage.js` — `isPlayableOrImageFile()` returns `false` for `.cover.webp`, so they don't appear in bulk directory-add operations. Manual single-file play/add of `.cover.webp` is still allowed in menu actions (each handler checks `isCoverFile()` explicitly and permits it).
+- **Remote storage listing is unfiltered** — `parseRemoteDirectoryListing()` no longer restricts to playable/image/subtitle files; it shows all files for consistency with external/navigator storage. Cover file exclusion still applies via `isPlayableOrImageFile()` when remote entries are used in other contexts.
 
 ## Key Helpers
 
@@ -102,4 +103,6 @@ python build/m3u8_to_channels.py
 - `showAudioCover()` / `hideAudioCover()` — shows/hides the `#audioCover` element; only shown for audio-only files (no video dimensions), fills the viewport with `object-fit: contain`
 - `currentCoverURL` — global that stores the current cover image blob URL; `hideAudioCover()` sets it to null
 - `getMediaMetadataFromSource(sourceobject)` — resolves various source types (File, FileSystemFileHandle, URL, Blob, MediaSource) into `[source, blobURL, metadata]`
+- **Subtitle persistence on seek**: A `seeked` event listener on the video element forces a MediaSession subtitle update after seeking, so stale subtitle text doesn't linger. `clearSubtitles()` and `updateMediaSessionSubtitle()` preserve the existing `artwork` when updating subtitle state.
+- **`clearVideoSource()` and `toggleStopBtn()`** both call `hideAudioCover()` to ensure the cover is hidden when playback stops or sources are cleared.
 

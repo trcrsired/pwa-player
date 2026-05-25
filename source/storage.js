@@ -3475,7 +3475,7 @@ function parseRemoteDirectoryListing(htmlText, baseUrl) {
 
         if (isDir) {
             dirs.push({ name });
-        } else if ((isPlayableOrImageFile(name) || isSubtitleFile(name)) && !isCoverFile(name)) {
+        } else {
             files.push({
                 name,
                 url: url.href
