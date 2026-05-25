@@ -674,7 +674,7 @@ async function setCoverFromBlob(blob) {
   img.src = url;
 }
 
-// Show/hide audio cover in the player UI (only for audio-only, fills the viewport)
+// Show/hide audio cover in the player UI (only for audio-only)
 function showAudioCover() {
   const coverEl = document.getElementById("audioCover");
   if (!coverEl || !currentCoverURL) return;
@@ -685,15 +685,9 @@ function showAudioCover() {
 
   if (isAudioOnly) {
     coverEl.src = currentCoverURL;
-    coverEl.style.position = 'fixed';
-    coverEl.style.top = '0';
-    coverEl.style.left = '0';
-    coverEl.style.width = '100vw';
-    coverEl.style.height = '100vh';
-    coverEl.style.objectFit = 'contain';
-    coverEl.style.zIndex = '1';
-    coverEl.style.background = 'black';
     coverEl.classList.remove("hidden");
+    // Make video background transparent so cover (behind it) is visible
+    video.style.background = 'transparent';
   } else {
     hideAudioCover();
   }
@@ -705,6 +699,7 @@ function hideAudioCover() {
     coverEl.classList.add("hidden");
     coverEl.removeAttribute("src");
   }
+  video.style.background = '';
   currentCoverURL = null;
 }
 
