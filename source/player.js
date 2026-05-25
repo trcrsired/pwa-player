@@ -686,6 +686,9 @@ function showAudioCover() {
   if (isAudioOnly) {
     coverEl.src = currentCoverURL;
     coverEl.classList.remove("hidden");
+    // Video element above cover so subtitles render on top
+    video.style.position = 'relative';
+    video.style.zIndex = '1';
     // Make video background transparent so cover (behind it) is visible
     video.style.background = 'transparent';
   } else {
@@ -699,6 +702,8 @@ function hideAudioCover() {
     coverEl.classList.add("hidden");
     coverEl.removeAttribute("src");
   }
+  video.style.position = '';
+  video.style.zIndex = '';
   video.style.background = '';
   currentCoverURL = null;
 }
