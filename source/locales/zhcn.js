@@ -145,7 +145,7 @@ const ZHCN_TRANSLATIONS = {
     mediaSession: "媒体会话",
     showSubtitlesInMediaSession: "在锁屏界面显示字幕",
     subtitles: "字幕",
-    autoLoadSubtitles: "自动加载同名子幕文件",
+    autoLoadSubtitles: "自动加载同名子幕文件 (.vtt)",
     autoLoadCovers: "自动加载同名封面图文件（.cover.webp）",
     behavior: "行为",
     autoHidePanel: "播放后隐藏面板",

@@ -142,7 +142,7 @@ const JA_TRANSLATIONS = {
     mediaSession: "メディアセッション",
     showSubtitlesInMediaSession: "ロック画面に字幕を表示",
     subtitles: "字幕",
-    autoLoadSubtitles: "同名の字幕ファイルを自動読み込み",
+    autoLoadSubtitles: "同名の字幕ファイルを自動読み込み (.vtt)",
     autoLoadCovers: "同名のカバー画像ファイルを自動読み込み（.cover.webp）",
     behavior: "動作",
     autoHidePanel: "再生後にパネルを非表示",

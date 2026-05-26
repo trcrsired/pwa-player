@@ -145,7 +145,7 @@ const EN_TRANSLATIONS = {
     mediaSession: "Media Session",
     showSubtitlesInMediaSession: "Show subtitles in lock screen",
     subtitles: "Subtitles",
-    autoLoadSubtitles: "Auto-load subtitles with same filename",
+    autoLoadSubtitles: "Auto-load subtitles with same filename (.vtt)",
     autoLoadCovers: "Auto-load cover images with same filename (.cover.webp)",
     behavior: "Behavior",
     autoHidePanel: "Hide panel after playing",
