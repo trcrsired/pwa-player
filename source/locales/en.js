@@ -146,6 +146,7 @@ const EN_TRANSLATIONS = {
     showSubtitlesInMediaSession: "Show subtitles in lock screen",
     subtitles: "Subtitles",
     autoLoadSubtitles: "Auto-load subtitles with same filename",
+    autoLoadCovers: "Auto-load cover images with same filename (.cover.webp)",
     behavior: "Behavior",
     autoHidePanel: "Hide panel after playing",
     autoResizeWindow: "Resize window to video size",
