@@ -49,8 +49,10 @@ class YouTubePlatform extends BasePlatform {
             // /embed/VIDEO_ID or /v/VIDEO_ID or /short/VIDEO_ID
             if (urlObj.pathname.startsWith('/embed/') ||
                 urlObj.pathname.startsWith('/v/') ||
-                urlObj.pathname.startsWith('/short/') ||
-                urlObj.pathname.startsWith('/live/')) {
+                urlObj.pathname.startsWith('/shorts/') ||
+                urlObj.pathname.startsWith('/live/') ||
+                urlObj.pathname.startsWith('/short/')
+                ) {
                 return urlObj.pathname.split('/')[2]?.split('?')[0];
             }
         } catch (e) {
