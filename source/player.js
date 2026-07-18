@@ -531,43 +531,47 @@ function updateTimeDisplay(txtct)
 }
 
 // Try to auto-load sidecar files (subtitles + cover image) from storage path
+function getSubtitleSidecarPaths(basePath) {
+  const mode = typeof getSubtitleAutoLoadMode === 'function' ? getSubtitleAutoLoadMode() : 'both';
+  if (mode === 'off') return [];
+
+  const lang = typeof getSubtitleLanguage === 'function' ? getSubtitleLanguage() : '';
+  const langVtt = lang ? basePath + '.' + lang + '.vtt' : null;
+
+  if (mode === 'plain') return [basePath + '.vtt'];
+  if (mode === 'lang') return langVtt ? [langVtt] : [];
+  if (mode === 'both') {
+    const paths = [];
+    if (langVtt) paths.push(langVtt);
+    paths.push(basePath + '.vtt');
+    return paths;
+  }
+  return [];
+}
+
 async function tryAutoLoadSidecars(entryPath) {
   if (!entryPath) return;
-
-  const subtitleEnabled = typeof isAutoLoadSubtitleEnabled === 'function' && isAutoLoadSubtitleEnabled();
-  const coverEnabled = typeof isAutoLoadCoverEnabled === 'function' && isAutoLoadCoverEnabled();
-  if (!subtitleEnabled && !coverEnabled) return;
-
-  // Get the path without extension
   const lastDot = entryPath.lastIndexOf('.');
   if (lastDot === -1) return;
-
   const basePath = entryPath.substring(0, lastDot);
 
-  // 1. Handle REMOTE_STORAGE (HTTP/HTTPS URLs)
+  const coverEnabled = typeof isAutoLoadCoverEnabled === 'function' && isAutoLoadCoverEnabled();
+  const subtitlePaths = getSubtitleSidecarPaths(basePath);
+  if (!subtitlePaths.length && !coverEnabled) return;
+
+  // Handle REMOTE_STORAGE (HTTP/HTTPS URLs)
   if (entryPath.startsWith('http://') || entryPath.startsWith('https://')) {
-    // Try subtitle in parallel with cover
-    if (subtitleEnabled) {
-      const vttUrl = basePath + '.vtt';
+    for (const vttUrl of subtitlePaths) {
       try {
-        const response = await fetch(vttUrl, { method: 'HEAD', mode: "cors" });
-        if (response.ok) {
-          await loadSubtitle(vttUrl);
-        }
-      } catch (err) {
-        console.warn("Remote subtitle auto-load failed:", err);
-      }
+        const r = await fetch(vttUrl, { method: 'HEAD', mode: "cors" });
+        if (r.ok) { await loadSubtitle(vttUrl); break; }
+      } catch (e) {}
     }
     if (coverEnabled) {
-      const coverUrl = basePath + '.cover.webp';
       try {
-        const response = await fetch(coverUrl, { method: 'HEAD', mode: "cors" });
-        if (response.ok) {
-          await setCoverFromUrl(coverUrl);
-        }
-      } catch (err) {
-        console.warn("Remote cover auto-load failed:", err);
-      }
+        const r = await fetch(basePath + '.cover.webp', { method: 'HEAD', mode: "cors" });
+        if (r.ok) await setCoverFromUrl(basePath + '.cover.webp');
+      } catch (e) {}
     }
     return;
   }
@@ -576,59 +580,42 @@ async function tryAutoLoadSidecars(entryPath) {
   if (entryPath.startsWith('indexeddb://')) {
     const pathParts = entryPath.replace('indexeddb://idb/', '').split('/');
     if (pathParts.length < 1) return;
-
     const folder = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : pathParts[0];
     const filename = pathParts[pathParts.length - 1];
     const baseFilename = filename.substring(0, filename.lastIndexOf('.'));
+    const idbTargets = subtitlePaths.map(p => baseFilename + p.slice(basePath.length));
 
     try {
       const files = await window.idb_getFilesInFolder(folder);
       if (files) {
-        for (const file of files) {
-          if (subtitleEnabled && file.name === baseFilename + '.vtt') {
-            const vttFile = new File([file.blob], file.name, { type: file.type || 'text/vtt' });
-            await loadSubtitle(vttFile);
-          }
-          if (coverEnabled && file.name === baseFilename + '.cover.webp') {
-            await setCoverFromBlob(file.blob);
-          }
+        for (const target of idbTargets) {
+          const f = files.find(x => x.name === target);
+          if (f) { await loadSubtitle(new File([f.blob], f.name, { type: f.type || 'text/vtt' })); break; }
+        }
+        if (coverEnabled) {
+          const cf = files.find(x => x.name === baseFilename + '.cover.webp');
+          if (cf) await setCoverFromBlob(cf.blob);
         }
       }
-    } catch (err) {
-      // Sidecar files not found in IndexedDB
-    }
+    } catch (e) {}
     return;
   }
 
   // Handle navigator_storage and external_storage paths
-  if (!entryPath.startsWith('navigator_storage://') && !entryPath.startsWith('external_storage://')) {
-    return;
-  }
+  if (!entryPath.startsWith('navigator_storage://') && !entryPath.startsWith('external_storage://')) return;
 
-  // Try subtitle (.vtt)
-  if (subtitleEnabled) {
+  for (const vttPath of subtitlePaths) {
     try {
-      const vttHandle = await storage_resolvePath(basePath + '.vtt');
-      if (vttHandle && vttHandle instanceof FileSystemFileHandle) {
-        const file = await vttHandle.getFile();
-        await loadSubtitle(file);
-      }
-    } catch (err) {
-      // Subtitle file doesn't exist
-    }
+      const h = await storage_resolvePath(vttPath);
+      if (h && h instanceof FileSystemFileHandle) { await loadSubtitle(await h.getFile()); break; }
+    } catch (e) {}
   }
 
-  // Try cover (.cover.webp)
   if (coverEnabled) {
     try {
-      const coverHandle = await storage_resolvePath(basePath + '.cover.webp');
-      if (coverHandle && coverHandle instanceof FileSystemFileHandle) {
-        const file = await coverHandle.getFile();
-        await setCoverFromBlob(file);
-      }
-    } catch (err) {
-      // Cover file doesn't exist
-    }
+      const h = await storage_resolvePath(basePath + '.cover.webp');
+      if (h && h instanceof FileSystemFileHandle) await setCoverFromBlob(await h.getFile());
+    } catch (e) {}
   }
 }
 

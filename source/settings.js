@@ -100,19 +100,21 @@ function isSubtitleInMediaSessionEnabled() {
     return localStorage.getItem("subtitleInMediaSession") !== "false";
 }
 
-// Auto-load subtitle toggle
-const autoLoadSubtitleCheckbox = document.getElementById("autoLoadSubtitle");
+// Subtitle auto-load mode: off, plain (only .vtt), lang (only .<lang>.vtt), both (try lang first, fallback to plain)
+const subtitleAutoLoadModeSelect = document.getElementById("subtitleAutoLoadMode");
 
-// Load saved preference (default: true)
-autoLoadSubtitleCheckbox.checked = localStorage.getItem("autoLoadSubtitle") !== "false";
+subtitleAutoLoadModeSelect.value = localStorage.getItem("subtitleAutoLoadMode") || "both";
 
-autoLoadSubtitleCheckbox.addEventListener("change", () => {
-    localStorage.setItem("autoLoadSubtitle", autoLoadSubtitleCheckbox.checked ? "true" : "false");
+subtitleAutoLoadModeSelect.addEventListener("change", () => {
+    localStorage.setItem("subtitleAutoLoadMode", subtitleAutoLoadModeSelect.value);
 });
 
-// Helper function to check if auto-load subtitle is enabled
+function getSubtitleAutoLoadMode() {
+    return localStorage.getItem("subtitleAutoLoadMode") || "both";
+}
+
 function isAutoLoadSubtitleEnabled() {
-    return localStorage.getItem("autoLoadSubtitle") !== "false";
+    return getSubtitleAutoLoadMode() !== "off";
 }
 
 // Auto-load cover image toggle
@@ -128,6 +130,19 @@ autoLoadCoverCheckbox.addEventListener("change", () => {
 // Helper function to check if auto-load cover is enabled
 function isAutoLoadCoverEnabled() {
     return localStorage.getItem("autoLoadCover") !== "false";
+}
+
+// Subtitle language preference
+const subtitleLanguageInput = document.getElementById("subtitleLanguage");
+
+subtitleLanguageInput.value = localStorage.getItem("subtitleLanguage") || "en";
+
+subtitleLanguageInput.addEventListener("change", () => {
+    localStorage.setItem("subtitleLanguage", subtitleLanguageInput.value.trim());
+});
+
+function getSubtitleLanguage() {
+    return (localStorage.getItem("subtitleLanguage") || "en").trim();
 }
 
 // Auto-hide panel toggle
@@ -1043,8 +1058,9 @@ function getProfileSettingsKeys() {
         "language",
         "startupView",
         "subtitleInMediaSession",
-        "autoLoadSubtitle",
+        "subtitleAutoLoadMode",
         "autoLoadCover",
+        "subtitleLanguage",
         "autoHidePanel",
         "autoResizeWindow",
         "disableRotateBtn",
@@ -1095,7 +1111,7 @@ function createDefaultProfileData() {
             language: "en",
             startupView: "player",
             subtitleInMediaSession: "true",
-            autoLoadSubtitle: "true",
+            subtitleAutoLoadMode: "both",
             autoLoadCover: "true",
             autoHidePanel: "false",
             autoResizeWindow: "false",
@@ -1181,8 +1197,8 @@ async function applyProfileData(profileData) {
     const startupViewSelect = document.getElementById("startupViewSelect");
     if (startupViewSelect) startupViewSelect.value = localStorage.getItem("startupView") || "player";
 
-    const autoLoadSubtitle = document.getElementById("autoLoadSubtitle");
-    if (autoLoadSubtitle) autoLoadSubtitle.checked = localStorage.getItem("autoLoadSubtitle") !== "false";
+    const subtitleAutoLoadMode = document.getElementById("subtitleAutoLoadMode");
+    if (subtitleAutoLoadMode) subtitleAutoLoadMode.value = localStorage.getItem("subtitleAutoLoadMode") || "both";
 
     const subtitleInMediaSession = document.getElementById("subtitleInMediaSession");
     if (subtitleInMediaSession) subtitleInMediaSession.checked = localStorage.getItem("subtitleInMediaSession") !== "false";

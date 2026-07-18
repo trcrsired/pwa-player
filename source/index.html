@@ -260,10 +260,20 @@
                 </select>
 
                 <h3 data-i18n="subtitles">Subtitles</h3>
-                <label class="setting-toggle">
-                    <input type="checkbox" id="autoLoadSubtitle" checked>
-                    <span data-i18n="autoLoadSubtitles">Auto-load subtitles with same filename (.vtt)</span>
+                <label class="setting-label">
+                    <span data-i18n="subtitleAutoLoadMode">Auto-load subtitles</span>
+                    <select id="subtitleAutoLoadMode" class="language-select">
+                        <option value="off" data-i18n="subtitleOff">Off</option>
+                        <option value="plain" data-i18n="subtitlePlain">Only .vtt</option>
+                        <option value="lang" data-i18n="subtitleLang">Only .&lt;lang&gt;.vtt</option>
+                        <option value="both" data-i18n="subtitleBoth">.&lt;lang&gt;.vtt + .vtt</option>
+                    </select>
                 </label>
+                <label class="setting-label">
+                    <span data-i18n="subtitleLanguage">Subtitle Language</span>
+                    <input type="text" id="subtitleLanguage" class="setting-input-small" placeholder="en">
+                </label>
+                <p class="setting-hint" data-i18n="subtitleLanguageHint">Language code for subtitle filenames (e.g., en, zh, ja)</p>
                 <label class="setting-toggle">
                     <input type="checkbox" id="autoLoadCover" checked>
                     <span data-i18n="autoLoadCovers">Auto-load cover images with same filename (.cover.webp)</span>
