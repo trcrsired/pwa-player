@@ -149,7 +149,7 @@ const EN_TRANSLATIONS = {
     subtitleOff: "Off",
     subtitlePlain: "Only .vtt",
     subtitleLang: "Only .<lang>.vtt",
-    subtitleBoth: ".<lang>.vtt + .vtt",
+    subtitleBoth: ".<lang>.vtt → .en.vtt → .vtt",
     subtitleLanguage: "Subtitle Language",
     subtitleLanguageHint: "Language code for subtitle filenames (e.g., en, zh, ja)",
     autoLoadCovers: "Auto-load cover images with same filename (.cover.webp)",

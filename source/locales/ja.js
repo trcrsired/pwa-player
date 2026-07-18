@@ -146,7 +146,7 @@ const JA_TRANSLATIONS = {
     subtitleOff: "オフ",
     subtitlePlain: ".vttのみ",
     subtitleLang: ".<lang>.vttのみ",
-    subtitleBoth: ".<lang>.vtt + .vtt",
+    subtitleBoth: ".<lang>.vtt → .en.vtt → .vtt",
     subtitleLanguage: "字幕の言語",
     subtitleLanguageHint: "字幕ファイル名の言語コード（例：en、zh、ja）",
     autoLoadCovers: "同名のカバー画像ファイルを自動読み込み（.cover.webp）",

@@ -543,6 +543,7 @@ function getSubtitleSidecarPaths(basePath) {
   if (mode === 'both') {
     const paths = [];
     if (langVtt) paths.push(langVtt);
+    if (lang && lang !== 'en') paths.push(basePath + '.en.vtt');
     paths.push(basePath + '.vtt');
     return paths;
   }

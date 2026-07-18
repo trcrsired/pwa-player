@@ -149,7 +149,7 @@ const ZHCN_TRANSLATIONS = {
     subtitleOff: "关闭",
     subtitlePlain: "仅 .vtt",
     subtitleLang: "仅 .<lang>.vtt",
-    subtitleBoth: ".<lang>.vtt + .vtt",
+    subtitleBoth: ".<lang>.vtt → .en.vtt → .vtt",
     subtitleLanguage: "字幕语言",
     subtitleLanguageHint: "字幕文件名的语言代码（例如：en、zh、ja）",
     autoLoadCovers: "自动加载同名封面图文件（.cover.webp）",
