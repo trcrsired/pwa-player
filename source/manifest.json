@@ -7,7 +7,6 @@
   "theme_color": "#000000",
   "description": "A Progressive Web APP Media Player",
   "display": "standalone",
-  "display_override": ["window-controls-overlay"],
   "icons": [
     {
       "src": "icons/icon.webp",
