@@ -490,8 +490,8 @@ body.side-off #configOptions {
   display: none;
 }
 
-/* Mobile Tuning — narrow screens, and touch devices held in landscape
-   (orientation = viewport wider than tall) */
+/* Mobile Tuning — compact sizes for narrow screens and for touch devices
+   held in landscape (orientation = viewport wider than tall) */
 @media (max-width: 600px), (pointer: coarse) and (orientation: landscape) {
   :root {
     --button-font-size: 15px;
@@ -502,7 +502,12 @@ body.side-off #configOptions {
     --progress-width: 90%;
     --controls-padding: 4px 8px;
   }
+}
 
+/* Portrait phones only: full-width dock with each group on its own
+   centered line. Landscape keeps the desktop layout — a content-width
+   dock with the left+right groups on a single row. */
+@media (max-width: 600px) {
   #controls {
     width: calc(100vw - 24px);
     max-width: calc(100vw - 24px);
