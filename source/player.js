@@ -2072,7 +2072,9 @@ function fullscreencallback()
         hasActiveSource && video.readyState >= 1) {
         video.webkitEnterFullscreen();
     } else if (docFs) {
-        const p = docFs.call(document.documentElement, { navigationUI: "show" });
+        // navigationUI:"hide" removes the Android system nav bar in
+        // fullscreen ("show"/default keeps it painted on top)
+        const p = docFs.call(document.documentElement, { navigationUI: "hide" });
         if (p && p.catch) p.catch(() => {});
     }
     // For embedded player, don't hide controls - fullscreen works same as non-fullscreen
