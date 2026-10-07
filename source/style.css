@@ -504,9 +504,23 @@ body.side-off #configOptions {
   }
 }
 
+/* Landscape touch: full-width dock, but groups stay on the same row —
+   centered like the desktop layout, not wrapped into two lines */
+@media (pointer: coarse) and (orientation: landscape) {
+  #controls {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    bottom: 6px;
+  }
+
+  .control-row {
+    justify-content: center;
+    column-gap: 16px;
+  }
+}
+
 /* Portrait phones only: full-width dock with each group on its own
-   centered line. Landscape keeps the desktop layout — a content-width
-   dock with the left+right groups on a single row. */
+   centered line. */
 @media (max-width: 600px) {
   #controls {
     width: calc(100vw - 24px);
