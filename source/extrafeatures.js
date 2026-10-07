@@ -65,58 +65,21 @@ if (!navigator.mediaDevices?.getDisplayMedia) {
 }
 
 let micToggleBtn = null;
-let switchCaptureBtn = null;
 
 let screenCaptureStream = null;
 let screenRecorder = null;
 let screenChunks = [];
 let screenRecordingStartTime = null;
 let micStream = null;
-let audioContext = null;
-let micGainNode = null;
-let screenAudioSource = null;
-let micAudioSource = null;
-let recordingDestination = null;
+let micTrack = null;
 let isMicEnabled = false;
 let previousVideoMuted = false;
-
-// Canvas-based recording for seamless source switching
-let captureCanvas = null;
-let captureCtx = null;
-let captureAnimationId = null;
-let currentCaptureVideo = null;
 
 function getMicToggleBtn() {
     if (!micToggleBtn) {
         micToggleBtn = document.getElementById("micToggleBtn");
     }
     return micToggleBtn;
-}
-
-function getSwitchCaptureBtn() {
-    if (!switchCaptureBtn) {
-        switchCaptureBtn = document.getElementById("switchCaptureBtn");
-    }
-    return switchCaptureBtn;
-}
-
-// Draw captured video to canvas continuously.
-// setInterval keeps running (throttled) when the tab is hidden —
-// requestAnimationFrame would pause entirely and freeze the recording
-function drawCaptureToCanvas() {
-    if (!captureCtx || !currentCaptureVideo) return;
-
-    const vw = currentCaptureVideo.videoWidth;
-    const vh = currentCaptureVideo.videoHeight;
-
-    if (vw > 0 && vh > 0) {
-        // Resize canvas to match video
-        if (captureCanvas.width !== vw || captureCanvas.height !== vh) {
-            captureCanvas.width = vw;
-            captureCanvas.height = vh;
-        }
-        captureCtx.drawImage(currentCaptureVideo, 0, 0, vw, vh);
-    }
 }
 
 screenCaptureBtn.addEventListener("click", async () => {
@@ -131,33 +94,17 @@ screenCaptureBtn.addEventListener("click", async () => {
             audio: true
         });
 
-        // Create canvas for recording (stays constant across source switches)
-        captureCanvas = document.createElement('canvas');
-        captureCtx = captureCanvas.getContext('2d');
-
-        // Create video element to feed the canvas
-        currentCaptureVideo = document.createElement('video');
-        currentCaptureVideo.srcObject = screenCaptureStream;
-        currentCaptureVideo.muted = true;
-        await currentCaptureVideo.play();
-
-        // Start drawing to canvas (~30fps, survives tab being hidden)
-        captureAnimationId = setInterval(drawCaptureToCanvas, 33);
-
-        // Set up AudioContext for mixing
-        audioContext = new AudioContext();
-        recordingDestination = audioContext.createMediaStreamDestination();
-
-        // Connect screen audio to recording destination
-        const screenAudioTracks = screenCaptureStream.getAudioTracks();
-        if (screenAudioTracks.length > 0) {
+        // Ask about the mic BEFORE the recorder is created — MediaRecorder
+        // only captures tracks that are already in the stream
+        const t = (key) => window.i18n ? window.i18n.t(key) : key;
+        if (await glassConfirm(t("enableMicrophonePrompt") || "Enable microphone for this recording?")) {
             try {
-                screenAudioSource = audioContext.createMediaStreamSource(
-                    new MediaStream([screenAudioTracks[0]])
-                );
-                screenAudioSource.connect(recordingDestination);
-            } catch (audioErr) {
-                console.warn("Could not connect screen audio:", audioErr);
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micTrack = micStream.getAudioTracks()[0];
+                screenCaptureStream.addTrack(micTrack);
+                isMicEnabled = true;
+            } catch (micErr) {
+                console.warn("Could not get microphone:", micErr);
             }
         }
 
@@ -165,37 +112,19 @@ screenCaptureBtn.addEventListener("click", async () => {
         previousVideoMuted = video.muted;
         video.muted = true;
 
-        // Show capture in main video element (muted)
+        // Show capture in main video element (muted preview)
         video.srcObject = screenCaptureStream;
         await video.play();
 
-        // Create recording stream from canvas + mixed audio
-        const canvasStream = captureCanvas.captureStream(30); // 30fps
-        const videoTrack = canvasStream.getVideoTracks()[0];
-        const audioTracks = recordingDestination.stream.getAudioTracks();
+        // Record the display stream directly
+        startScreenRecording(screenCaptureStream);
 
-        let recordingStream;
-        if (audioTracks.length > 0) {
-            recordingStream = new MediaStream([videoTrack, audioTracks[0]]);
-        } else {
-            recordingStream = new MediaStream([videoTrack]);
-        }
-
-        // Start recording
-        startScreenRecording(recordingStream);
-
-        // Show mic toggle and switch capture buttons
         const micBtn = getMicToggleBtn();
-        if (micBtn) micBtn.style.display = "";
-        const switchBtn = getSwitchCaptureBtn();
-        if (switchBtn) switchBtn.style.display = "";
-        setIcon(screenCaptureBtn, "stop");
-
-        // Ask user if they want to enable microphone
-        const t = (key) => window.i18n ? window.i18n.t(key) : key;
-        if (await glassConfirm(t("enableMicrophonePrompt") || "Enable microphone for this recording?")) {
-            toggleMicInRecording();
+        if (micBtn) {
+            micBtn.style.display = micTrack ? "" : "none";
+            setIcon(micBtn, isMicEnabled ? "micOn" : "mic");
         }
+        setIcon(screenCaptureBtn, "stop");
 
         // Handle track ended
         screenCaptureStream.getVideoTracks()[0].onended = () => {
@@ -213,113 +142,19 @@ screenCaptureBtn.addEventListener("click", async () => {
     }
 });
 
-async function toggleMicInRecording() {
-    if (!screenRecorder || screenRecorder.state !== "recording") {
+// The mic track lives inside the recorded stream — muting it is just
+// flipping track.enabled
+function toggleMicInRecording() {
+    if (!micTrack || !screenRecorder || screenRecorder.state !== "recording") {
         return;
     }
-
+    isMicEnabled = !isMicEnabled;
+    micTrack.enabled = isMicEnabled;
     const micBtn = getMicToggleBtn();
-
-    if (isMicEnabled) {
-        // Turn off mic
-        if (micGainNode) {
-            micGainNode.gain.value = 0;
-        }
-        isMicEnabled = false;
-        if (micBtn) setIcon(micBtn, "mic");
-    } else {
-        // Turn on mic
-        try {
-            if (!micStream) {
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                micAudioSource = audioContext.createMediaStreamSource(micStream);
-                micGainNode = audioContext.createGain();
-                micAudioSource.connect(micGainNode);
-                micGainNode.connect(recordingDestination);
-            }
-            micGainNode.gain.value = 1;
-            isMicEnabled = true;
-            if (micBtn) setIcon(micBtn, "micOn");
-        } catch (micErr) {
-            console.warn("Could not get microphone:", micErr);
-            alert("Could not access microphone.");
-        }
-    }
-}
-
-async function switchCaptureSource() {
-    if (!screenRecorder || screenRecorder.state !== "recording") {
-        return;
-    }
-
-    try {
-        // Get new screen capture
-        const newStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true
-        });
-
-        // Stop old screen capture tracks
-        if (screenCaptureStream) {
-            screenCaptureStream.getVideoTracks().forEach(track => track.stop());
-            screenCaptureStream.getAudioTracks().forEach(track => track.stop());
-        }
-
-        screenCaptureStream = newStream;
-
-        // Disconnect old screen audio source
-        if (screenAudioSource) {
-            screenAudioSource.disconnect();
-            screenAudioSource = null;
-        }
-
-        // Connect new screen audio to existing recording destination
-        const screenAudioTracks = newStream.getAudioTracks();
-        if (screenAudioTracks.length > 0) {
-            screenAudioSource = audioContext.createMediaStreamSource(
-                new MediaStream([screenAudioTracks[0]])
-            );
-            screenAudioSource.connect(recordingDestination);
-        }
-
-        // Switch the video that feeds the canvas (canvas stream stays the same)
-        currentCaptureVideo.srcObject = newStream;
-        await currentCaptureVideo.play();
-
-        // Keep main video muted
-        video.muted = true;
-        video.srcObject = newStream;
-        await video.play();
-
-        // Handle track ended
-        newStream.getVideoTracks()[0].onended = () => {
-            stopScreenRecording();
-        };
-
-    } catch (e) {
-        if (e.name !== "NotAllowedError" && e.name !== "AbortError") {
-            alert("Failed to switch capture: " + e.message);
-        }
-        console.log("Switch capture cancelled or failed:", e);
-    }
+    if (micBtn) setIcon(micBtn, isMicEnabled ? "micOn" : "mic");
 }
 
 function cleanupCaptureResources() {
-    // Stop draw loop
-    if (captureAnimationId) {
-        clearInterval(captureAnimationId);
-        captureAnimationId = null;
-    }
-
-    // Clean up video element
-    if (currentCaptureVideo) {
-        currentCaptureVideo.srcObject = null;
-        currentCaptureVideo = null;
-    }
-
-    captureCanvas = null;
-    captureCtx = null;
-
     // Release the capture stream from the main video element —
     // srcObject takes precedence over src, so leaving it set would
     // block all subsequent playback
@@ -335,35 +170,13 @@ function cleanupCaptureResources() {
         screenCaptureStream.getTracks().forEach(track => track.stop());
         screenCaptureStream = null;
     }
-    if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-    }
     isMicEnabled = false;
-    micGainNode = null;
-    screenAudioSource = null;
-    micAudioSource = null;
-    recordingDestination = null;
+    micTrack = null;
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-    const micBtn = getMicToggleBtn();
-    if (micBtn) {
-        micBtn.addEventListener("click", toggleMicInRecording);
-    }
-    const switchBtn = getSwitchCaptureBtn();
-    if (switchBtn) {
-        switchBtn.addEventListener("click", switchCaptureSource);
-    }
-});
 
 const micBtnImmediate = document.getElementById("micToggleBtn");
 if (micBtnImmediate) {
     micBtnImmediate.addEventListener("click", toggleMicInRecording);
-}
-const switchBtnImmediate = document.getElementById("switchCaptureBtn");
-if (switchBtnImmediate) {
-    switchBtnImmediate.addEventListener("click", switchCaptureSource);
 }
 
 function saveScreenRecording() {
@@ -431,10 +244,6 @@ function stopScreenRecording() {
     if (micBtn) {
         micBtn.style.display = "none";
         setIcon(micBtn, "mic");
-    }
-    const switchBtn = getSwitchCaptureBtn();
-    if (switchBtn) {
-        switchBtn.style.display = "none";
     }
 }
 
