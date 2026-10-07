@@ -490,8 +490,9 @@ body.side-off #configOptions {
   display: none;
 }
 
-/* Mobile Tuning */
-@media (max-width: 600px) {
+/* Mobile Tuning — narrow screens, and phones held in landscape where the
+   viewport is wide but short (the width query alone misses those) */
+@media (max-width: 600px), (pointer: coarse) and (max-height: 500px) {
   :root {
     --button-font-size: 15px;
     --button-size: 34px;
