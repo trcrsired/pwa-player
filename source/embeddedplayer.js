@@ -83,6 +83,12 @@ function playEmbeddedUrl(url, metadata = {}) {
         }
     }
 
+    // Dismiss any leftover loading/error cover from the video element —
+    // the status overlay sits above the iframe inside #playerWrapper
+    if (typeof hideVideoStatus === 'function') {
+        hideVideoStatus();
+    }
+
     // Clear the embedded player container
     embeddedPlayer.innerHTML = '';
 

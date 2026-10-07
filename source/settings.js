@@ -310,6 +310,61 @@ if (sidePanelPositionSelect) {
 }
 
 // =====================================================
+// Touch gestures on the video surface (default: off)
+// =====================================================
+const touchGesturesEnabledCheckbox = document.getElementById("touchGesturesEnabled");
+
+if (touchGesturesEnabledCheckbox) {
+    touchGesturesEnabledCheckbox.checked = localStorage.getItem("touchGestures") === "true";
+    touchGesturesEnabledCheckbox.addEventListener("change", () => {
+        localStorage.setItem("touchGestures", touchGesturesEnabledCheckbox.checked ? "true" : "false");
+    });
+}
+
+// =====================================================
+// Custom background for the control dock + side rail
+// =====================================================
+const controlsBgEnabledCheckbox = document.getElementById("controlsBgEnabled");
+const controlsBgColorInput = document.getElementById("controlsBgColor");
+const controlsBgOpacityInput = document.getElementById("controlsBgOpacity");
+const sideRailEl = document.getElementById("sideRail");
+
+function applyControlsBackground() {
+    if (!controlsBgEnabledCheckbox || !controlsBgEnabledCheckbox.checked) {
+        if (controlsEl) controlsEl.style.background = "";
+        if (sideRailEl) sideRailEl.style.background = "";
+        return;
+    }
+    const hex = controlsBgColorInput.value || "#1c1c20";
+    const n = parseInt(hex.replace("#", ""), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const alpha = Math.min(100, Math.max(0, parseInt(controlsBgOpacityInput.value, 10) || 0)) / 100;
+    const bg = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    if (controlsEl) controlsEl.style.background = bg;
+    if (sideRailEl) sideRailEl.style.background = bg;
+}
+
+if (controlsBgEnabledCheckbox && controlsBgColorInput && controlsBgOpacityInput) {
+    controlsBgEnabledCheckbox.checked = localStorage.getItem("controlsBgEnabled") === "true";
+    controlsBgColorInput.value = localStorage.getItem("controlsBgColor") || "#1c1c20";
+    controlsBgOpacityInput.value = localStorage.getItem("controlsBgOpacity") || "60";
+
+    controlsBgEnabledCheckbox.addEventListener("change", () => {
+        localStorage.setItem("controlsBgEnabled", controlsBgEnabledCheckbox.checked ? "true" : "false");
+        applyControlsBackground();
+    });
+    controlsBgColorInput.addEventListener("input", () => {
+        localStorage.setItem("controlsBgColor", controlsBgColorInput.value);
+        applyControlsBackground();
+    });
+    controlsBgOpacityInput.addEventListener("change", () => {
+        localStorage.setItem("controlsBgOpacity", controlsBgOpacityInput.value);
+        applyControlsBackground();
+    });
+    applyControlsBackground();
+}
+
+// =====================================================
 // Playback Speed Control
 // =====================================================
 const speedValue = document.getElementById("speedValue");

@@ -370,10 +370,29 @@
                     <select id="sidePanelPosition" class="language-select">
                         <option value="left" data-i18n="sidePanelLeft">Left</option>
                         <option value="right" data-i18n="sidePanelRight">Right</option>
+                        <option value="top" data-i18n="sidePanelTop">Top</option>
                         <option value="off" data-i18n="sidePanelOff">Off</option>
                     </select>
                 </label>
                 <p class="setting-hint" data-i18n="sidePanelHint">Hover the screen edge or swipe inward from it to reveal a floating bar with quick access to Now Playing, Playlists, Storage, IPTV and Settings — without leaving the player.</p>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="touchGesturesEnabled">
+                    <span data-i18n="touchGestures">Touch gestures</span>
+                </label>
+                <p class="setting-hint" data-i18n="touchGesturesHint">Touch devices only. Long-press the right side of the video for 2× speed, the left side to rewind; double-tap left/right to skip 10s; drag horizontally to scrub.</p>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="controlsBgEnabled">
+                    <span data-i18n="controlsCustomBg">Custom controls background</span>
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="controlsBgColor">Background color</span>
+                    <input type="color" id="controlsBgColor" class="setting-input-small">
+                </label>
+                <label class="setting-label">
+                    <span data-i18n="controlsBgOpacity">Background opacity (%)</span>
+                    <input type="number" id="controlsBgOpacity" class="setting-input-small" min="0" max="100" step="1">
+                </label>
+                <p class="setting-hint" data-i18n="controlsBgHint">Overrides the glass background of the bottom control dock and the side rail. Opacity 0 = fully transparent, 100 = solid.</p>
 
                 <h3 data-i18n="keyboardShortcuts">Keyboard Shortcuts</h3>
                 <label class="setting-toggle">
@@ -516,8 +535,6 @@
 
         <!-- Edge trigger zone that reveals the side rail -->
         <div id="sideEdgeTrigger" class="hidden"></div>
-        <!-- Visible grab handle on touch devices (edge swipe conflicts with the OS back gesture) -->
-        <div id="sideRailHandle"></div>
         <!-- Floating side rail: quick-access panels without leaving the player -->
         <nav id="sideRail" class="hidden">
             <button id="sideRailPlayerBtn" class="rail-btn hidden" data-icon="home" data-i18n-title="backToPlayer"></button>

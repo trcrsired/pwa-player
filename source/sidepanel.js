@@ -1,24 +1,23 @@
 // ===============================
 // Side Panel — floating edge rail + slide-over sheets
 // ===============================
-// A thin trigger zone on the left or right screen edge reveals a
+// A thin trigger zone on the left, right, or top screen edge reveals a
 // floating rail of shortcuts (Now Playing / Playlists / Storage /
 // IPTV / Settings). Selecting one opens that view as a slide-over
-// sheet on the same edge instead of replacing the player, so it
-// also works on top of embedded players (YouTube, Spotify, ...).
-// While an embedded site is active an extra "back to player"
-// button appears, giving a way out without refreshing the page.
+// sheet instead of replacing the player, so it also works on top of
+// embedded players (YouTube, Spotify, ...). While an embedded site is
+// active an extra "back to player" button appears, giving a way out
+// without refreshing the page.
 //
 // The dock buttons in the control bar still open full-page views.
 
 const sideEdgeTrigger = document.getElementById("sideEdgeTrigger");
 const sideRail = document.getElementById("sideRail");
-const sideRailHandle = document.getElementById("sideRailHandle");
 const sideRailPlayerBtn = document.getElementById("sideRailPlayerBtn");
 const sideRailSep = document.getElementById("sideRailSep");
 
 // On touch devices the OS back gesture owns edge swipes, so the rail is
-// opened via the visible handle instead of the invisible edge zone.
+// opened by tapping the edge zone instead of swiping inward.
 const coarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
 
 const SIDE_SHEET_CLOSE_MS = 320;
@@ -38,7 +37,7 @@ function getSidePanelSide() {
     const pos = (typeof getSidePanelPosition === "function")
         ? getSidePanelPosition()
         : (localStorage.getItem("sidePanelPosition") || "left");
-    return pos === "right" ? "right" : (pos === "off" ? "off" : "left");
+    return pos === "right" ? "right" : (pos === "top" ? "top" : (pos === "off" ? "off" : "left"));
 }
 
 // Apply the configured side to body classes, trigger visibility,
@@ -47,6 +46,7 @@ function applySidePanelPosition() {
     const side = getSidePanelSide();
     document.body.classList.toggle("side-left", side === "left");
     document.body.classList.toggle("side-right", side === "right");
+    document.body.classList.toggle("side-top", side === "top");
 
     if (side === "off") {
         hideSideRail();
@@ -60,11 +60,17 @@ function applySidePanelPosition() {
     if (sidePanelViewId) {
         const view = document.getElementById(sidePanelViewId);
         if (view) {
-            view.classList.toggle("sheet-left", side === "left");
-            view.classList.toggle("sheet-right", side === "right");
+            const sheetSide = getSheetSide(side);
+            view.classList.toggle("sheet-left", sheetSide === "left");
+            view.classList.toggle("sheet-right", sheetSide === "right");
             setSheetBackIcon(view, side);
         }
     }
+}
+
+// A top-docked rail still opens its sheets on the left edge
+function getSheetSide(side) {
+    return side === "right" ? "right" : "left";
 }
 
 // Point the sheet's back button toward its docked edge
@@ -149,7 +155,7 @@ function openSidePanel(viewId, fromPopstate = false) {
     view.classList.remove("hidden", "sheet-closing", "sheet-left", "sheet-right");
     view.style.transform = "";
     view.style.transition = "";
-    view.classList.add("side-sheet", `sheet-${side}`);
+    view.classList.add("side-sheet", `sheet-${getSheetSide(side)}`);
     setSheetBackIcon(view, side);
     requestAnimationFrame(() => requestAnimationFrame(() => {
         view.classList.add("sheet-visible");
@@ -240,10 +246,34 @@ function closeSidePanel(instant = false, fromPopstate = false) {
 if (sideEdgeTrigger) {
     sideEdgeTrigger.addEventListener("mouseenter", showSideRail);
     sideEdgeTrigger.addEventListener("mouseleave", () => scheduleRailHide());
+    // On touch devices an edge *swipe* belongs to the OS back gesture, so the
+    // rail opens on a tap inside the edge zone instead — a drag won't trigger it.
+    let edgeTap = null;
     sideEdgeTrigger.addEventListener("touchstart", (e) => {
         e.preventDefault();
-        showSideRail();
+        if (!coarsePointer) {
+            showSideRail();
+            return;
+        }
+        const t = e.touches[0];
+        edgeTap = { x: t.clientX, y: t.clientY };
     }, { passive: false });
+    sideEdgeTrigger.addEventListener("touchmove", (e) => {
+        if (!edgeTap) return;
+        const t = e.touches[0];
+        if (Math.abs(t.clientX - edgeTap.x) > 12 || Math.abs(t.clientY - edgeTap.y) > 12) {
+            edgeTap = null;
+        }
+    }, { passive: true });
+    sideEdgeTrigger.addEventListener("touchend", () => {
+        if (!edgeTap) return;
+        edgeTap = null;
+        if (sideRail && sideRail.classList.contains("rail-visible")) {
+            hideSideRail();
+        } else {
+            showSideRail();
+        }
+    }, { passive: true });
 }
 
 if (sideRail) {
@@ -266,42 +296,6 @@ if (sideRailPlayerBtn) {
     });
 }
 
-// Visible edge handle (touch devices): tap toggles the rail, dragging it
-// inward opens it. A drag-open must swallow the trailing click or it
-// would immediately toggle the rail back shut.
-let handleDragSuppressClick = false;
-if (sideRailHandle) {
-    let handleStart = null;
-    sideRailHandle.addEventListener("pointerdown", (e) => {
-        handleStart = { x: e.clientX, y: e.clientY };
-        handleDragSuppressClick = false;
-        try { sideRailHandle.setPointerCapture(e.pointerId); } catch (_) {}
-    });
-    sideRailHandle.addEventListener("pointermove", (e) => {
-        if (!handleStart) return;
-        const side = getSidePanelSide();
-        const inward = side === "right" ? handleStart.x - e.clientX : e.clientX - handleStart.x;
-        if (inward > 16) {
-            handleStart = null;
-            handleDragSuppressClick = true;
-            showSideRail();
-        }
-    });
-    ["pointerup", "pointercancel"].forEach(ev =>
-        sideRailHandle.addEventListener(ev, () => { handleStart = null; }));
-    sideRailHandle.addEventListener("click", () => {
-        if (handleDragSuppressClick) {
-            handleDragSuppressClick = false;
-            return;
-        }
-        if (sideRail && sideRail.classList.contains("rail-visible")) {
-            hideSideRail();
-        } else {
-            showSideRail();
-        }
-    });
-}
-
 // Pointerdown outside the sheet dismisses it (Esc and the sheet's back
 // button also close it). Clicks inside an embedded iframe never reach
 // us, so over embedded content the rail/back button remain the way out.
@@ -310,7 +304,6 @@ document.addEventListener("pointerdown", (e) => {
     const view = document.getElementById(sidePanelViewId);
     if (!view || view.contains(e.target)) return;
     if (sideRail && sideRail.contains(e.target)) return;
-    if (sideRailHandle && sideRailHandle.contains(e.target)) return;
     if (sideEdgeTrigger && sideEdgeTrigger.contains(e.target)) return;
     if (e.target.closest && e.target.closest(".context-menu")) return;
     if (e.target.closest && e.target.closest(".scroll-btn")) return;
@@ -322,7 +315,6 @@ document.addEventListener("pointerdown", (e) => {
 document.addEventListener("pointerdown", (e) => {
     if (!sideRail || !sideRail.classList.contains("rail-visible")) return;
     if (sideRail.contains(e.target)) return;
-    if (sideRailHandle && sideRailHandle.contains(e.target)) return;
     if (sideEdgeTrigger && sideEdgeTrigger.contains(e.target)) return;
     hideSideRail();
 });
@@ -343,6 +335,8 @@ document.addEventListener("touchstart", (e) => {
         edgeSwipe = { x: t.clientX, y: t.clientY };
     } else if (side === "right" && t.clientX >= window.innerWidth - EDGE) {
         edgeSwipe = { x: t.clientX, y: t.clientY };
+    } else if (side === "top" && t.clientY <= EDGE) {
+        edgeSwipe = { x: t.clientX, y: t.clientY };
     }
 }, { passive: true });
 
@@ -351,11 +345,13 @@ document.addEventListener("touchmove", (e) => {
     const t = e.touches[0];
     const dx = t.clientX - edgeSwipe.x;
     const dy = t.clientY - edgeSwipe.y;
-    const inward = getSidePanelSide() === "right" ? -dx : dx;
-    if (inward > 24 && inward > Math.abs(dy) * 1.2) {
+    const side = getSidePanelSide();
+    const inward = side === "right" ? -dx : (side === "top" ? dy : dx);
+    const cross = side === "top" ? Math.abs(dx) : Math.abs(dy);
+    if (inward > 24 && inward > cross * 1.2) {
         showSideRail();
         edgeSwipe = null;
-    } else if (Math.abs(dy) > 40 || inward < -20) {
+    } else if (cross > 40 || inward < -20) {
         edgeSwipe = null;
     }
 }, { passive: true });

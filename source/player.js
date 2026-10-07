@@ -1388,11 +1388,16 @@ function clearVideoSource() {
   video.currentTime = 0;
   video.srcObject = null;
   video.removeAttribute("src");
+  // Drop load handlers — a pending retry timer could otherwise re-fire
+  // onerror and resurrect the loading/error overlay over embedded players
+  video.onerror = null;
+  video.onwaiting = null;
   video.load();
   hasActiveSource = false;
   clearVideoPreview();
   revokeBlobURL();
   hideAudioCover();
+  hideVideoStatus();
 }
 // Make it globally accessible for embedded player
 window.clearVideoSource = clearVideoSource;
@@ -2724,6 +2729,7 @@ function isCoarsePointerDevice() {
 }
 
 function touchGesturesEnabled() {
+    if (localStorage.getItem("touchGestures") !== "true") return false;
     if (!hasActiveSource) return false;
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) return false;
     if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) return false;
