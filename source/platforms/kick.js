@@ -119,8 +119,8 @@ class KickPlatform extends BasePlatform {
 
         const playBtn = document.getElementById("playBtn");
         const npPlayBtn = document.getElementById("npPlayBtn");
-        if (playBtn) playBtn.textContent = "⏸️";
-        if (npPlayBtn) npPlayBtn.textContent = "⏸️";
+        if (playBtn) setIcon(playBtn, "pause");
+        if (npPlayBtn) setIcon(npPlayBtn, "pause");
         navigator.mediaSession.playbackState = 'playing';
 
         if (options.onReady) options.onReady();

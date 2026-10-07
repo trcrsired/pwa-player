@@ -1,13 +1,13 @@
 // Chinese (Simplified) translations
 const ZHCN_TRANSLATIONS = {
     // Navigation
-    nowPlaying: "▶️ 正在播放",
-    playlist: "🎵 播放列表",
-    playlists: "🎵 播放列表",
-    storage: "🗂️ 存储",
-    iptv: "📺 网络电视",
-    settings: "⚙️ 设置",
-    storageManager: "🗂️ 存储管理",
+    nowPlaying: "正在播放",
+    playlist: "播放列表",
+    playlists: "播放列表",
+    storage: "存储",
+    iptv: "网络电视",
+    settings: "设置",
+    storageManager: "存储管理",
 
     // Player controls
     play: "播放",
@@ -78,6 +78,10 @@ const ZHCN_TRANSLATIONS = {
 
     // Playlist
     addToPlaylist: "添加到播放列表",
+    addToQueue: "添加到队列",
+    addedToQueue: "已添加到队列",
+    noOtherPlaylists: "没有其他播放列表。",
+    alreadyInPlaylist: "{name} 已在播放列表 {playlist} 中",
     newPlaylist: "新建播放列表",
     whichPlaylist: "添加到哪个播放列表？",
     playKeepPanel: "播放（保持面板打开）",
@@ -109,7 +113,7 @@ const ZHCN_TRANSLATIONS = {
     playlistLoadError: "加载播放列表出错",
 
     // IPTV
-    iptvChannels: "📺 网络电视频道",
+    iptvChannels: "网络电视频道",
     searchChannels: "搜索频道...",
     iptvCorsHint: "IP地址始终需要CORS绕过。HTTP URL通常需要CORS。HTTPS通常不需要CORS。如果频道无法播放，请尝试启用CORS绕过。",
     import: "导入",
@@ -169,6 +173,13 @@ const ZHCN_TRANSLATIONS = {
     compact: "紧凑",
     normal: "标准",
     large: "大",
+    sidePanel: "侧边悬浮栏",
+    sidePanelLeft: "左侧",
+    sidePanelRight: "右侧",
+    sidePanelOff: "关闭",
+    sidePanelHint: "鼠标悬停屏幕边缘，或从屏幕边缘向内滑动，即可唤出悬浮栏——无需离开播放器即可打开正在播放、播放列表、存储管理、电视频道和播放设置。",
+    backToPlayer: "返回播放器",
+    showControls: "显示控制栏",
     keyboardShortcuts: "键盘快捷键",
     shortcutSpeedEnabled: "A/D/S - 速度控制",
     shortcutLoopEnabled: "J/K/L - A-B循环",
@@ -230,6 +241,7 @@ const ZHCN_TRANSLATIONS = {
     // Common
     close: "关闭",
     cancel: "取消",
+    ok: "好",
     removeFromQueue: "从队列中移除",
     confirm: "确认",
     yes: "是",
@@ -342,9 +354,9 @@ const ZHCN_TRANSLATIONS = {
     screenshotFailed: "无法截图。视频源可能是跨域或未启用CORS。",
     saveLocations: "保存位置",
     saveLocationsHint: "配置屏幕录制、视频录制和截图的保存位置。通过存储目录右键菜单设置。",
-    screenRecordingLocationLabel: "📹 屏幕录制：",
-    videoRecordingLocationLabel: "🎬 视频录制：",
-    screenshotLocationLabel: "🖼️ 截图：",
+    screenRecordingLocationLabel: "屏幕录制：",
+    videoRecordingLocationLabel: "视频录制：",
+    screenshotLocationLabel: "截图：",
     noLocationSet: "未设置（下载到浏览器默认位置）",
     clearScreenRecordingLocation: "清除屏幕录制",
     clearVideoRecordingLocation: "清除视频录制",
@@ -399,6 +411,12 @@ const ZHCN_TRANSLATIONS = {
     // Skip iframes in background
     skipIframesInBackground: "后台播放时跳过嵌入式内容",
     skipIframesInBackgroundHint: "当标签页隐藏时，跳过YouTube/Spotify等内容，避免浏览器自动播放策略问题。",
+    embeddedEndBehavior: "嵌入媒体播放结束时",
+    embeddedEndPause: "暂停",
+    embeddedEndNext: "播放列表下一项",
+    embeddedEndBehaviorHint: "嵌入式或网络条目（YouTube、Spotify、IPTV链接等）播放结束后的行为。",
+    useUrlPlaylist: "使用URL自带的播放列表",
+    useUrlPlaylistHint: "当URL自带播放列表（例如YouTube的list=参数）时，允许网站依次播放。关闭后：播放列表URL只播放第一个视频，watch?v=&list=的URL只播放该视频。",
 
     // Remote Storage
     mountRemote: "挂载远程",

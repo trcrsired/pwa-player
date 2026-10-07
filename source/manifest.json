@@ -6,7 +6,7 @@
   "background_color": "#000000",
   "theme_color": "#000000",
   "description": "A Progressive Web APP Media Player",
-  "display": "standalone",
+  "display": "fullscreen",
   "icons": [
     {
       "src": "icons/icon.webp",

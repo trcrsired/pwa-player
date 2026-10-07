@@ -306,19 +306,8 @@ async function addIndexedDBFolderToPlaylist(folderName, tonowplaying) {
             return;
         }
 
-        const choice = prompt(
-            t('addToWhichPlaylist', "Add to which playlist?") + "\n" +
-            names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-            "1"
-        );
-
-        if (!choice) return;
-
-        const index = parseInt(choice, 10) - 1;
-        if (index < 0 || index >= names.length) {
-            alert(t('invalidSelection', "Invalid selection."));
-            return;
-        }
+        const index = await pickOption(t('addToWhichPlaylist', "Add to which playlist?"), names);
+        if (index === null) return;
 
         const selectedName = names[index];
         const items = playableFiles.map(f => ({
@@ -347,7 +336,7 @@ async function exportIndexedDBFolder(folderName) {
             return;
         }
 
-        const ok = confirm(t('exportFilesConfirm', 'Export {count} file(s)?').replace('{count}', files.length));
+        const ok = await glassConfirm(t('exportFilesConfirm', 'Export {count} file(s)?').replace('{count}', files.length));
         if (!ok) return;
 
         let exported = 0;
@@ -411,7 +400,7 @@ async function promptForUniqueName(baseName, parentHandle) {
     let attempts = 0;
 
     while (attempts < 3) {
-        const name = prompt(
+        const name = await glassPrompt(
             `${t('directoryExists', 'Directory')} "${baseName}" ${t('alreadyExists', 'already exists.')} ${t('enterNewName', 'Enter a new name (no slashes):')}`,
             baseName
         );
@@ -1151,19 +1140,13 @@ async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
     const playlists = await playlists_load();
     const names = Object.keys(playlists);
 
-    const choice = prompt(
-        t('addToWhichPlaylist', "Add to which playlist?") + "\n" +
-        names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-        "1"
-    );
-
-    if (!choice) return;
-
-    const index = parseInt(choice, 10) - 1;
-    if (index < 0 || index >= names.length) {
-        alert(t('invalidSelection', "Invalid selection"));
+    if (names.length === 0) {
+        alert(t('noPlaylistsAvailable', "No playlists available. Please create a playlist first."));
         return;
     }
+
+    const index = await pickOption(t('addToWhichPlaylist', "Add to which playlist?"), names);
+    if (index === null) return;
 
     const selectedName = names[index];
     if (!selectedName) return;
@@ -1225,7 +1208,7 @@ async function exportDirectory(entry, dirPath, parent) {
         }
 
         // Ask user confirmation
-        const ok = confirm(`${t('exportAllFilesFrom', 'Export all files from')} "${dirPath}"?\n\n${t('foundFiles', 'Found {count} file(s).').replace('{count}', files.length)}`);
+        const ok = await glassConfirm(`${t('exportAllFilesFrom', 'Export all files from')} "${dirPath}"?\n\n${t('foundFiles', 'Found {count} file(s).').replace('{count}', files.length)}`);
         if (!ok) return;
 
         // Download each file
@@ -1575,7 +1558,7 @@ function showStorageDirMenu(entry, dirName, button) {
             }
 
             if (action === "new-folder") {
-                const folderName = prompt(t('newFolderName', "New folder name:"));
+                const folderName = await glassPrompt(t('newFolderName', "New folder name:"));
                 if (!folderName || !folderName.trim()) {
                     closeMenu();
                     return;
@@ -1617,7 +1600,7 @@ function showStorageDirMenu(entry, dirName, button) {
                 } else if (canRenameMount) {
                     // Rename mount name for external or remote storage
                     const oldName = dirName;
-                    const newName = prompt(t('newMountName', "New name:"), oldName);
+                    const newName = await glassPrompt(t('newMountName', "New name:"), oldName);
                     if (newName && newName.trim() && newName.trim() !== oldName) {
                         const trimmed = newName.trim();
 
@@ -1663,7 +1646,7 @@ function showStorageDirMenu(entry, dirName, button) {
                     const oldName = parts.pop();
                     const pathToParent = parts.join("/");
 
-                    const newName = prompt(t('newFolderName', "New folder name:"), oldName);
+                    const newName = await glassPrompt(t('newFolderName', "New folder name:"), oldName);
                     if (newName && newName.trim() && newName.trim() !== oldName) {
                         const trimmed = newName.trim();
 
@@ -1688,7 +1671,7 @@ function showStorageDirMenu(entry, dirName, button) {
                 // Edit URL for remote storage
                 const roots = await loadRemoteRoots();
                 const oldUrl = roots[dirName];
-                const newUrl = prompt(t('editRemoteUrl', "Edit remote URL:"), oldUrl);
+                const newUrl = await glassPrompt(t('editRemoteUrl', "Edit remote URL:"), oldUrl);
 
                 if (!newUrl) {
                     closeMenu();
@@ -1719,7 +1702,7 @@ function showStorageDirMenu(entry, dirName, button) {
                 } else if (isExternalNotTopRemoval) {
                     // External storage removal - require typing the name to confirm
                     confirmMsg = `${t('confirmRemoveExternal', 'Type the directory name to confirm removal')}:\n"${dirName}"`;
-                    const userInput = prompt(confirmMsg);
+                    const userInput = await glassPrompt(confirmMsg);
                     if (userInput !== dirName) {
                         if (userInput) alert(t('confirmationMismatch', "Confirmation name does not match."));
                         closeMenu();
@@ -1737,7 +1720,7 @@ function showStorageDirMenu(entry, dirName, button) {
                 }
 
                 // Skip confirm for external (already confirmed with typing)
-                const shouldProceed = isExternalNotTopRemoval || confirm(confirmMsg);
+                const shouldProceed = isExternalNotTopRemoval || await glassConfirm(confirmMsg);
                 if (!shouldProceed) {
                     closeMenu();
                     return;
@@ -1929,9 +1912,9 @@ function showSaveLocationSubMenu(entry, dirName, parentButton) {
     menu.className = "context-menu";
 
     const menuItems = [
-        `<div class="menu-item" data-type="screenRecording">📹 ${t('screenRecordingSaveLocation', 'Screen Recording')}</div>`,
-        `<div class="menu-item" data-type="videoRecording">🎬 ${t('videoRecordingSaveLocation', 'Video Recording')}</div>`,
-        `<div class="menu-item" data-type="screenshot">🖼️ ${t('screenshotSaveLocation', 'Screenshot')}</div>`,
+        `<div class="menu-item" data-type="screenRecording">${icon("video")} ${t('screenRecordingSaveLocation', 'Screen Recording')}</div>`,
+        `<div class="menu-item" data-type="videoRecording">${icon("film")} ${t('videoRecordingSaveLocation', 'Video Recording')}</div>`,
+        `<div class="menu-item" data-type="screenshot">${icon("photo")} ${t('screenshotSaveLocation', 'Screenshot')}</div>`,
         `<div class="menu-item" data-action="close">${t('close', 'Close')}</div>`
     ];
 
@@ -2028,7 +2011,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
         menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
     }
     if (isSubtitle) {
-        menuItems.push(`<div class="menu-item" data-action="load-subtitle">📝 ${t('loadSubtitles', 'Load Subtitles')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="load-subtitle">${icon("subtitles")} ${t('loadSubtitles', 'Load Subtitles')}</div>`);
     }
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
@@ -2095,30 +2078,28 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
                 const playlists = await playlists_load();
                 const names = Object.keys(playlists);
 
-                const choice = prompt(
-                    t('addToWhichPlaylist', "Add to which playlist?") + "\n" +
-                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-                    "1"
-                );
+                if (names.length === 0) {
+                    alert(t('noPlaylistsAvailable', "No playlists available. Please create a playlist first."));
+                    closeMenu();
+                    return;
+                }
 
-                if (choice) {
-                    const index = parseInt(choice, 10) - 1;
-                    if (index >= 0 && index < names.length) {
-                        const selectedName = names[index];
-                        let path;
-                        if (isRemote)
-                        {
-                            path = handle;
-                        }
-                        else
-                        {
-                            path = `${entry.schema}://${entry.rootName}/${fullPath}`;
-                        }
-                        playlists[selectedName].push({ name, path });
-                        await playlists_save(playlists);
-                        playlist_renderTree();
-                        alert(`${t('addedToPlaylistSuccess', 'Added')} "${name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
+                const index = await pickOption(t('addToWhichPlaylist', "Add to which playlist?"), names);
+                if (index !== null) {
+                    const selectedName = names[index];
+                    let path;
+                    if (isRemote)
+                    {
+                        path = handle;
                     }
+                    else
+                    {
+                        path = `${entry.schema}://${entry.rootName}/${fullPath}`;
+                    }
+                    playlists[selectedName].push({ name, path });
+                    await playlists_save(playlists);
+                    playlist_renderTree();
+                    alert(`${t('addedToPlaylistSuccess', 'Added')} "${name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
                 }
                 closeMenu();
                 return;
@@ -2274,7 +2255,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
             const canModify = entry.allowModification;
 
             if (action === "rename" && canModify) {
-                const newName = prompt(t('newFileName', "New file name:"), name);
+                const newName = await glassPrompt(t('newFileName', "New file name:"), name);
                 if (newName && newName.trim() && newName.trim() !== name) {
                     const trimmed = newName.trim();
                     let writable = null;
@@ -2318,7 +2299,7 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
             }
 
             if (action === "delete" && canModify) {
-                const ok = confirm(`${t('deleteFileConfirm', 'Delete file')} "${name}"?`);
+                const ok = await glassConfirm(`${t('deleteFileConfirm', 'Delete file')} "${name}"?`);
                 if (ok) {
                     try {
                         let parent;
@@ -2380,11 +2361,11 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
 
     li.innerHTML = `
         <div class="storage-file-header">
-            <span class="file-name">📄 ${escapeHTML(name)}</span>
+            <span class="file-name">${icon("file")} ${escapeHTML(name)}</span>
             <div class="file-actions">
-                ${isPlayable ? '<button class="file-play" title="Play">▶</button>' : ''}
-                ${isSubtitle ? '<button class="file-subtitle" title="Load Subtitle">📝</button>' : ''}
-                <button class="file-menu" title="Menu">⋮</button>
+                ${isPlayable ? `<button class="file-play" title="Play">${icon("play")}</button>` : ''}
+                ${isSubtitle ? `<button class="file-subtitle" title="Load Subtitle">${icon("subtitles")}</button>` : ''}
+                <button class="file-menu" title="Menu">${icon("ellipsisV")}</button>
             </div>
         </div>
     `;
@@ -2458,11 +2439,11 @@ function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "
 
     li.innerHTML = `
         <div class="storage-file-header">
-            <span class="file-name">📄 ${escapeHTML(name)}</span>
+            <span class="file-name">${icon("file")} ${escapeHTML(name)}</span>
             <div class="file-actions">
-                ${isPlayable ? '<button class="file-play" title="Play">▶</button>' : ''}
-                ${isSubtitle ? '<button class="file-subtitle" title="Load Subtitle">📝</button>' : ''}
-                <button class="file-menu" title="Menu">⋮</button>
+                ${isPlayable ? `<button class="file-play" title="Play">${icon("play")}</button>` : ''}
+                ${isSubtitle ? `<button class="file-subtitle" title="Load Subtitle">${icon("subtitles")}</button>` : ''}
+                <button class="file-menu" title="Menu">${icon("ellipsisV")}</button>
             </div>
         </div>
     `;
@@ -2534,7 +2515,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
         menuItems.push(`<div class="menu-item" data-action="add">${t('addToPlaylist', 'Add to Playlist')}</div>`);
     }
     if (isSubtitle) {
-        menuItems.push(`<div class="menu-item" data-action="load-subtitle">📝 ${t('loadSubtitles', 'Load Subtitles')}</div>`);
+        menuItems.push(`<div class="menu-item" data-action="load-subtitle">${icon("subtitles")} ${t('loadSubtitles', 'Load Subtitles')}</div>`);
     }
     menuItems.push(`<div class="menu-item" data-action="export">${t('export', 'Export')}</div>`);
     menuItems.push(`<div class="menu-item" data-action="share">${t('share', 'Share')}</div>`);
@@ -2593,21 +2574,19 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
                 const playlists = await playlists_load();
                 const names = Object.keys(playlists);
 
-                const choice = prompt(
-                    t('addToWhichPlaylist', "Add to which playlist?") + "\n" +
-                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-                    "1"
-                );
+                if (names.length === 0) {
+                    alert(t('noPlaylistsAvailable', "No playlists available. Please create a playlist first."));
+                    closeMenu();
+                    return;
+                }
 
-                if (choice) {
-                    const index = parseInt(choice, 10) - 1;
-                    if (index >= 0 && index < names.length) {
-                        const selectedName = names[index];
-                        playlists[selectedName].push({ name, path: entryPath });
-                        await playlists_save(playlists);
-                        playlist_renderTree();
-                        alert(`${t('addedToPlaylistSuccess', 'Added')} "${name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
-                    }
+                const index = await pickOption(t('addToWhichPlaylist', "Add to which playlist?"), names);
+                if (index !== null) {
+                    const selectedName = names[index];
+                    playlists[selectedName].push({ name, path: entryPath });
+                    await playlists_save(playlists);
+                    playlist_renderTree();
+                    alert(`${t('addedToPlaylistSuccess', 'Added')} "${name}" ${t('toPlaylist', 'to playlist')} "${selectedName}".`);
                 }
                 closeMenu();
                 return;
@@ -2708,7 +2687,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
             }
 
             if (action === "rename" && entry.allowModification) {
-                const newName = prompt(t('newFileName', "New file name:"), name);
+                const newName = await glassPrompt(t('newFileName', "New file name:"), name);
                 if (newName && newName.trim() && newName.trim() !== name) {
                     const trimmed = newName.trim();
                     try {
@@ -2725,7 +2704,7 @@ function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") 
             }
 
             if (action === "delete" && entry.allowModification) {
-                const ok = confirm(`${t('deleteFileConfirm', 'Delete file')} "${name}"?`);
+                const ok = await glassConfirm(`${t('deleteFileConfirm', 'Delete file')} "${name}"?`);
                 if (ok) {
                     try {
                         await idb_deleteFile(fileEntry.path);
@@ -2748,9 +2727,9 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPat
 
     li.innerHTML = `
         <div class="storage-sub-header">
-            <span class="sub-name">📁 ${escapeHTML(name)}</span>
+            <span class="sub-name">${icon("folder")} ${escapeHTML(name)}</span>
             <div class="sub-actions">
-                <button class="sub-menu" title="Menu">⋮</button>
+                <button class="sub-menu" title="Menu">${icon("ellipsisV")}</button>
             </div>
         </div>
     `;
@@ -2980,9 +2959,9 @@ async function renderStorage() {
 
         li.innerHTML = `
             <div class="storage-header">
-                <button class="toggle">+</button>
+                <button class="toggle">${icon("chevronRight")}</button>
                 <span class="storage-name">${displayRootName}</span>
-                <button class="storage-menu" title="Menu">⋮</button>
+                <button class="storage-menu" title="Menu">${icon("ellipsisV")}</button>
             </div>
             <ul class="storage-sub hidden"></ul>
         `;
@@ -2996,7 +2975,7 @@ async function renderStorage() {
         header.addEventListener("click", (e) => {
             if (e.target === menuBtn) return;
             const hidden = subList.classList.toggle("hidden");
-            toggleBtn.textContent = hidden ? "+" : "−";
+            setIcon(toggleBtn, hidden ? "chevronRight" : "chevronDown");
             if (!hidden) loadStorageSubdirs(subList, rootDir, entry);
         });
 
@@ -3050,7 +3029,7 @@ document.getElementById("addImportBtn").addEventListener("click", async () => {
 // ============================================================
 document.getElementById("clearImports").addEventListener("click", async () => {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-    const confirmed = confirm(
+    const confirmed = await glassConfirm(
         t('clearAllImportMountConfirm', "This will permanently delete all imported directories and mounted storages:\n") +
         IMPORT_ROOTS.map(r => `• "${r.dirName}"`).join("\n") +
         "\n\n" + t('clearAllImportMountNote', "This will also clear IndexedDB storage.\n\nAre you sure you want to proceed?")
@@ -3351,7 +3330,7 @@ window.loadRemoteRoots = loadRemoteRoots;
 document.getElementById("addRemoteBtn").addEventListener("click", async () => {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
-    let url = prompt(
+    let url = await glassPrompt(
         `${t('enterRemoteUrl', 'Enter remote server URL')}:\n\n` +
         `${t('examples', 'Examples')}:\n` +
         `• http://192.168.1.100:8080/\n` +
@@ -3371,7 +3350,7 @@ document.getElementById("addRemoteBtn").addEventListener("click", async () => {
 
     while (attempts < maxAttempts) {
         ++attempts;
-        const input = prompt(t('enterRemoteName', "Enter a name for this remote server (no special characters like . / \\ : * ? \" < > |):"));
+        const input = await glassPrompt(t('enterRemoteName', "Enter a name for this remote server (no special characters like . / \\ : * ? \" < > |):"));
 
         if (!input) {
             if (attempts < maxAttempts) {
@@ -3567,6 +3546,7 @@ async function saveFileToConfiguredLocation(type, blob, filename) {
             const folder = config.path || `idb_${Date.now()}`;
             await idb_putFile(folder, filename, blob, blob.type);
             if (typeof renderStorage === 'function') renderStorage();
+            if (typeof showToast === 'function') showToast(filename);
             return true;
         }
 
@@ -3611,6 +3591,7 @@ async function saveFileToConfiguredLocation(type, blob, filename) {
         }
 
         if (typeof renderStorage === 'function') renderStorage();
+        if (typeof showToast === 'function') showToast(filename);
         return true;
     } catch (err) {
         console.warn(`Failed to save to configured location (${type}):`, err);

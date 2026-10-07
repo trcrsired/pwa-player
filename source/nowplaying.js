@@ -120,7 +120,7 @@ async function nowPlaying_playIndex(index) {
     renderNowPlayingQueue();
 }
 
-async function startNowPlayingFromPlaylistTable(playlist, startIndex, playlistName, noshufflefirsttime) {
+async function startNowPlayingFromPlaylistTable(playlist, startIndex, playlistName, noshufflefirsttime, randomStart = false) {
     nowPlayingQueue = playlistName
         ? playlist.map(item => ({ ...item, playlistName }))
         : playlist.slice();
@@ -136,26 +136,27 @@ async function startNowPlayingFromPlaylistTable(playlist, startIndex, playlistNa
     // Use startIndex directly for ordered queue
     if (playMode !== "shuffle") {
         nowPlayingIndex = startIndex;
+    } else if (randomStart) {
+        // "Play whole playlist" entry points start on a random track
+        nowPlayingIndex = 0;
     } else {
-        // In shuffle mode with startIndex=0, just play shuffledQueue[0]
-        // Otherwise find the shuffled position of the requested item
-        if (startIndex === 0) {
-            nowPlayingIndex = 0;
-        } else {
-            const startEntry = nowPlayingQueue[startIndex];
-            const foundIndex = shuffledQueue.findIndex(e => e.path === startEntry.path && e.playlistName === startEntry.playlistName);
-            nowPlayingIndex = (foundIndex >= 0) ? foundIndex : 0;
-        }
+        // Find the requested item's position in the shuffled queue so an
+        // explicitly selected entry is the one that plays (index 0 included)
+        const startEntry = nowPlayingQueue[startIndex];
+        const foundIndex = startEntry
+            ? shuffledQueue.findIndex(e => e.path === startEntry.path && e.playlistName === startEntry.playlistName)
+            : -1;
+        nowPlayingIndex = (foundIndex >= 0) ? foundIndex : 0;
     }
 
     await nowPlaying_playIndex(nowPlayingIndex);
 }
 
-async function startNowPlayingFromPlaylist(playlistName, startIndex) {
+async function startNowPlayingFromPlaylist(playlistName, startIndex, randomStart = false) {
     const playlists = await playlists_load();
     const list = playlists[playlistName];
     if (!list) return;
-    await startNowPlayingFromPlaylistTable(list, startIndex, playlistName, false);
+    await startNowPlayingFromPlaylistTable(list, startIndex, playlistName, false, randomStart);
 }
 
 async function playPrevious() {
@@ -235,10 +236,11 @@ async function playNext() {
             break;
 
         case "once":
+            // Advance only if a next entry exists — otherwise stay and stop
             if (++nowPlayingIndex >= nowPlayingQueue.length) {
                 nowPlayingIndex = nowPlayingQueue.length - 1;
+                toplay = false;
             }
-            toplay = false;
             break;
     }
     if (nowPlayingIndex >= nowPlayingQueue.length) {
@@ -247,7 +249,9 @@ async function playNext() {
     if (nowPlayingIndex < 0) {
         nowPlayingIndex = 0;
     }
-    await nowPlaying_playIndex(nowPlayingIndex);
+    if (toplay) {
+        await nowPlaying_playIndex(nowPlayingIndex);
+    }
 }
 
 document.getElementById("prevBtn").addEventListener("click", playPrevious);
@@ -301,7 +305,7 @@ async function restoreLastPlayback() {
         const playlists = await playlists_load();
         const list = playlists[defaultPlaylist];
         if (list && list.length > 0) {
-            await startNowPlayingFromPlaylist(defaultPlaylist, 0);
+            await startNowPlayingFromPlaylist(defaultPlaylist, 0, true);
             return true;
         }
     }
@@ -347,7 +351,8 @@ function updateNowPlayingInfo(entry) {
     const isImage = typeof window.isImageFile === 'function' && window.isImageFile(entry.name || entry.path || '');
 
     // Basic metadata with image indicator
-    titleEl.textContent = isImage ? `🖼️ ${entry.name || "Unknown Title"}` : entry.name || "Unknown Title";
+    titleEl.innerHTML = isImage ? `${icon('photo')} ${escapeHTML(entry.name || "Unknown Title")}` : "";
+    if (!isImage) titleEl.textContent = entry.name || "Unknown Title";
     artistEl.textContent = entry.artist || "";
     urlEl.textContent = entry.path || "";
 }
@@ -386,11 +391,11 @@ function removeFromNowPlaying(index) {
     renderNowPlayingQueue();
 }
 
-function confirmRemoveFromNowPlaying(index) {
+async function confirmRemoveFromNowPlaying(index) {
     const queue = getActiveQueue();
     const entry = queue[index];
 
-    const ok = confirm(`Remove "${entry.name || entry.path}" from the queue?`);
+    const ok = await glassConfirm(`Remove "${entry.name || entry.path}" from the queue?`);
     if (!ok) return;
 
     removeFromNowPlaying(index);
@@ -415,6 +420,7 @@ function showNowPlayingItemMenu(index, button) {
         menuHtml += `<div class="menu-item" data-action="copy-url">${t('copyUrl', 'Copy URL')}</div>`;
     }
     menuHtml += `
+        <div class="menu-item" data-action="add-to-playlist">${t('addToPlaylist', 'Add to Playlist')}</div>
         <div class="menu-item danger" data-action="remove">${t('removeFromQueue', 'Remove from Queue')}</div>
         <div class="menu-item" data-action="properties">${t('properties', 'Properties')}</div>
         <div class="menu-item" data-action="close">${t('close', 'Close')}</div>
@@ -465,8 +471,16 @@ function showNowPlayingItemMenu(index, button) {
                 return;
             }
 
+            if (action === "add-to-playlist") {
+                // Allow picking the source playlist too — the dedup check
+                // inside reports "already in playlist" instead of hiding it
+                await addEntryToPlaylistPrompt(entry, null);
+                closeMenu();
+                return;
+            }
+
             if (action === "remove") {
-                confirmRemoveFromNowPlaying(index);
+                await confirmRemoveFromNowPlaying(index);
             }
 
             if (action === "properties") {
@@ -632,11 +646,20 @@ function renderNowPlayingQueue() {
 
         // Add image badge if this is an image file
         const isImage = typeof window.isImageFile === 'function' && window.isImageFile(entry.name || entry.path || '');
-        const imageBadge = isImage ? ' 🖼️' : '';
+        const imageBadge = isImage ? ' ' + icon('photo') : '';
 
         // Add playing indicator if this is the current track
-        const playingIndicator = isCurrentTrack ? '▶ ' : '';
-        titleSpan.innerHTML = `${playingIndicator}${escapeHTML(entry.name || entry.path)}${imageBadge}${badgesHtml}`;
+        const playingIndicator = isCurrentTrack ? icon('play') + ' ' : '';
+
+        // Small badge showing which saved playlist this entry came from
+        const sourceBadge = entry.playlistName
+            ? `<span class="iptv-badge np-src-badge" title="${escapeHTML(entry.playlistName)}">${icon('musicList')}<span class="np-src-name">${escapeHTML(entry.playlistName)}</span></span>`
+            : '';
+
+        // Name truncates with ellipsis; badges never shrink or clip
+        titleSpan.innerHTML =
+            `<span class="np-item-name">${playingIndicator}${escapeHTML(entry.name || entry.path)}</span>` +
+            `<span class="np-item-badges">${imageBadge}${badgesHtml}${sourceBadge}</span>`;
 
         // Click on title → play
         titleSpan.addEventListener("click", () => {
@@ -649,7 +672,7 @@ function renderNowPlayingQueue() {
         // Menu button (⋮)
         const menuBtn = document.createElement("button");
         menuBtn.className = "np-item-menu";
-        menuBtn.textContent = "⋮";
+        setIcon(menuBtn, "ellipsisV");
         menuBtn.title = "Menu";
         menuBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -666,21 +689,9 @@ function renderNowPlayingQueue() {
 function updatePlayModeButton() {
     const btn = document.getElementById("playModeBtn");
 
-    switch (playMode) {
-        case "once":
-            btn.textContent = "➡️";
-            break;
-        case "repeat":
-            btn.textContent = "🔁";
-            break;
-        case "repeat-one":
-            btn.textContent = "🔂";
-            break;
-        case "shuffle":
-            btn.textContent = "🔀";
-            break;
-    }
-    document.getElementById("npPlayModeBtn").textContent = btn.textContent;
+    const modeIcons = { once: "once", repeat: "repeat", "repeat-one": "repeatOne", shuffle: "shuffle" };
+    setIcon(btn, modeIcons[playMode] || "once");
+    setIcon(document.getElementById("npPlayModeBtn"), btn.dataset.icon);
 }
 
 async function loadPlayMode() {

@@ -201,7 +201,7 @@ async function updatePlaylistEntryName(playlistName, entryPath, newName, skipIfH
                             const isCurrentTrack = currentTrack && queueEntry.path === currentTrack.path &&
                                 (queueEntry.playlistName === currentTrack.playlistName || (!queueEntry.playlistName && !currentTrack.playlistName));
 
-                            const playingIndicator = isCurrentTrack ? '▶ ' : '';
+                            const playingIndicator = isCurrentTrack ? icon('play') + ' ' : '';
 
                             // Update name if this is the entry we're updating, otherwise keep existing name
                             const displayName = (queueEntry.path === entryPath && queueEntry.playlistName === playlistName)
@@ -275,8 +275,8 @@ function stopEmbeddedPlayer() {
 
     const playBtn = document.getElementById("playBtn");
     const npPlayBtn = document.getElementById("npPlayBtn");
-    if (playBtn) playBtn.textContent = "▶️";
-    if (npPlayBtn) npPlayBtn.textContent = "▶️";
+    if (playBtn) setIcon(playBtn, "play");
+    if (npPlayBtn) setIcon(npPlayBtn, "play");
 
     const progressBar = document.getElementById("progressBar");
     const npProgressBar = document.getElementById("npProgressBar");

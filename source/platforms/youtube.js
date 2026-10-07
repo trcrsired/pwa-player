@@ -175,6 +175,18 @@ class YouTubePlatform extends BasePlatform {
             'iv_load_policy': 3
         };
 
+        // Whether to follow the playlist carried inside the URL itself
+        const useUrlPlaylist = typeof isUrlPlaylistEnabled === 'function' ? isUrlPlaylistEnabled() : false;
+        this.urlPlaylistActive = false;
+        this.convertToSingleVideo = false;
+
+        // A watch?v=ID&list=ID URL degrades to a single video when the
+        // URL playlist feature is off
+        if (contentInfo.type === 'video-in-playlist' && !useUrlPlaylist) {
+            contentInfo = { type: 'video', videoId: contentInfo.videoId };
+            this.currentContentInfo = contentInfo;
+        }
+
         // Configure based on content type
         let playerConfig;
 
@@ -182,6 +194,13 @@ class YouTubePlatform extends BasePlatform {
             // Load entire playlist using YouTube's built-in playlist support
             playerVars.listType = 'playlist';
             playerVars.list = contentInfo.playlistId;
+
+            if (useUrlPlaylist) {
+                this.urlPlaylistActive = true;
+            } else {
+                // Load once to discover items, then collapse to the first video
+                this.convertToSingleVideo = true;
+            }
 
             playerConfig = {
                 height: '100%',
@@ -194,21 +213,19 @@ class YouTubePlatform extends BasePlatform {
                 }
             };
         } else if (contentInfo.type === 'video-in-playlist') {
-            // Load specific video within playlist
+            // Pass videoId together with list/listType so playback starts at
+            // the selected video and YouTube continues through the playlist
             playerVars.listType = 'playlist';
             playerVars.list = contentInfo.playlistId;
-            // Index will be determined by YouTube, or we can load specific video
+            this.urlPlaylistActive = true;
 
             playerConfig = {
                 height: '100%',
                 width: '100%',
+                videoId: contentInfo.videoId,
                 playerVars: playerVars,
                 events: {
-                    'onReady': (event) => {
-                        // Seek to specific video in playlist
-                        // Find index by loading playlist and matching video
-                        this.onReady(event, this.pendingOptions);
-                    },
+                    'onReady': (event) => this.onReady(event, this.pendingOptions),
                     'onStateChange': (event) => this.onStateChange(event, this.pendingOptions),
                     'onError': (event) => this.onError(event, this.pendingOptions)
                 }
@@ -239,7 +256,30 @@ class YouTubePlatform extends BasePlatform {
     }
 
     onReady(event, options) {
+        // URL playlist disabled: the embed was only loaded to discover the
+        // playlist contents. The actual collapse happens in onStateChange
+        // once the video is PLAYING — only then is getVideoData() reliably
+        // populated with the video the user is actually watching.
+        if (this.convertToSingleVideo) {
+            // Safety: if playback never starts, stop rather than leave the
+            // whole YouTube playlist armed
+            setTimeout(() => {
+                if (this.convertToSingleVideo) {
+                    this.convertToSingleVideo = false;
+                    try { this.player.stopVideo(); } catch (e) {}
+                }
+            }, 8000);
+            if (options.onReady) options.onReady(event);
+            return;
+        }
+
         event.target.playVideo();
+
+        // Resume position after a rebuild (single-video conversion)
+        if (this.resumeTime) {
+            try { this.player.seekTo(this.resumeTime, true); } catch (e) {}
+            this.resumeTime = 0;
+        }
 
         // Set volume from stored preference
         const storedVolume = localStorage.getItem('volume');
@@ -299,31 +339,91 @@ class YouTubePlatform extends BasePlatform {
         if (options.onReady) options.onReady(event);
     }
 
+    // Rebuild the embed as a plain single-video player (no list params) so
+    // YouTube cannot continue into the rest of the URL playlist
+    recreateAsSingleVideo(videoId) {
+        try {
+            const parent = this.player.getIframe().parentNode;
+            if (!parent) return false;
+            this.player.destroy();
+            const div = document.createElement('div');
+            parent.appendChild(div);
+            this.createPlayer({ type: 'video', videoId }, div, this.pendingOptions);
+            return true;
+        } catch (e) {
+            console.warn("Could not rebuild player as single video:", e);
+            return false;
+        }
+    }
+
     onStateChange(event, options) {
+        // URL playlist disabled: once the playlist embed actually starts
+        // playing a video, rebuild as a single-video player for exactly
+        // that video (PLAYING = getVideoData is finally reliable)
+        if (this.convertToSingleVideo && event.data === YT.PlayerState.PLAYING) {
+            this.convertToSingleVideo = false;
+            try {
+                const data = this.player.getVideoData && this.player.getVideoData();
+                const videoId = data && data.video_id;
+                const t = this.player.getCurrentTime ? this.player.getCurrentTime() : 0;
+                if (videoId && this.recreateAsSingleVideo(videoId)) {
+                    this.resumeTime = t;
+                } else {
+                    this.player.stopVideo();
+                }
+            } catch (e) {
+                try { this.player.stopVideo(); } catch (e2) {}
+            }
+            if (options.onStateChange) options.onStateChange(event);
+            return;
+        }
+
         const playBtn = document.getElementById("playBtn");
         const npPlayBtn = document.getElementById("npPlayBtn");
 
         if (event.data === YT.PlayerState.PLAYING) {
-            if (playBtn) playBtn.textContent = "⏸️";
-            if (npPlayBtn) npPlayBtn.textContent = "⏸️";
+            if (playBtn) setIcon(playBtn, "pause");
+            if (npPlayBtn) setIcon(npPlayBtn, "pause");
             navigator.mediaSession.playbackState = 'playing';
 
             if (!this.progressInterval) {
                 this.startProgressUpdates(() => this.updateProgress());
             }
         } else if (event.data === YT.PlayerState.PAUSED) {
-            if (playBtn) playBtn.textContent = "▶️";
-            if (npPlayBtn) npPlayBtn.textContent = "▶️";
+            if (playBtn) setIcon(playBtn, "play");
+            if (npPlayBtn) setIcon(npPlayBtn, "play");
             navigator.mediaSession.playbackState = 'paused';
         } else if (event.data === YT.PlayerState.ENDED) {
-            if (playBtn) playBtn.textContent = "▶️";
-            if (npPlayBtn) npPlayBtn.textContent = "▶️";
+            if (playBtn) setIcon(playBtn, "play");
+            if (npPlayBtn) setIcon(npPlayBtn, "play");
             navigator.mediaSession.playbackState = 'paused';
 
             this.stopProgressUpdates();
 
-            if (!this.handleVideoEnded()) {
-                if (typeof playNext === 'function') playNext();
+            if (this.urlPlaylistActive) {
+                // YouTube advances its own playlist internally — an ENDED here
+                // is usually just a track transition. Wait a beat and only
+                // hand off to our playlist if playback has truly stopped.
+                setTimeout(() => {
+                    try {
+                        const state = this.player && this.player.getPlayerState ? this.player.getPlayerState() : -1;
+                        if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) return;
+                    } catch (e) { /* fall through to normal handling */ }
+                    if (!this.handleVideoEnded()) {
+                        if (typeof playNext === 'function') playNext();
+                    }
+                }, 400);
+            } else {
+                // Defensive: if this embed still has a multi-item playlist
+                // context (conversion pending or failed), stop it now so
+                // YouTube cannot auto-advance into the next video
+                try {
+                    const list = this.player.getPlaylist && this.player.getPlaylist();
+                    if (list && list.length > 1) this.player.stopVideo();
+                } catch (e) {}
+                if (!this.handleVideoEnded()) {
+                    if (typeof playNext === 'function') playNext();
+                }
             }
         }
 
@@ -475,85 +575,18 @@ registerPlatform(YouTubePlatform);
 function onYouTubeIframeAPIReady() {
     window._ytApiReady = true;
 
-    // If there's a pending instance, continue creating its player
+    // If there's a pending instance, finish creating its player through the
+    // normal path (which applies the URL-playlist setting and flags)
     if (window._pendingYouTubeInstance && window._pendingYouTubeContentInfo) {
         const instance = window._pendingYouTubeInstance;
         const contentInfo = window._pendingYouTubeContentInfo;
         const container = window._pendingYouTubeContainer || 'embeddedPlayer';
 
-        // Check play mode for looping
-        const playMode = typeof getPlayMode === 'function' ? getPlayMode() : 'once';
-        const shouldLoop = playMode === 'repeat-one';
-
-        // Build playerVars
-        const playerVars = {
-            'playsinline': 1,
-            'autoplay': 1,
-            'controls': 1,
-            'modestbranding': 1,
-            'rel': 0,
-            'fs': 1,
-            'iv_load_policy': 3
-        };
-
-        let playerConfig;
-
-        if (contentInfo.type === 'playlist') {
-            // Load playlist
-            playerVars.listType = 'playlist';
-            playerVars.list = contentInfo.playlistId;
-
-            playerConfig = {
-                height: '100%',
-                width: '100%',
-                playerVars: playerVars,
-                events: {
-                    'onReady': (event) => instance.onReady(event, instance.pendingOptions),
-                    'onStateChange': (event) => instance.onStateChange(event, instance.pendingOptions),
-                    'onError': (event) => instance.onError(event, instance.pendingOptions)
-                }
-            };
-        } else if (contentInfo.type === 'video-in-playlist') {
-            // Video within playlist
-            playerVars.listType = 'playlist';
-            playerVars.list = contentInfo.playlistId;
-
-            playerConfig = {
-                height: '100%',
-                width: '100%',
-                playerVars: playerVars,
-                events: {
-                    'onReady': (event) => instance.onReady(event, instance.pendingOptions),
-                    'onStateChange': (event) => instance.onStateChange(event, instance.pendingOptions),
-                    'onError': (event) => instance.onError(event, instance.pendingOptions)
-                }
-            };
-        } else {
-            // Single video
-            if (shouldLoop) {
-                playerVars['loop'] = 1;
-                playerVars['playlist'] = contentInfo.videoId;
-            }
-
-            playerConfig = {
-                height: '100%',
-                width: '100%',
-                videoId: contentInfo.videoId,
-                playerVars: playerVars,
-                events: {
-                    'onReady': (event) => instance.onReady(event, instance.pendingOptions),
-                    'onStateChange': (event) => instance.onStateChange(event, instance.pendingOptions),
-                    'onError': (event) => instance.onError(event, instance.pendingOptions)
-                }
-            };
-        }
-        console.log(new Date().toISOString(), " playerConfig:", playerConfig);
-
-        instance.player = new YT.Player(container, playerConfig);
-
         window._pendingYouTubeInstance = null;
         window._pendingYouTubeContentInfo = null;
         window._pendingYouTubeContainer = null;
+
+        instance.createPlayer(contentInfo, container, instance.pendingOptions || {});
     }
 }
 

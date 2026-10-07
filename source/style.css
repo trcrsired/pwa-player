@@ -1,48 +1,66 @@
 :root {
+  /* Liquid glass palette (dark) */
   --color-bg: #000;
-  --color-fg: #fff;
-  --color-ui-bg: rgba(255,255,255,0);
-  --color-ui-fg: #222;
-  --color-hover: #d0d0d0;
-  --color-text: #fff;
+  --color-fg: rgba(255, 255, 255, 0.92);
+  --color-ui-fg: rgba(255, 255, 255, 0.92);
+  --color-text: rgba(255, 255, 255, 0.92);
+  --color-dim: rgba(235, 235, 245, 0.6);
+  --color-hover: rgba(255, 255, 255, 0.14);
+  --color-active: rgba(255, 255, 255, 0.22);
 
-  --button-font-size: 24px;
-  --button-padding: 6px 10px;
-  --button-radius: 6px;
+  --glass-bg: rgba(28, 28, 32, 0.45);
+  --glass-bg-strong: rgba(30, 30, 34, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.22);
+  --glass-blur: saturate(1.8) blur(22px);
+  --glass-blur-heavy: saturate(1.6) blur(44px);
+  --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.38);
 
-  --control-gap: 16px;
-  --group-gap: 0px;
-  --row-gap: 8px;
+  --accent: #0a84ff;
+  --danger: #ff453a;
+  --record: #ff453a;
 
-  --volume-width: 100px;
+  --icon-size: 1.2em;
+  --button-size: 38px;
+  --button-font-size: 17px;
+  --button-padding: 8px;
+  --button-radius: 50%;
+
+  --control-gap: 10px;
+  --group-gap: 2px;
+  --row-gap: 6px;
+
+  --volume-width: 90px;
   --progress-width: 80%;
 
-  --controls-padding: 10px 14px;
-  --controls-radius: 10px;
-  --controls-width: 92vw;
+  --controls-padding: 8px 14px;
+  --controls-radius: 22px;
+  --controls-width: auto;
   --controls-z: 1002;  /* Above trigger zone and button */
   --progress-z: 999;
 
-  --controls-ui-bg: rgba(255, 255, 255, 0);
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+             Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
 }
 
 /* Button size variants */
 .controls-compact {
-  --button-font-size: 20px;
-  --button-padding: 4px 8px;
+  --button-font-size: 15px;
+  --button-size: 32px;
   --group-gap: 0px;
 }
 
 .controls-normal {
-  --button-font-size: 24px;
-  --button-padding: 6px 10px;
-  --group-gap: 0px;
+  --button-font-size: 17px;
+  --button-size: 38px;
+  --group-gap: 2px;
 }
 
 .controls-large {
-  --button-font-size: 28px;
-  --button-padding: 10px 14px;
-  --group-gap: 4px;
+  --button-font-size: 20px;
+  --button-size: 46px;
+  --group-gap: 6px;
 }
 
 /* Layout Reset */
@@ -51,6 +69,11 @@ html, body {
   height: 100%;
   overflow: hidden;
   background-color: var(--color-bg);
+}
+
+body {
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Video Player Styling */
@@ -65,23 +88,65 @@ html, body {
   cursor: none;
 }
 
-/* Controls Container */
+/* Rotate-view button: CSS rotation works on every device, unlike
+   screen.orientation.lock which requires mobile fullscreen. 90/270 swap
+   the box dimensions so the rotated picture still fills the viewport. */
+#player.rot90,
+#player.rot270 {
+  width: 100vh;
+  height: 100vw;
+  flex-shrink: 0;
+}
+#player.rot90  { transform: rotate(90deg); }
+#player.rot180 { transform: rotate(180deg); }
+#player.rot270 { transform: rotate(270deg); }
+
+/* When fullscreen is active (element OR document level), Chrome may promote
+   the video to a hardware overlay plane whose geometry is synced separately
+   from the DOM compositor — every overlay show/hide can then flash a stale
+   black/misplaced video region. A no-op filter keeps the video on the
+   composited path in both fullscreen modes. */
+#player:fullscreen,
+#player:-webkit-full-screen,
+:fullscreen #player,
+:-webkit-full-screen #player {
+  filter: opacity(0.999);
+}
+
+/* Inline SVG icons scale with font-size */
+.icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Controls Container — floating liquid-glass dock */
 #controls {
   position: absolute;
-  bottom: 8px;
+  bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--controls-ui-bg);
-  padding: var(--controls-padding);
-  border-radius: var(--controls-radius);
   display: flex;
   flex-direction: column;
   gap: var(--row-gap);
   justify-content: center;
   align-items: center;
   width: var(--controls-width);
+  max-width: 94vw;
+  padding: var(--controls-padding);
+  border-radius: var(--controls-radius);
   z-index: var(--controls-z);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  color: var(--color-fg);
+  font-family: var(--font-ui);
+  font-size: var(--button-font-size);
+
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow),
+              inset 0 0.5px 0 var(--glass-highlight);
   transition: opacity 0.3s ease;
 }
 
@@ -90,7 +155,6 @@ html, body {
   pointer-events: none;
   display: none;
 }
-
 
 #advancedControls {
     transition: opacity .3s ease;
@@ -109,24 +173,11 @@ html, body {
   flex-wrap: wrap; /* allow wrapping */
 }
 
-@media (max-width: 480px) {
-    .control-group.left-controls,
-    .control-group.right-controls {
-        width: 100%;        /* each group takes full width */
-        justify-content: center; /* center buttons */
-        margin-top: 6px;
-        flex-wrap: wrap; /* allow wrapping */
-    }
-
-    #volumeSlider {
-        width: 60%; /* shrink slider on small screens */
-    }
-}
-
 .left-controls,
 .right-controls {
   display: flex;
   gap: var(--group-gap);
+  align-items: center;
 }
 
 /* Control Groups */
@@ -140,18 +191,26 @@ html, body {
     color: var(--color-fg);
 }
 
-/* Buttons */
+/* Buttons — ghost icon buttons */
 button,
 .picker-button {
-  background: var(--color-ui-bg);
+  background: transparent;
   color: var(--color-fg);
   border: none;
   padding: var(--button-padding);
   border-radius: var(--button-radius);
   font-size: var(--button-font-size);
-  cursor: pointer;
+  font-family: var(--font-ui);
   line-height: 1;
+  cursor: pointer;
   user-select: none;
+  min-width: var(--button-size);
+  height: var(--button-size);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
 }
 
 button:hover,
@@ -159,39 +218,119 @@ button:hover,
   background: var(--color-hover);
 }
 
-/* Rotation buttons styling */
-#rotationBtn {
-  background: var(--color-ui-bg);
-  color: var(--color-ui-fg);
-  border: none;
-  padding: var(--button-padding);
-  border-radius: var(--button-radius);
-  font-size: var(--button-font-size);
-  cursor: pointer;
-  user-select: none;
+button:active {
+  transform: scale(0.92);
 }
 
-/* Fullscreen buttons styling */
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* AB-loop text button keeps a fixed-width feel */
+#abLoopBtn {
+  font-weight: 600;
+  font-size: calc(var(--button-font-size) - 2px);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Status chips (battery / network) */
+#batteryStatus,
+#networkStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-dim);
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+#batteryStatus .icon,
+#networkStatus .icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* Recording indicator inside the time display */
+#timeDisplay .icon-rec {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  vertical-align: baseline;
+  color: var(--record);
+}
+
+#timeDisplay .icon {
+  display: inline-block;
+  vertical-align: -2px;
+  width: 13px;
+  height: 13px;
+}
+
+#mediaRecordBtn {
+  color: var(--record);
+}
+
+/* Fullscreen button */
+#rotationBtn,
 #fullscreenBtn {
-  background: var(--color-ui-bg);
   color: var(--color-fg);
-  border: none;
-  padding: var(--button-padding);
-  border-radius: var(--button-radius);
-  font-size: var(--button-font-size);
-  cursor: pointer;
-  user-select: none;
-}
-
-#rotationBtn:hover,
-#fullscreenBtn:hover {
-  background: var(--color-hover);
 }
 
 /* Progress Bar */
 #progressBar {
   width: var(--progress-width);
   z-index: var(--progress-z);
+}
+
+/* iOS-style thin range sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 22px;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(120, 120, 128, 0.4);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  margin-top: -4.5px;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.12s ease;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb,
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(120, 120, 128, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 /* Progress Row - progress bar with time on same line */
@@ -211,7 +350,9 @@ button:hover,
   flex-shrink: 0;
   min-width: 90px;
   font-size: 12px;
-  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-dim);
   cursor: pointer;
   user-select: none;
 }
@@ -222,21 +363,49 @@ button:hover,
 
 .progress-row #fullscreenBtn {
   flex-shrink: 0;
-  background: transparent;
-  border: none;
-  color: var(--color-fg);
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  min-width: 32px;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-width: 34px;
+  height: 34px;
 }
 
-.progress-row #fullscreenBtn:hover {
-  opacity: 0.7;
+/* Seek preview bubble — floating glass card */
+#videoPreview {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+#videoPreview video,
+#videoPreview img {
+  width: 160px;
+  height: 90px;
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+
+#previewTime {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Volume Slider */
@@ -245,15 +414,19 @@ button:hover,
 }
 
 #timeDisplay {
-  color: var(--color-text); /* assuming this is white or light grey */
+  color: var(--color-dim);
 }
 
+/* Config menu (legacy floating panel) */
 #configMenu {
   position: absolute;
   bottom: 100px;
   right: 20px;
-  background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent dark */
-  border-radius: 8px;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -262,6 +435,8 @@ button:hover,
   transition: opacity 0.3s ease, transform 0.3s ease;
   opacity: 1;
   transform: translateY(0);
+  box-shadow: var(--glass-shadow),
+              inset 0 0.5px 0 var(--glass-highlight);
 }
 
 #configMenu.hidden {
@@ -272,26 +447,19 @@ button:hover,
 
 .config-item {
   color: var(--color-fg);
-  font-size: 16px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(120, 120, 128, 0.18);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .config-item:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-hover);
 }
 
-@media (prefers-color-scheme: light) {
-  .config-item {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-
-  .config-item:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-  }
+.config-item:active {
+  transform: scale(0.92);
 }
 
 .config-row {
@@ -308,37 +476,61 @@ button:hover,
 .full-width {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
+}
+
+/* The config row duplicates the side rail's shortcuts — only show it
+   when the rail is off */
+body.side-left #configOptions,
+body.side-right #configOptions {
+  display: none;
 }
 
 /* Mobile Tuning */
 @media (max-width: 600px) {
   :root {
-    --button-font-size: 20px;
-    --button-padding: 12px 16px;
+    --button-font-size: 15px;
+    --button-size: 34px;
     --group-gap: 0px;
-    --volume-width: 120px;
+    --row-gap: 4px;
+    --volume-width: 110px;
     --progress-width: 90%;
-    --controls-padding: 8px 12px;
+    --controls-padding: 4px 8px;
   }
 
   #controls {
-    width: 96vw;
-    bottom: 4px;
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    bottom: 6px;
+  }
+
+  .control-group.left-controls,
+  .control-group.right-controls {
+    width: 100%;        /* each group takes full width */
+    justify-content: center; /* center buttons */
+    margin-top: 4px;
+    flex-wrap: wrap; /* allow wrapping */
+  }
+
+  #volumeSlider {
+    width: 60%; /* shrink slider on small screens */
   }
 }
 
+/* Overlay views — frosted sheets floating over the video */
 .overlay-panel {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: #fff;
   z-index: 999;
   display: flex;
   flex-direction: column;
+  background: rgba(18, 18, 22, 0.6);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  backdrop-filter: var(--glass-blur-heavy);
 }
 
 .overlay-view {
@@ -347,18 +539,20 @@ button:hover,
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--bg);
   z-index: 999;
   display: flex;
   flex-direction: column;
   overflow: hidden; /* Prevent any scrolling at this level */
+  background: rgba(18, 18, 22, 0.6);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  backdrop-filter: var(--glass-blur-heavy);
 }
 
 .overlay-header {
   flex-shrink: 0;
   padding: 1em;
-  background: #f0f0f0;
-  border-bottom: 1px solid #ccc;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 0.5px solid var(--glass-border);
 }
 
 .overlay-content {
@@ -389,9 +583,8 @@ button:hover,
 
 .overlay-list li {
   padding: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 0.5px solid rgba(120, 120, 128, 0.25);
 }
-
 
 .storage-item {
   position: relative;
@@ -412,30 +605,39 @@ button:hover,
   position: absolute;
   right: 0;
   top: 100%;
-  background: #fff;
-  border: 1px solid #ccc;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--glass-shadow);
   z-index: 10;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  padding: 4px;
 }
 
 .flyout-menu button {
-  padding: 6px 12px;
+  padding: 8px 12px;
   border: none;
   background: none;
   text-align: left;
   cursor: pointer;
+  border-radius: 8px;
+  font-size: 14px;
+  height: auto;
+  min-width: 0;
+  justify-content: flex-start;
 }
 
 .flyout-menu button:hover {
-  background-color: #f0f0f0;
+  background: var(--color-hover);
 }
 
 .hidden {
   display: none;
 }
-
 
 .overlay-panel.modal {
   position: fixed;
@@ -444,19 +646,15 @@ button:hover,
   transform: translateX(-50%);
   width: 300px;
   max-height: 400px;
-  background: #fff;
-  border: 1px solid #ccc;
+  border-radius: 16px;
   z-index: 9999;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  box-shadow: var(--glass-shadow);
 }
 
 .storage-folder-item {
   cursor: pointer;
   padding: 6px;
-  border-bottom: 1px solid #eee;
-}
-.storage-folder-item:hover {
-  background-color: #f5f5f5;
+  border-bottom: 0.5px solid rgba(120, 120, 128, 0.25);
 }
 
 #folderFileList {
@@ -469,93 +667,214 @@ button:hover,
   display: flex;
   align-items: center;
   padding: 6px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 0.5px solid rgba(120, 120, 128, 0.25);
   cursor: pointer;
 }
 
 .file-entry:hover {
-  background-color: #f9f9f9;
+  background: var(--color-hover);
 }
 
 #folderActions {
   position: sticky;
   top: 0;
-  background: #fff;
   padding: 0.5em 0;
   z-index: 1;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 0.5px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
 }
 
-/* Context menu styles */
+/* Context menu — floating glass panel */
 .context-menu {
     position: absolute;
     z-index: 9999;
-    background: #222;
-    border: 1px solid #444;
-    padding: 6px 0;
-    border-radius: 6px;
-    min-width: 120px;
+    min-width: 160px;
+    padding: 5px;
+    border-radius: 14px;
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow),
+                inset 0 0.5px 0 var(--glass-highlight);
 }
 
 .context-menu .menu-item {
-    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
     cursor: pointer;
-    color: #fff;
+    color: var(--color-fg);
     font-size: 14px;
+    border-radius: 9px;
+    white-space: nowrap;
+}
+
+.context-menu .menu-item .icon {
+    width: 16px;
+    height: 16px;
+    color: var(--color-dim);
 }
 
 .context-menu .menu-item:hover {
-    background-color: #444;
+    background: var(--color-hover);
 }
 
 .context-menu .menu-item.danger {
-    color: #ff6b6b;
+    color: var(--danger);
 }
 
-.context-menu .menu-item.danger:hover {
-    background-color: #4a2222;
+.context-menu .menu-item.danger .icon {
+    color: var(--danger);
 }
+
+/* Glass modal dialogs (alert / confirm / prompt / option picker) */
+.glass-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.32);
+    -webkit-backdrop-filter: blur(8px) saturate(1.3);
+    backdrop-filter: blur(8px) saturate(1.3);
+    animation: dlgFadeIn 0.16s ease;
+}
+.glass-dialog {
+    min-width: 240px;
+    max-width: min(380px, 88vw);
+    max-height: 72vh;
+    overflow-y: auto;
+    padding: 20px 18px 14px;
+    border-radius: 18px;
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow),
+                inset 0 0.5px 0 var(--glass-highlight);
+    color: var(--color-fg);
+    outline: none;
+    animation: dlgPop 0.18s cubic-bezier(0.32, 0.72, 0.35, 1.2);
+}
+.glass-dialog-title {
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 10px;
+}
+.glass-dialog-msg {
+    font-size: 13.5px;
+    line-height: 1.5;
+    text-align: center;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 16px;
+}
+.glass-dialog-input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+    font-size: 14px;
+    color: var(--color-fg);
+    background: var(--color-hover);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    outline: none;
+}
+.glass-dialog-input:focus {
+    border-color: var(--accent);
+}
+.glass-dialog-btns {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+.glass-dialog-btns.stack {
+    flex-direction: column;
+}
+.dlg-btn {
+    flex: 1;
+    padding: 9px 14px;
+    font-size: 14px;
+    color: var(--color-fg);
+    background: var(--color-hover);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: normal;
+    word-break: break-word;
+}
+.dlg-btn:hover {
+    background: var(--color-active);
+}
+.dlg-btn.primary {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+.dlg-btn.primary:hover {
+    filter: brightness(1.12);
+}
+.dlg-btn.danger {
+    color: var(--danger);
+}
+@keyframes dlgFadeIn { from { opacity: 0; } }
+@keyframes dlgPop { from { opacity: 0; transform: scale(0.94) translateY(6px); } }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --color-bg: #fafafa;
-    --color-ui-bg: rgba(0, 0, 0, 0);
-    --color-ui-fg: #000;
-    --color-hover: #e0e0e0;
-    --color-text: #000;
-    --color-fg: #000;
+    --color-bg: #f2f2f7;
+    --color-fg: rgba(0, 0, 0, 0.85);
+    --color-ui-fg: rgba(0, 0, 0, 0.85);
+    --color-text: rgba(0, 0, 0, 0.85);
+    --color-dim: rgba(60, 60, 67, 0.6);
+    --color-hover: rgba(0, 0, 0, 0.07);
+    --color-active: rgba(0, 0, 0, 0.12);
 
-    --controls-ui-bg: rgba(0, 0, 0, 0);
+    --glass-bg: rgba(250, 250, 252, 0.55);
+    --glass-bg-strong: rgba(250, 250, 252, 0.78);
+    --glass-border: rgba(0, 0, 0, 0.09);
+    --glass-highlight: rgba(255, 255, 255, 0.7);
+    --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+
+    --accent: #007aff;
+    --danger: #ff3b30;
   }
 
-  .context-menu {
+  #controls {
+    background: rgba(30, 30, 34, 0.4);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.92);
+    --color-fg: rgba(255, 255, 255, 0.92);
+    --color-text: rgba(255, 255, 255, 0.92);
+    --color-dim: rgba(235, 235, 245, 0.6);
+    --color-hover: rgba(255, 255, 255, 0.16);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
     background: #fff;
-    border: 1px solid #ccc;
   }
 
-  .context-menu .menu-item {
-    color: #000;
-  }
-
-  .context-menu .menu-item:hover {
-    background-color: #f0f0f0;
-  }
-
+  .overlay-view,
   .overlay-panel {
-    background: #fff;
-  }
-
-  .overlay-view {
-    background: #fff;
+    background: rgba(244, 244, 248, 0.62);
   }
 
   .overlay-header {
-    background: #f0f0f0;
-    border-bottom: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.5);
   }
 
-  .overlay-list li {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  .context-menu .menu-item .icon,
+  .toggle .icon,
+  .iptv-toggle .icon,
+  .iptv-toggle-text .icon {
+    color: var(--color-dim);
   }
 }
 
@@ -597,19 +916,24 @@ button:hover,
   right: 15px;
   transform: translateY(-50%);
   z-index: 1001;  /* Above trigger zone */
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 12px;
-  font-size: 16px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  color: var(--color-fg);
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.3s ease;
+  opacity: 0.75;
+  transition: opacity 0.25s ease;
+  box-shadow: var(--glass-shadow);
 }
 
 #embeddedShowControlsBtn:hover {
   opacity: 1;
+  background: var(--color-hover);
 }
 
 /* Trigger zone overlay - small area around button position */
@@ -623,6 +947,17 @@ button:hover,
   background: transparent;
   pointer-events: auto;  /* Capture mouse events */
   cursor: default;
+}
+
+/* When the side rail docks on the right, the embedded controls
+   affordance moves to the opposite edge so the two never overlap */
+body.side-right #embeddedShowBtnTriggerZone {
+  right: auto;
+  left: 0;
+}
+body.side-right #embeddedShowControlsBtn {
+  right: auto;
+  left: 15px;
 }
 
 .iptv-nsfw-badge {
@@ -644,11 +979,14 @@ button:hover,
 .sub-menu {
     background: none;
     border: none;
-    font-size: 18px;
+    font-size: 15px;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 4px;
     color: inherit;
-    opacity: 0.6;
+    opacity: 0.55;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
 }
 
 /* Header-level burger buttons need margin-left: auto */
@@ -668,8 +1006,7 @@ button:hover,
 .file-menu:hover,
 .sub-menu:hover {
     opacity: 1;
-    background: rgba(128, 128, 128, 0.2);
-    border-radius: 4px;
+    background: var(--color-hover);
 }
 
 /* Action button containers */
@@ -679,6 +1016,23 @@ button:hover,
     gap: 4px;
     align-items: center;
     margin-left: auto;
+}
+
+/* Inline icons inside file/folder names and list rows */
+.file-name .icon,
+.sub-name .icon,
+.storage-name .icon,
+.np-item-title .icon {
+    display: inline-block;
+    vertical-align: -2.5px;
+    width: 14px;
+    height: 14px;
+    margin-right: 5px;
+    color: var(--color-dim);
+}
+
+.np-item-title .icon {
+    color: var(--accent);
 }
 
 /* Storage file/sub headers */
@@ -697,10 +1051,28 @@ button:hover,
 .iptv-toggle {
     background: none;
     border: none;
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 4px;
     color: inherit;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle .icon,
+.iptv-toggle .icon,
+.iptv-toggle-text .icon {
+    width: 14px;
+    height: 14px;
+    color: var(--color-dim);
+}
+
+.iptv-toggle-text {
+    display: inline-flex;
 }
 
 .file-play:hover,
@@ -708,8 +1080,7 @@ button:hover,
 .quick-add:hover,
 .toggle:hover,
 .iptv-toggle:hover {
-    background: rgba(128, 128, 128, 0.15);
-    border-radius: 4px;
+    background: var(--color-hover);
 }
 
 /* Playlist header */
@@ -742,48 +1113,90 @@ button:hover,
 
 .np-item-title {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+.np-item-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.np-item-badges {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.np-item-badges .icon {
+    margin-right: 0;
 }
 
 .np-item-menu {
     background: none;
     border: none;
-    font-size: 18px;
+    font-size: 15px;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 4px;
     color: inherit;
-    opacity: 0.6;
+    opacity: 0.55;
     margin-left: auto;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
 }
 
 .np-item-menu:hover {
     opacity: 1;
-    background: rgba(128, 128, 128, 0.2);
-    border-radius: 4px;
+    background: var(--color-hover);
 }
 
-/* Floating scroll buttons */
+/* Source-playlist badge on queue items — same chip shape as .iptv-badge */
+.np-src-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(128, 128, 128, 0.3);
+    color: var(--color-fg);
+    white-space: nowrap;
+}
+.np-src-badge .icon {
+    width: 9px;
+    height: 9px;
+    color: inherit;
+}
+.np-src-name {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Floating scroll buttons — glass circles */
 .scroll-btn {
     position: fixed;
     right: 16px;
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
+    padding: 0;
     border-radius: 50%;
-    border: none;
-    background: rgba(80, 80, 80, 0.85);
-    color: #fff;
-    font-size: 22px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    color: var(--color-fg);
     cursor: pointer;
     z-index: 1100;
     display: none;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-    transition: background 0.15s ease;
+    box-shadow: var(--glass-shadow),
+                inset 0 0.5px 0 var(--glass-highlight);
+    transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .scroll-btn:hover {
-    background: rgba(60, 60, 60, 0.95);
-    transform: scale(1.05);
+    background: var(--color-hover);
+    transform: scale(1.06);
 }
 
 .scroll-btn.scroll-up {
@@ -816,15 +1229,38 @@ button:hover,
     display: none;
 }
 
+/* Compact pill for transient gesture hints — no empty icon box, pinned to
+   the top so it never covers the center of the picture */
+.video-status-overlay.compact {
+    top: calc(env(safe-area-inset-top, 0px) + 10%);
+    transform: none;
+    align-items: flex-start;
+}
+.video-status-overlay.compact .video-status-content {
+    gap: 0;
+    padding: 10px 20px;
+    border-radius: 999px;
+}
+.video-status-overlay.compact .video-status-icon {
+    display: none;
+}
+
 .video-status-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    padding: 24px 32px;
-    width: 100%;
-    max-width: calc(100% - 16px);
+    padding: 26px 34px;
+    width: auto;
+    max-width: calc(100% - 32px);
     text-align: center;
+    border-radius: 20px;
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow),
+                inset 0 0.5px 0 var(--glass-highlight);
 }
 
 @media (max-width: 600px) {
@@ -834,37 +1270,30 @@ button:hover,
 }
 
 .video-status-icon {
-    font-size: 48px;
+    font-size: 44px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-fg);
 }
 
 .video-status-text {
-    color: #000;
-    font-size: 16px;
+    color: var(--color-text);
+    font-size: 15px;
     line-height: 1.5;
-    font-family: system-ui, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-    .video-status-text {
-        color: #fff;
-    }
+    font-family: var(--font-ui);
 }
 
 /* Loading spinner animation */
 .video-status-icon.loading {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(0, 0, 0, 0.2);
-    border-top-color: #000;
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(120, 120, 128, 0.35);
+    border-top-color: var(--color-fg);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@media (prefers-color-scheme: dark) {
-    .video-status-icon.loading {
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-top-color: #fff;
-    }
+    animation: spin 0.9s linear infinite;
 }
 
 @keyframes spin {
@@ -872,7 +1301,13 @@ button:hover,
 }
 
 .video-status-icon.error::before {
-    content: "❌";
+    content: "";
+    width: 48px;
+    height: 48px;
+    display: block;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M9 9l6 6M15 9l-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M9 9l6 6M15 9l-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 /* Secure input - completely hides characters */
@@ -886,4 +1321,246 @@ button:hover,
     color: transparent !important;
     caret-color: var(--color-text);
     text-shadow: none;
+}
+
+/* ============================================================
+   Side rail + slide-over sheets
+   A thin edge trigger reveals a floating vertical rail with
+   quick access to the overlay views as sheets — the player
+   stays visible behind them (incl. embedded iframes).
+   ============================================================ */
+
+#sideEdgeTrigger {
+    position: fixed;
+    top: 12%;
+    bottom: 12%;
+    width: 14px;
+    z-index: 1400; /* above embedded iframe + its trigger zone */
+}
+body.side-left #sideEdgeTrigger { left: 0; }
+body.side-right #sideEdgeTrigger { right: 0; }
+
+/* Visible grab handle — touch devices only. The invisible edge zone is
+   disabled there because the OS back gesture claims edge swipes.
+   Hit area stays wide; the visible part is just a thin glass sliver. */
+#sideRailHandle {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    z-index: 1400;
+    display: none;
+    width: 36px;
+    height: 120px;
+    touch-action: none;
+    cursor: grab;
+}
+#sideRailHandle::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    width: 6px;
+    height: 56px;
+    border-radius: 0 6px 6px 0;
+    background: rgba(255, 255, 255, 0.28);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+#sideRailHandle:active::before {
+    background: rgba(255, 255, 255, 0.5);
+}
+body.side-right #sideRailHandle {
+    left: auto;
+    right: 0;
+}
+body.side-right #sideRailHandle::before {
+    left: auto;
+    right: 0;
+    border-radius: 6px 0 0 6px;
+}
+/* Rail open → the handle steps aside */
+body.rail-shown #sideRailHandle {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+@media (prefers-color-scheme: light) {
+    #sideRailHandle::before {
+        background: rgba(60, 60, 67, 0.3);
+    }
+    #sideRailHandle:active::before {
+        background: rgba(60, 60, 67, 0.5);
+    }
+}
+@media (pointer: coarse) {
+    body.side-left #sideRailHandle,
+    body.side-right #sideRailHandle { display: block; }
+    #sideEdgeTrigger { display: none !important; }
+
+    /* The dock's backdrop blur must re-composite over the hardware video
+       surface every time it shows/hides; on mobile Chrome this can flash a
+       black rectangle for a frame. Use a stronger solid glass instead. */
+    #controls {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background: rgba(28, 28, 32, 0.85);
+        /* Lift the dock above gesture bars / rounded screen edges */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    }
+    /* Same compositing artifact applies to every always-on-top blurred
+       surface over the video — strip the blur there too. */
+    #sideRailHandle::before {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background: rgba(255, 255, 255, 0.45);
+    }
+    .video-status-content {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background: rgba(28, 28, 32, 0.88);
+    }
+}
+@media (pointer: coarse) and (prefers-color-scheme: light) {
+    #controls {
+        background: rgba(250, 250, 252, 0.88);
+    }
+    #sideRailHandle::before {
+        background: rgba(60, 60, 67, 0.45);
+    }
+    .video-status-content {
+        background: rgba(250, 250, 252, 0.9);
+    }
+}
+
+#sideRail {
+    position: fixed;
+    top: 50%;
+    z-index: 1600; /* above sheets so panels can be switched */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 6px;
+    border-radius: 999px;
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow),
+                inset 0 0.5px 0 var(--glass-highlight);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0.35, 1),
+                opacity 0.25s ease;
+}
+body.side-left #sideRail {
+    left: 12px;
+    transform: translateY(-50%) translateX(calc(-100% - 24px));
+}
+body.side-right #sideRail {
+    right: 12px;
+    transform: translateY(-50%) translateX(calc(100% + 24px));
+}
+/* Must outrank the side-docked transform rules above */
+body #sideRail.rail-visible {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+}
+#sideRail.hidden {
+    display: none;
+}
+
+#sideRail .rail-btn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--color-fg);
+}
+#sideRail .rail-btn .icon {
+    width: 19px;
+    height: 19px;
+}
+#sideRail .rail-btn:hover {
+    background: var(--color-hover);
+}
+#sideRail .rail-btn.active {
+    color: var(--accent);
+}
+#sideRailPlayerBtn {
+    color: var(--accent);
+}
+
+.rail-sep {
+    width: 60%;
+    height: 0.5px;
+    background: var(--glass-border);
+    margin: 3px 0;
+}
+
+/* Slide-over sheet — the overlay view re-docked to a screen edge */
+.overlay-view.side-sheet {
+    top: 12px;
+    bottom: 12px;
+    height: auto;
+    width: min(400px, calc(100vw - 24px));
+    border-radius: 24px;
+    border: 0.5px solid var(--glass-border);
+    box-shadow: var(--glass-shadow),
+                inset 0 0.5px 0 var(--glass-highlight);
+    z-index: 1500;
+    touch-action: pan-y; /* vertical scroll stays native; horizontal drag is ours */
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0.35, 1);
+}
+.overlay-view.side-sheet.sheet-left {
+    left: 12px;
+    right: auto;
+    transform: translateX(calc(-100% - 20px));
+}
+.overlay-view.side-sheet.sheet-right {
+    right: 12px;
+    left: auto;
+    transform: translateX(calc(100% + 20px));
+}
+.overlay-view.side-sheet.sheet-visible {
+    transform: translateX(0);
+}
+.overlay-view.side-sheet .content {
+    max-width: none;
+    padding: 14px;
+}
+
+/* Keep floating scroll buttons reachable beside a right-docked sheet */
+body.sheet-open.side-right .scroll-btn {
+    right: calc(min(400px, 100vw - 24px) + 28px);
+}
+
+/* Recentre the control dock inside the space left of/right of an open
+   sheet, so the two never sit flush against each other */
+#controls {
+    transition: opacity 0.3s ease, left 0.32s cubic-bezier(0.32, 0.72, 0.35, 1);
+}
+@media (min-width: 1100px) {
+    body.sheet-open.side-left #controls {
+        left: calc((100vw + min(400px, 100vw - 24px) + 12px) / 2);
+        max-width: calc(100vw - min(400px, 100vw - 24px) - 40px);
+    }
+    body.sheet-open.side-right #controls {
+        left: calc((100vw - min(400px, 100vw - 24px) - 12px) / 2);
+        max-width: calc(100vw - min(400px, 100vw - 24px) - 40px);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    /* Keep the rail a dark glass pill over bright video, like the dock */
+    #sideRail {
+        background: rgba(30, 30, 34, 0.55);
+        border-color: rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.92);
+        --color-fg: rgba(255, 255, 255, 0.92);
+        --color-hover: rgba(255, 255, 255, 0.16);
+    }
 }

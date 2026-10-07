@@ -7,7 +7,7 @@
 
         <!-- Dark mode -->
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     	<meta name="msvalidate.01" content="0EBF88DA5B81674DD7E39378483EC964" />
         <meta name="description" content="PWA Player - A modern Progressive Web App for playing videos, audio files, and IPTV streams. Features include playlists, subtitle support, playback speed control, A-B loop, and more." />
@@ -22,7 +22,7 @@
         <h1 style="position:absolute;left:-9999px;top:-9999px;">PWA Player - Video, Audio & IPTV Streaming Player</h1>
         <div id="playerContainer">
             <div id="playerWrapper">
-                <video id="player" crossorigin="anonymous" autoplay></video>
+                <video id="player" crossorigin="anonymous" autoplay playsinline></video>
                 <!-- Audio cover image (shown for audio-only webm files) -->
                 <img id="audioCover" class="hidden" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;">
                 <!-- Image display for image viewing -->
@@ -32,7 +32,7 @@
                 <!-- Invisible trigger zone on right side to reveal button -->
                 <div id="embeddedShowBtnTriggerZone" class="hidden"></div>
                 <!-- Floating button to show controls for embedded player -->
-                <button id="embeddedShowControlsBtn" class="hidden">⚙️</button>
+                <button id="embeddedShowControlsBtn" class="hidden" data-icon="sliders" data-i18n-title="showControls"></button>
                 <!-- Video status overlay (loading/error) -->
                 <div id="videoStatusOverlay" class="video-status-overlay hidden">
                     <div class="video-status-content">
@@ -47,56 +47,56 @@
 
                 <div class="control-row config-row" id="configOptions">
                     <div class="control-group full-width">
-                        <button class="config-item" id="nowPlayingBtn">▶️</button>
-                        <button class="config-item" id="playlistBtn">🎵</button>
-                        <button class="config-item" id="storageBtn">🗂️</button>
-                        <button class="config-item" id="iptvBtn">📺</button>
-                        <button class="config-item" id="settingsBtn">⚙️</button>
+                        <button class="config-item" id="nowPlayingBtn" data-icon="waveform" data-i18n-title="nowPlaying"></button>
+                        <button class="config-item" id="playlistBtn" data-icon="musicList" data-i18n-title="playlist"></button>
+                        <button class="config-item" id="storageBtn" data-icon="archive" data-i18n-title="storageManager"></button>
+                        <button class="config-item" id="iptvBtn" data-icon="tv" data-i18n-title="iptvChannels"></button>
+                        <button class="config-item" id="settingsBtn" data-icon="gear" data-i18n-title="settings"></button>
                     </div>
                 </div>
                 <!-- Row 2: File & Web -->
                 <div class="control-row" id="fileWebRow">
                     <div class="control-group left-controls">
-                        <button id="pickerBtn" data-i18n-title="pickFile">📁</button>
-                        <button id="webBtn" data-i18n-title="openWebView">🌍</button>
-                        <button id="pipBtn" data-i18n-title="pip">🪟</button>
-                        <button id="remoteBtn" data-i18n-title="remotePlayback">📡</button>
-                        <button id="screenCaptureBtn" data-i18n-title="captureScreen">🖥️</button>
-                        <button id="mediaRecordBtn" data-i18n-title="recordMedia">⏺️</button>
-                        <button id="screenshotBtn" data-i18n-title="screenshot">📸</button>
+                        <button id="pickerBtn" data-icon="folder" data-i18n-title="pickFile"></button>
+                        <button id="webBtn" data-icon="globe" data-i18n-title="openWebView"></button>
+                        <button id="pipBtn" data-icon="pip" data-i18n-title="pip"></button>
+                        <button id="remoteBtn" data-icon="antenna" data-i18n-title="remotePlayback"></button>
+                        <button id="screenCaptureBtn" data-icon="monitor" data-i18n-title="captureScreen"></button>
+                        <button id="mediaRecordBtn" data-icon="record" data-i18n-title="recordMedia"></button>
+                        <button id="screenshotBtn" data-icon="camera" data-i18n-title="screenshot"></button>
                     </div>
                     <div class="control-group right-controls">
-                        <button id="micToggleBtn" data-i18n-title="toggleMicrophone" style="display:none;">🎤</button>
-                        <button id="switchCaptureBtn" data-i18n-title="switchCapture" style="display:none;">🔄</button>
+                        <button id="micToggleBtn" data-icon="mic" data-i18n-title="toggleMicrophone" style="display:none;"></button>
+                        <button id="switchCaptureBtn" data-icon="refresh" data-i18n-title="switchCapture" style="display:none;"></button>
                         <button id="abLoopBtn" data-i18n-title="abLoop">A</button>
-                        <button id="rotationBtn" data-i18n-title="rotateView">🌀</button>
-                        <button id="subtitleBtn" data-i18n-title="loadSubtitles">📝</button>
-                        <button id="wakeLockBtn" data-i18n-title="keepAwake">🔒</button>
-                        <span id="networkStatus" data-i18n-title="networkStatus">🌐</span>
+                        <button id="rotationBtn" data-icon="rotateScreen" data-i18n-title="rotateView"></button>
+                        <button id="subtitleBtn" data-icon="subtitles" data-i18n-title="loadSubtitles"></button>
+                        <button id="wakeLockBtn" data-icon="lock" data-i18n-title="keepAwake"></button>
+                        <span id="networkStatus" data-i18n-title="networkStatus"></span>
                     </div>
                 </div>
                 <!-- Row 1: Playback & Timeline -->
                 <div class="control-row">
                     <div class="control-group left-controls">
-                        <button id="prevBtn" data-i18n-title="previous">⏮️</button>
-                        <button id="skipBackBtn" data-i18n-title="skipBack">⏪</button>
-                        <button id="playBtn" data-i18n-title="play">▶️</button>
-                        <button id="skipForwardBtn" data-i18n-title="skipForward">⏩</button>
-                        <button id="nextBtn" data-i18n-title="next">⏭️</button>
-                        <button id="stopBtn" data-i18n-title="stop">⏹️</button>
-                        <button id="playModeBtn" data-i18n-title="playbackMode">🔀</button>
-                        <button id="magnifierBtn" data-i18n-title="zoomIn" class="hidden">🔍</button>
-                        <button id="rotateLeftBtn" data-i18n-title="rotateLeft" class="hidden">↺</button>
-                        <button id="rotateRightBtn" data-i18n-title="rotateRight" class="hidden">↻</button>
-                        <button id="flipHBtn" data-i18n-title="flipHorizontal" class="hidden">⇆</button>
-                        <button id="flipVBtn" data-i18n-title="flipVertical" class="hidden">⇅</button>
+                        <button id="prevBtn" data-icon="prev" data-i18n-title="previous"></button>
+                        <button id="skipBackBtn" data-icon="rewind" data-i18n-title="skipBack"></button>
+                        <button id="playBtn" data-icon="play" data-i18n-title="play"></button>
+                        <button id="skipForwardBtn" data-icon="fastForward" data-i18n-title="skipForward"></button>
+                        <button id="nextBtn" data-icon="next" data-i18n-title="next"></button>
+                        <button id="stopBtn" data-icon="stop" data-i18n-title="stop"></button>
+                        <button id="playModeBtn" data-icon="shuffle" data-i18n-title="playbackMode"></button>
+                        <button id="magnifierBtn" data-icon="zoomIn" data-i18n-title="zoomIn" class="hidden"></button>
+                        <button id="rotateLeftBtn" data-icon="rotateLeft" data-i18n-title="rotateLeft" class="hidden"></button>
+                        <button id="rotateRightBtn" data-icon="rotateRight" data-i18n-title="rotateRight" class="hidden"></button>
+                        <button id="flipHBtn" data-icon="flipH" data-i18n-title="flipHorizontal" class="hidden"></button>
+                        <button id="flipVBtn" data-icon="flipV" data-i18n-title="flipVertical" class="hidden"></button>
                     </div>
 
                     <div class="control-group right-controls">
-                        <button id="burgerBtn" data-i18n-title="more">☰</button>
-                        <button id="volumeToggle" data-i18n-title="toggleVolume">🔊</button>
+                        <button id="burgerBtn" data-icon="ellipsis" data-i18n-title="more"></button>
+                        <button id="volumeToggle" data-icon="volume" data-i18n-title="toggleVolume"></button>
                         <input type="range" id="volumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
-                        <span id="batteryStatus" data-i18n-title="batteryStatus">🔋</span>
+                        <span id="batteryStatus" data-i18n-title="batteryStatus"></span>
                     </div>
                 </div>
 
@@ -105,13 +105,13 @@
                     <span id="timeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
                     <div id="progressContainer" style="position:relative;flex:1;">
                         <input type="range" id="progressBar" min="0" max="100" value="0" data-i18n-title="seekTimeline" style="width:100%;" />
-                        <div id="videoPreview" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:10px;background:#000;border-radius:4px;overflow:hidden;pointer-events:none;">
-                            <video id="previewVideo" muted style="width:160px;height:90px;object-fit:contain;"></video>
-                            <img id="previewImage" style="width:160px;height:90px;object-fit:contain;display:none;">
-                            <div id="previewTime" style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;font-family:monospace;"></div>
+                        <div id="videoPreview" style="display:none;">
+                            <video id="previewVideo" muted></video>
+                            <img id="previewImage">
+                            <div id="previewTime"></div>
                         </div>
                     </div>
-                    <button id="fullscreenBtn" data-i18n-title="fullscreen">⛶</button>
+                    <button id="fullscreenBtn" data-icon="fullscreen" data-i18n-title="fullscreen"></button>
                 </div>
             </div>
 
@@ -119,40 +119,40 @@
 
         <div id="storageView" class="overlay-view hidden">
             <header class="topbar">
-                <button id="backBtn" class="back-btn">←</button>
+                <button id="backBtn" class="back-btn" data-icon="back"></button>
                 <h2 class="title" data-i18n="storageManager">Storage Manager</h2>
             </header>
 
             <main class="content">
                 <section class="actions">
-                    <button id="addExternalBtn" class="btn primary"
+                    <button id="addExternalBtn" class="btn" data-icon="harddrive"
                             data-i18n="mountExternal" data-i18n-title="mountExternalHint">
                         Mount External
                     </button>
 
-                    <button id="addRemoteBtn" class="btn primary"
+                    <button id="addRemoteBtn" class="btn" data-icon="antenna"
                             data-i18n="mountRemote" data-i18n-title="mountRemoteHint">
                         Mount Remote
                     </button>
 
-                    <button id="addImportBtn" class="btn primary"
+                    <button id="addImportBtn" class="btn" data-icon="folder"
                             data-i18n="importDirectory" data-i18n-title="importDirectoryHint">
                         Import Directory
                     </button>
 
-                    <button id="addFilesBtn" class="btn primary"
+                    <button id="addFilesBtn" class="btn" data-icon="file"
                             data-i18n="importFiles" data-i18n-title="importFilesHint">
                         Import Files
                     </button>
 
-                    <button id="addIndexedDBBtn" class="btn primary"
+                    <button id="addIndexedDBBtn" class="btn" data-icon="archive"
                             data-i18n="importIndexedDB" data-i18n-title="importIndexedDBHint">
                         Import Into IndexedDB
                     </button>
 
                     <input id="filePicker" type="file" multiple webkitdirectory directory style="display:none">
 
-                    <button id="clearImports" class="btn danger"
+                    <button id="clearImports" class="btn danger" data-icon="trash"
                             data-i18n="clearAllImportMount" data-i18n-title="clearAllImportMountHint">
                         Clear All Import & Mount
                     </button>
@@ -162,7 +162,7 @@
         </div>
         <div id="nowPlayingView" class="overlay-view hidden">
             <header class="topbar">
-                <button id="nowPlayingBackBtn" class="back-btn">←</button>
+                <button id="nowPlayingBackBtn" class="back-btn" data-icon="back"></button>
                 <h2 class="title" data-i18n="nowPlaying">Now Playing</h2>
             </header>
 
@@ -182,7 +182,7 @@
                     <div class="time-volume-row">
                         <span id="npTimeDisplay" data-i18n-title="currentTime">00:00 / 00:00</span>
                         <div class="volume-row">
-                            <button id="npVolumeToggle" data-i18n-title="toggleVolume">🔊</button>
+                            <button id="npVolumeToggle" data-icon="volume" data-i18n-title="toggleVolume"></button>
                             <input type="range" id="npVolumeSlider" min="0" max="100" value="100" data-i18n-title="adjustVolume" />
                         </div>
                     </div>
@@ -190,13 +190,13 @@
 
                 <!-- Playback controls -->
                 <section class="np-controls">
-                    <button id="npPrevBtn" data-i18n-title="previous">⏮️</button>
-                    <button id="npSkipBackBtn" data-i18n-title="skipBack">⏪</button>
-                    <button id="npPlayBtn" data-i18n-title="play">▶️</button>
-                    <button id="npSkipForwardBtn" data-i18n-title="skipForward">⏩</button>
-                    <button id="npNextBtn" data-i18n-title="next">⏭️</button>
-                    <button id="npStopBtn" data-i18n-title="stop">⏹️</button>
-                    <button id="npPlayModeBtn" data-i18n-title="playbackMode">🔀</button>
+                    <button id="npPrevBtn" data-icon="prev" data-i18n-title="previous"></button>
+                    <button id="npSkipBackBtn" data-icon="rewind" data-i18n-title="skipBack"></button>
+                    <button id="npPlayBtn" data-icon="play" data-i18n-title="play"></button>
+                    <button id="npSkipForwardBtn" data-icon="fastForward" data-i18n-title="skipForward"></button>
+                    <button id="npNextBtn" data-icon="next" data-i18n-title="next"></button>
+                    <button id="npStopBtn" data-icon="stop" data-i18n-title="stop"></button>
+                    <button id="npPlayModeBtn" data-icon="shuffle" data-i18n-title="playbackMode"></button>
                 </section>
 
                 <!-- Playback queue -->
@@ -206,32 +206,32 @@
 
         <div id="playlistView" class="overlay-view hidden">
             <header class="topbar">
-                <button id="playlistBackBtn" class="back-btn">←</button>
+                <button id="playlistBackBtn" class="back-btn" data-icon="back"></button>
                 <h2 class="title" data-i18n="playlist">Playlists</h2>
             </header>
 
             <main class="content">
-                <section class="actions" style="padding:10px;display:flex;gap:10px;flex-wrap:wrap;">
-                    <button id="newPlaylistBtn" class="btn primary" data-i18n="newPlaylist">New Playlist</button>
-                    <button id="importPlaylistBtn" class="btn" style="border:1px solid #4caf50;background:transparent;color:#4caf50;" data-i18n="import">Import</button>
-                    <button id="exportPlaylistBtn" class="btn" style="border:1px solid #2196f3;background:transparent;color:#2196f3;" data-i18n="export">Export</button>
+                <section class="actions">
+                    <button id="newPlaylistBtn" class="btn primary" data-icon="plus" data-i18n="newPlaylist">New Playlist</button>
+                    <button id="importPlaylistBtn" class="btn" data-icon="import" data-i18n="import">Import</button>
+                    <button id="exportPlaylistBtn" class="btn" data-icon="export" data-i18n="export">Export</button>
                 </section>
                 <ul id="playlistTree" class="list"></ul>
             </main>
         </div>
         <div id="iptvView" class="overlay-view hidden">
             <header class="topbar">
-                <button id="iptvBackBtn" class="back-btn">←</button>
+                <button id="iptvBackBtn" class="back-btn" data-icon="back"></button>
                 <h2 class="title" data-i18n="iptvChannels">IPTV Channels</h2>
             </header>
 
             <main class="content">
                 <p class="iptv-hint" data-i18n="iptvCorsHint">IP addresses need CORS bypass server. HTTP URLs may also need CORS.</p>
-                <div class="iptv-buttons" style="padding:10px;border-bottom:1px solid #333;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                    <button id="iptvImportBtn" class="btn" style="padding:8px 16px;border:1px solid #4caf50;border-radius:6px;background:transparent;color:#4caf50;cursor:pointer;font-size:13px;">📥 <span data-i18n="import">Import</span></button>
-                    <button id="iptvExportBtn" class="btn" style="padding:8px 16px;border:1px solid #2196f3;border-radius:6px;background:transparent;color:#2196f3;cursor:pointer;font-size:13px;">📤 <span data-i18n="export">Export</span></button>
-                    <button id="iptvClearBtn" class="btn" style="padding:8px 16px;border:1px solid #f44336;border-radius:6px;background:transparent;color:#f44336;cursor:pointer;font-size:13px;">🗑️ <span data-i18n="clear">Clear</span></button>
-                    <span id="iptvChannelCount" style="margin-left:auto;font-size:13px;color:#888;"></span>
+                <div class="iptv-buttons actions">
+                    <button id="iptvImportBtn" class="btn" data-icon="import"><span data-i18n="import">Import</span></button>
+                    <button id="iptvExportBtn" class="btn" data-icon="export"><span data-i18n="export">Export</span></button>
+                    <button id="iptvClearBtn" class="btn danger" data-icon="trash"><span data-i18n="clear">Clear</span></button>
+                    <span id="iptvChannelCount"></span>
                 </div>
                 <input type="search" id="iptvSearch" class="search-input" placeholder="Search channels..." data-i18n-placeholder="searchChannels" />
                 <ul id="iptvList" class="list"></ul>
@@ -239,7 +239,7 @@
         </div>
         <div id="settingsView" class="overlay-view hidden">
             <header class="topbar">
-                <button id="settingsCloseBtn" class="back-btn">←</button>
+                <button id="settingsCloseBtn" class="back-btn" data-icon="back"></button>
                 <h2 class="title" data-i18n="settings">Settings</h2>
             </header>
 
@@ -303,16 +303,16 @@
                 <h3 data-i18n="playback">Playback</h3>
                 <label class="setting-label">
                     <span data-i18n="playbackSpeed">Speed</span>
-                    <input type="number" id="speedValue" min="0.1" max="16" step="0.01" value="1" style="width:70px;margin-left:10px;font-family:monospace;text-align:right;">
+                    <input type="number" id="speedValue" class="setting-input-small" min="0.1" max="16" step="0.01" value="1">
                 </label>
                 <label class="setting-label">
                     <span data-i18n="speedStep">Speed Step</span>
-                    <input type="number" id="speedStepInput" min="0.01" max="1" step="0.01" value="0.05" style="width:70px;margin-left:10px;font-family:monospace;text-align:right;">
+                    <input type="number" id="speedStepInput" class="setting-input-small" min="0.01" max="1" step="0.01" value="0.05">
                 </label>
-                <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
-                    <button id="speedDown" class="btn" style="padding:5px 10px;font-size:12px;">-<span id="speedDownLabel">0.05</span></button>
-                    <button id="speedReset" class="btn" style="padding:5px 10px;font-size:12px;">1.00</button>
-                    <button id="speedUp" class="btn" style="padding:5px 10px;font-size:12px;">+<span id="speedUpLabel">0.05</span></button>
+                <div class="speed-step-row">
+                    <button id="speedDown" class="btn btn-small">-<span id="speedDownLabel">0.05</span></button>
+                    <button id="speedReset" class="btn btn-small">1.00</button>
+                    <button id="speedUp" class="btn btn-small">+<span id="speedUpLabel">0.05</span></button>
                 </div>
                 <p class="setting-hint" data-i18n="playbackSpeedHint">Playback speed for non-live videos.</p>
                 <label class="setting-toggle">
@@ -337,6 +337,19 @@
                 </label>
                 <p class="setting-hint" data-i18n="skipIframesInBackgroundHint">When tab is hidden, skip YouTube/Spotify/etc. entries to avoid browser autoplay policy issues.</p>
                 <label class="setting-label">
+                    <span data-i18n="embeddedEndBehavior">When embedded media ends</span>
+                    <select id="embeddedEndBehavior" class="language-select">
+                        <option value="pause" data-i18n="embeddedEndPause">Pause</option>
+                        <option value="next" data-i18n="embeddedEndNext">Play next in playlist</option>
+                    </select>
+                </label>
+                <p class="setting-hint" data-i18n="embeddedEndBehaviorHint">What to do when an embedded or network entry (YouTube, Spotify, IPTV link...) finishes.</p>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="useUrlPlaylist">
+                    <span data-i18n="useUrlPlaylist">Use playlist embedded in URL</span>
+                </label>
+                <p class="setting-hint" data-i18n="useUrlPlaylistHint">When a URL carries its own playlist (e.g. YouTube list= parameter), let the site play through it. Off: a playlist URL plays only its first video, and a watch?v=&list= URL plays just that video.</p>
+                <label class="setting-label">
                     <span data-i18n="controlsAutoHideDelay">Controls Auto-hide (ms)</span>
                     <input type="number" id="controlsAutoHideDelayInput" class="setting-input-small" min="0" max="60000">
                 </label>
@@ -352,6 +365,15 @@
                     </select>
                 </label>
                 <p class="setting-hint" data-i18n="buttonSizeHint">Adjust the size of control buttons. Compact removes gaps between buttons.</p>
+                <label class="setting-label">
+                    <span data-i18n="sidePanel">Side Panel</span>
+                    <select id="sidePanelPosition" class="language-select">
+                        <option value="left" data-i18n="sidePanelLeft">Left</option>
+                        <option value="right" data-i18n="sidePanelRight">Right</option>
+                        <option value="off" data-i18n="sidePanelOff">Off</option>
+                    </select>
+                </label>
+                <p class="setting-hint" data-i18n="sidePanelHint">Hover the screen edge or swipe inward from it to reveal a floating bar with quick access to Now Playing, Playlists, Storage, IPTV and Settings — without leaving the player.</p>
 
                 <h3 data-i18n="keyboardShortcuts">Keyboard Shortcuts</h3>
                 <label class="setting-toggle">
@@ -426,17 +448,17 @@
 
                 <h3 data-i18n="profiles">Profiles</h3>
                 <p class="setting-hint" data-i18n="profilesHint">Save and restore all settings, playlists, and custom IPTV channels.</p>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
-                    <select id="profileSelect" class="language-select" style="min-width:120px;"></select>
-                    <button id="newProfileBtn" class="btn" style="padding:6px 12px;font-size:12px;">➕ <span data-i18n="newProfile">New</span></button>
-                    <button id="duplicateProfileBtn" class="btn" style="padding:6px 12px;font-size:12px;">📋 <span data-i18n="duplicate">Duplicate</span></button>
-                    <button id="renameProfileBtn" class="btn" style="padding:6px 12px;font-size:12px;">✏️ <span data-i18n="rename">Rename</span></button>
-                    <button id="resetProfileBtn" class="btn" style="padding:6px 12px;font-size:12px;">🔄 <span data-i18n="reset">Reset</span></button>
-                    <button id="deleteProfileBtn" class="btn" style="padding:6px 12px;font-size:12px;">🗑️ <span data-i18n="delete">Delete</span></button>
+                <div class="actions">
+                    <select id="profileSelect" class="language-select profile-select"></select>
+                    <button id="newProfileBtn" class="btn btn-small" data-icon="plus"><span data-i18n="newProfile">New</span></button>
+                    <button id="duplicateProfileBtn" class="btn btn-small" data-icon="duplicate"><span data-i18n="duplicate">Duplicate</span></button>
+                    <button id="renameProfileBtn" class="btn btn-small" data-icon="pencil"><span data-i18n="rename">Rename</span></button>
+                    <button id="resetProfileBtn" class="btn btn-small" data-icon="reset"><span data-i18n="reset">Reset</span></button>
+                    <button id="deleteProfileBtn" class="btn btn-small danger" data-icon="trash"><span data-i18n="delete">Delete</span></button>
                 </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-                    <button id="exportProfileBtn" class="btn" style="padding:6px 12px;font-size:12px;">📤 <span data-i18n="export">Export</span></button>
-                    <button id="importProfileBtn" class="btn" style="padding:6px 12px;font-size:12px;">📥 <span data-i18n="import">Import</span></button>
+                <div class="actions">
+                    <button id="exportProfileBtn" class="btn btn-small" data-icon="export"><span data-i18n="export">Export</span></button>
+                    <button id="importProfileBtn" class="btn btn-small" data-icon="import"><span data-i18n="import">Import</span></button>
                     <input type="file" id="profileFileInput" accept=".json" style="display:none;">
                 </div>
 
@@ -492,6 +514,23 @@
             </main>
         </div>
 
+        <!-- Edge trigger zone that reveals the side rail -->
+        <div id="sideEdgeTrigger" class="hidden"></div>
+        <!-- Visible grab handle on touch devices (edge swipe conflicts with the OS back gesture) -->
+        <div id="sideRailHandle"></div>
+        <!-- Floating side rail: quick-access panels without leaving the player -->
+        <nav id="sideRail" class="hidden">
+            <button id="sideRailPlayerBtn" class="rail-btn hidden" data-icon="home" data-i18n-title="backToPlayer"></button>
+            <div id="sideRailSep" class="rail-sep hidden"></div>
+            <button class="rail-btn" data-sidepanel="nowPlayingView" data-icon="waveform" data-i18n-title="nowPlaying"></button>
+            <button class="rail-btn" data-sidepanel="playlistView" data-icon="musicList" data-i18n-title="playlist"></button>
+            <button class="rail-btn" data-sidepanel="storageView" data-icon="archive" data-i18n-title="storageManager"></button>
+            <button class="rail-btn" data-sidepanel="iptvView" data-icon="tv" data-i18n-title="iptvChannels"></button>
+            <button class="rail-btn" data-sidepanel="settingsView" data-icon="gear" data-i18n-title="settings"></button>
+        </nav>
+
+        <script src="icons.js"></script>
+        <script src="dialog.js"></script>
         <script src="indexeddb.js"></script>
         <script src="locales/en.js"></script>
         <script src="locales/zhcn.js"></script>
@@ -518,13 +557,14 @@
         <script src="iptv.js" type="module"></script>
 
         <!-- Floating scroll buttons - defined before extrafeatures.js -->
-        <button id="scrollUpBtn" class="scroll-btn scroll-up" title="Scroll to top">⬆</button>
-        <button id="scrollDownBtn" class="scroll-btn scroll-down" title="Scroll to bottom">⬇</button>
+        <button id="scrollUpBtn" class="scroll-btn scroll-up" title="Scroll to top" data-icon="chevronUp"></button>
+        <button id="scrollDownBtn" class="scroll-btn scroll-down" title="Scroll to bottom" data-icon="chevronDown"></button>
 
         <script src="extrafeatures.js"></script>
         <script src="imageviewer.js"></script>
         <script src="wakelock.js"></script>
         <script src="settings.js"></script>
+        <script src="sidepanel.js"></script>
         <script src="sw-register.js"></script>
         <div id="toast" class="toast"></div>
     </body>

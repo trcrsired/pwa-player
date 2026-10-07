@@ -233,6 +233,39 @@ async function storage_resolvePath(pointer) {
 }
 
 
+// Prompt the user to pick a saved playlist and append the entry to it.
+// excludeName hides the playlist the entry already belongs to.
+async function addEntryToPlaylistPrompt(entry, excludeName) {
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+    if (entry && entry.isTemporary) {
+        alert(t('cannotAddTemporaryToPlaylist', 'Temporary entries cannot be added to playlists. Import the directory to storage first.'));
+        return;
+    }
+    const allPlaylists = await playlists_load();
+    const allNames = Object.keys(allPlaylists);
+    const names = allNames.filter(n => n !== excludeName);
+    if (names.length === 0) {
+        alert(allNames.length === 0
+            ? t('noPlaylistsAvailable', 'No playlists available. Please create a playlist first.')
+            : t('noOtherPlaylists', 'No other playlists available.'));
+        return;
+    }
+    const targetIndex = await pickOption(t('addToWhichPlaylist', 'Add to which playlist?'), names);
+    if (targetIndex === null) return;
+    const targetName = names[targetIndex];
+    const targetList = allPlaylists[targetName];
+    if (targetList.some(e => e.path === entry.path)) {
+        if (typeof showToast === 'function') {
+            showToast(t('alreadyInPlaylist', { name: entry.name || entry.path, playlist: targetName }));
+        }
+        return;
+    }
+    targetList.push({ name: entry.name, path: entry.path, corsBypass: entry.corsBypass });
+    await playlists_save(allPlaylists);
+    playlist_renderTree();
+    alert(`${t('addedToPlaylistSuccess', 'Added')} "${entry.name}" ${t('toPlaylist', 'to playlist')} "${targetName}".`);
+}
+
 async function showPlaylistItemMenu(playlistName, index, button) {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
@@ -248,6 +281,7 @@ async function showPlaylistItemMenu(playlistName, index, button) {
     let menuHtml = `
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
+        <div class="menu-item" data-action="add-to-queue">${t('addToQueue', 'Add to Queue')}</div>
         <div class="menu-item" data-action="share">${t('share', 'Share')}</div>
     `;
     if (isUrl) {
@@ -288,6 +322,18 @@ async function showPlaylistItemMenu(playlistName, index, button) {
                 return;
             }
 
+            if (action === "add-to-queue") {
+                const qEntry = { ...currentEntry, playlistName };
+                nowPlayingQueue.push(qEntry);
+                // In shuffle mode the active order lives in shuffledQueue —
+                // append there too so the new entry actually plays
+                if (playMode === "shuffle") shuffledQueue.push(qEntry);
+                renderNowPlayingQueue();
+                if (typeof showToast === 'function') showToast(t('addedToQueue', 'Added to queue'));
+                closeMenu();
+                return;
+            }
+
             if (action === "share") {
                 await sharePlaylistEntry(currentEntry);
                 closeMenu();
@@ -309,47 +355,20 @@ async function showPlaylistItemMenu(playlistName, index, button) {
 
             if (action === "rename") {
                 const currentName = currentEntry.name || currentEntry.path;
-                const newName = prompt(t('newEntryName', 'New entry name:'), currentName);
+                const newName = await glassPrompt(t('newEntryName', 'New entry name:'), currentName);
                 if (newName && newName.trim()) {
                     currentList[index].name = newName.trim();
                 }
             }
 
             if (action === "add-to-playlist") {
-                // Check if entry is temporary (has handle, no persistable path)
-                if (currentEntry && currentEntry.isTemporary) {
-                    alert(t('cannotAddTemporaryToPlaylist', 'Temporary entries cannot be added to playlists. Import the directory to storage first.'));
-                    closeMenu();
-                    return;
-                }
-                const allPlaylists = await playlists_load();
-                const names = Object.keys(allPlaylists).filter(n => n !== playlistName);
-                if (names.length === 0) {
-                    alert(t('noPlaylistsAvailable', 'No playlists available. Please create a playlist first.'));
-                    closeMenu();
-                    return;
-                }
-                const choice = prompt(
-                    t('addToWhichPlaylist', 'Add to which playlist?') + "\n" +
-                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-                    "1"
-                );
-                if (choice) {
-                    const targetIndex = parseInt(choice, 10) - 1;
-                    if (targetIndex >= 0 && targetIndex < names.length) {
-                        const targetName = names[targetIndex];
-                        allPlaylists[targetName].push({ name: currentEntry.name, path: currentEntry.path, corsBypass: currentEntry.corsBypass });
-                        await playlists_save(allPlaylists);
-                        playlist_renderTree();
-                        alert(`${t('addedToPlaylistSuccess', 'Added')} "${currentEntry.name}" ${t('toPlaylist', 'to playlist')} "${targetName}".`);
-                    }
-                }
+                await addEntryToPlaylistPrompt(currentEntry, playlistName);
                 closeMenu();
                 return;
             }
 
             if (action === "delete") {
-                const ok = confirm(`${t('confirmRemoveItem', 'Remove this item from playlist')} "${playlistName}"?`);
+                const ok = await glassConfirm(`${t('confirmRemoveItem', 'Remove this item from playlist')} "${playlistName}"?`);
                 if (ok) {
                     currentList.splice(index, 1);
                 }
@@ -396,16 +415,16 @@ async function playlist_renderTree() {
 
     Object.entries(playlists).forEach(([playlistName, items]) => {
         const isDefault = playlistName === defaultPlaylist;
-        const defaultBadge = isDefault ? ' ⭐' : '';
+        const defaultBadge = isDefault ? ' ' + icon('star') : '';
 
         const li = document.createElement("li");
         li.className = "storage-node";
 
         li.innerHTML = `
             <div class="storage-header">
-                <button class="toggle">+</button>
+                <button class="toggle">${icon('chevronRight')}</button>
                 <span class="storage-name">${escapeHTML(playlistName)}${defaultBadge} (${items.length})</span>
-                <button class="storage-menu" title="Menu">⋮</button>
+                <button class="storage-menu" title="Menu">${icon('ellipsisV')}</button>
             </div>
             <ul class="storage-sub hidden"></ul>
         `;
@@ -419,7 +438,7 @@ async function playlist_renderTree() {
         header.addEventListener("click", (e) => {
             if (e.target === menuBtn) return;
             const hidden = itemsContainer.classList.toggle("hidden");
-            toggleBtn.textContent = hidden ? "+" : "−";
+            setIcon(toggleBtn, hidden ? "chevronRight" : "chevronDown");
         });
 
         // Burger menu button
@@ -441,7 +460,7 @@ async function playlist_renderTree() {
                 <div class="storage-sub-header">
                     <span class="sub-name">${escapeHTML(itemName)}${badgesHtml}</span>
                     <div class="sub-actions">
-                        <button class="sub-menu" title="Menu">⋮</button>
+                        <button class="sub-menu" title="Menu">${icon('ellipsisV')}</button>
                     </div>
                 </div>
             `;
@@ -483,7 +502,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
     menu.innerHTML = `
         <div class="menu-item" data-action="play">${t('playThis', 'Play')}</div>
         <div class="menu-item" data-action="play-keep-open">${t('playKeepPanel', 'Play (keep panel open)')}</div>
-        <div class="menu-item" data-action="set-default">${isDefault ? '⭐ ' + t('defaultPlaylist', 'Default') : t('setDefaultPlaylist', 'Set as Default')}</div>
+        <div class="menu-item" data-action="set-default">${isDefault ? icon('star') + ' ' + t('defaultPlaylist', 'Default') : t('setDefaultPlaylist', 'Set as Default')}</div>
         <div class="menu-item" data-action="add-url">${t('addUrlToPlaylist', 'Add URL to Playlist')}</div>
         <div class="menu-item" data-action="rename">${t('rename', 'Rename')}</div>
         <div class="menu-item" data-action="duplicate">${t('duplicate', 'Duplicate')}</div>
@@ -507,7 +526,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
             const actionisplay = action ==="play";
             if (actionisplay || action === "play-keep-open") {
                 // Play this playlist - respects shuffle mode
-                await startNowPlayingFromPlaylist(playlistName, 0);
+                await startNowPlayingFromPlaylist(playlistName, 0, true);
                 if (actionisplay) {
                     closeActiveView();
                 }
@@ -529,7 +548,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
             }
 
             if (action === "add-url") {
-                const url = prompt(t('enterWebURL', 'Enter web URL:'));
+                const url = await glassPrompt(t('enterWebURL', 'Enter web URL:'));
                 if (!url || !url.trim()) {
                     closeMenu();
                     return;
@@ -602,7 +621,7 @@ function showPlaylistHeaderMenu(playlistName, button) {
             }
 
             if (action === "rename") {
-                const newName = prompt(t('newPlaylistName', 'New playlist name:'), playlistName);
+                const newName = await glassPrompt(t('newPlaylistName', 'New playlist name:'), playlistName);
                 if (newName && newName.trim()) {
                     playlists[newName.trim()] = playlists[playlistName];
                     delete playlists[playlistName];
@@ -627,35 +646,28 @@ function showPlaylistHeaderMenu(playlistName, button) {
                     closeMenu();
                     return;
                 }
-                const choice = prompt(
-                    t('addToWhichPlaylist', 'Add to which playlist?') + "\n" +
-                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-                    "1"
-                );
-                if (choice) {
-                    const targetIndex = parseInt(choice, 10) - 1;
-                    if (targetIndex >= 0 && targetIndex < names.length) {
-                        const targetName = names[targetIndex];
-                        const items = playlists[playlistName];
-                        playlists[targetName].push(...items.map(item => ({ name: item.name, path: item.path, corsBypass: item.corsBypass })));
-                        await playlists_save(playlists);
-                        playlist_renderTree();
-                        alert(`${t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', items.length)} "${targetName}".`);
-                    }
+                const targetIndex = await pickOption(t('addToWhichPlaylist', 'Add to which playlist?'), names);
+                if (targetIndex !== null) {
+                    const targetName = names[targetIndex];
+                    const items = playlists[playlistName];
+                    playlists[targetName].push(...items.map(item => ({ name: item.name, path: item.path, corsBypass: item.corsBypass })));
+                    await playlists_save(playlists);
+                    playlist_renderTree();
+                    alert(`${t('addedFilesToPlaylist', 'Added {count} file(s) to playlist').replace('{count}', items.length)} "${targetName}".`);
                 }
                 closeMenu();
                 return;
             }
 
             if (action === "delete") {
-                const confirmDelete = confirm(`${t('confirmDeletePlaylist', 'Delete playlist')} "${playlistName}"?`);
+                const confirmDelete = await glassConfirm(`${t('confirmDeletePlaylist', 'Delete playlist')} "${playlistName}"?`);
                 if (confirmDelete) {
                     delete playlists[playlistName];
                 }
             }
 
             if (action === "clear") {
-                const ok = confirm(`${t('confirmClearPlaylist', 'Clear ALL items in playlist')} "${playlistName}"?`);
+                const ok = await glassConfirm(`${t('confirmClearPlaylist', 'Clear ALL items in playlist')} "${playlistName}"?`);
                 if (ok) {
                     playlists[playlistName] = []; // clear entire playlist
                 }
@@ -686,7 +698,7 @@ document.getElementById("playlistBackBtn").addEventListener("click", () => {
 // New playlist button
 document.getElementById("newPlaylistBtn").addEventListener("click", async () => {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-    const name = prompt(t('newPlaylistName', "Enter new playlist name:"));
+    const name = await glassPrompt(t('newPlaylistName', "Enter new playlist name:"));
 
     if (!name) return;
 

@@ -2,16 +2,16 @@
    Global Theme Variables (Light Mode)
    ========================================= */
 :root {
-    --bg: #ffffff;
-    --fg: #111111;
-    --subtle: #666666;
+    --bg: rgba(244, 244, 248, 0.62);
+    --fg: rgba(0, 0, 0, 0.85);
+    --subtle: rgba(60, 60, 67, 0.6);
 
-    --card-bg: #f5f5f5;
-    --card-border: #dddddd;
+    --card-bg: rgba(120, 120, 128, 0.10);
+    --card-border: rgba(0, 0, 0, 0.06);
 
-    --btn-bg: #e0e0e0;
-    --btn-fg: #111111;
-    --btn-hover: #d5d5d5;
+    --btn-bg: rgba(120, 120, 128, 0.14);
+    --btn-fg: rgba(0, 0, 0, 0.85);
+    --btn-hover: rgba(120, 120, 128, 0.22);
 
     --primary-bg: #007aff;
     --primary-fg: #ffffff;
@@ -21,7 +21,9 @@
     --danger-fg: #ffffff;
     --danger-hover: #e2332a;
 
-    --divider: #cccccc;
+    --divider: rgba(60, 60, 67, 0.18);
+
+    --topbar-bg: rgba(250, 250, 252, 0.5);
 }
 
 /* =========================================
@@ -29,26 +31,28 @@
    ========================================= */
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #000000;
-        --fg: #ffffff;
-        --subtle: #aaaaaa;
+        --bg: rgba(18, 18, 22, 0.6);
+        --fg: rgba(255, 255, 255, 0.92);
+        --subtle: rgba(235, 235, 245, 0.55);
 
-        --card-bg: #1a1a1a;
-        --card-border: #333333;
+        --card-bg: rgba(120, 120, 128, 0.14);
+        --card-border: rgba(255, 255, 255, 0.07);
 
-        --btn-bg: #2a2a2a;
-        --btn-fg: #ffffff;
-        --btn-hover: #3a3a3a;
+        --btn-bg: rgba(120, 120, 128, 0.2);
+        --btn-fg: rgba(255, 255, 255, 0.92);
+        --btn-hover: rgba(120, 120, 128, 0.32);
 
         --primary-bg: #0a84ff;
         --primary-fg: #ffffff;
-        --primary-hover: #006fe0;
+        --primary-hover: #409cff;
 
         --danger-bg: #ff453a;
         --danger-fg: #ffffff;
-        --danger-hover: #e03a32;
+        --danger-hover: #ff6961;
 
-        --divider: #444444;
+        --divider: rgba(84, 84, 88, 0.5);
+
+        --topbar-bg: rgba(24, 24, 28, 0.4);
     }
 }
 
@@ -58,23 +62,25 @@
 html, body {
     margin: 0;
     padding: 0;
-    background: var(--bg);
     color: var(--fg);
-    font-family: system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+                 Roboto, "Helvetica Neue", Arial, sans-serif;
     height: 100%;
     overflow-x: hidden;
 }
 
 /* =========================================
-   Top Bar
+   Top Bar — frosted, sticky
    ========================================= */
 .topbar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--divider);
-    background: var(--bg);
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid var(--divider);
+    background: var(--topbar-bg);
+    -webkit-backdrop-filter: saturate(1.8) blur(20px);
+    backdrop-filter: saturate(1.8) blur(20px);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -84,15 +90,65 @@ html, body {
 .back-btn {
     background: none;
     border: none;
-    color: var(--fg);
-    font-size: 22px;
+    color: var(--primary-bg);
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 6px;
+    border-radius: 50%;
+    min-width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    transition: background 0.15s ease;
+}
+
+.back-btn:hover {
+    background: var(--btn-bg);
+}
+
+.back-btn .icon {
+    width: 20px;
+    height: 20px;
 }
 
 .title {
     font-size: 20px;
     font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+/* =========================================
+   Scrollbars — thin, translucent, recede into glass
+   ========================================= */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 120, 128, 0.35) transparent;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(120, 120, 128, 0.35);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 120, 128, 0.55);
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
 }
 
 /* =========================================
@@ -104,6 +160,22 @@ html, body {
     overflow-x: hidden;
     flex: 1;
     min-height: 0; /* Allow shrinking in flexbox for scrolling */
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* Section headers — quiet iOS-style group labels */
+.content h3 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--subtle);
+    margin: 26px 6px 8px;
+}
+
+.content h3:first-child {
+    margin-top: 6px;
 }
 
 /* =========================================
@@ -111,11 +183,33 @@ html, body {
    ========================================= */
 .btn {
     padding: 10px 16px;
-    border-radius: 8px;
+    height: auto;
+    min-width: 0;
+    border-radius: 12px;
     border: none;
     cursor: pointer;
     font-size: 15px;
-    transition: background 0.15s ease;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn .icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.btn-small {
+    padding: 7px 12px;
+    font-size: 13px;
+    border-radius: 10px;
+}
+
+.btn:active {
+    transform: scale(0.96);
 }
 
 .btn.primary {
@@ -151,12 +245,41 @@ html, body {
 .actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 20px;
+    align-items: center;
+}
+
+/* IPTV action bar: same .actions layout, count pushed right */
+.iptv-buttons {
+    margin-bottom: 12px;
+}
+
+#iptvChannelCount {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--subtle);
+}
+
+/* Profile select sits inline with the action buttons */
+.profile-select {
+    width: auto;
+    min-width: 140px;
+    margin-bottom: 0;
+    padding: 7px 12px;
+    font-size: 14px;
+    border-radius: 10px;
+}
+
+.speed-step-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
 }
 
 /* =========================================
-   List
+   List — iOS grouped cards
    ========================================= */
 .list {
     list-style: none;
@@ -165,11 +288,12 @@ html, body {
 }
 
 .list > li:not(.storage-node):not(.iptv-node) {
-    padding: 14px 12px;
-    border-bottom: 1px solid var(--divider);
+    padding: 12px 14px;
+    border-bottom: none;
     background: var(--card-bg);
-    border-radius: 6px;
-    margin-bottom: 10px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 14px;
+    margin-bottom: 8px;
     cursor: pointer;
     transition: background 0.15s ease;
 }
@@ -178,19 +302,24 @@ html, body {
     background: var(--btn-hover);
 }
 
+/* Toast — floating glass pill */
 .toast {
   position: fixed;
-  bottom: 20px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 6px;
+  background: rgba(30, 30, 34, 0.72);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  backdrop-filter: saturate(1.8) blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.92);
+  padding: 10px 18px;
+  border-radius: 999px;
   font-size: 14px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .3s;
+  transition: opacity .25s ease, transform .25s ease;
   z-index: 9999;
 }
 .toast.show {
@@ -205,11 +334,13 @@ html, body {
 .storage-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     padding: 12px;
     background: var(--card-bg);
-    border-radius: 6px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 14px;
     cursor: pointer;
+    transition: background 0.15s ease;
 }
 
 .storage-header:hover {
@@ -217,20 +348,35 @@ html, body {
 }
 
 .storage-header .toggle {
-    background: var(--btn-bg);
+    background: transparent;
     border: none;
-    color: var(--fg);
+    color: var(--subtle);
     width: 28px;
     height: 28px;
-    border-radius: 4px;
+    border-radius: 50%;
     cursor: pointer;
     font-size: 16px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.storage-header .toggle:hover {
+    background: var(--btn-bg);
 }
 
 .storage-header .storage-name {
     font-weight: 500;
     word-break: break-word;
+}
+
+.storage-header .storage-name .icon {
+    display: inline-block;
+    vertical-align: -2px;
+    width: 14px;
+    height: 14px;
+    color: #ffd60a;
 }
 
 .storage-sub {
@@ -253,9 +399,11 @@ html, body {
     gap: 8px;
     padding: 8px 12px;
     background: var(--card-bg);
-    border-radius: 4px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 10px;
     cursor: pointer;
     margin-bottom: 4px;
+    transition: background 0.15s ease;
 }
 
 .storage-sub-header:hover {
@@ -280,7 +428,8 @@ html, body {
     gap: 8px;
     padding: 8px 12px;
     background: var(--card-bg);
-    border-radius: 4px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 10px;
 }
 
 .storage-file-header .file-name {
@@ -290,14 +439,19 @@ html, body {
 }
 
 .storage-file-header button {
-    background: var(--btn-bg);
+    background: transparent;
     color: var(--btn-fg);
     border: none;
-    padding: 4px 10px;
-    border-radius: 4px;
+    padding: 4px;
+    border-radius: 50%;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
     flex-shrink: 0;
+    min-width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .storage-file-header button:hover {
@@ -312,11 +466,13 @@ html, body {
 .iptv-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     padding: 12px;
     background: var(--card-bg);
-    border-radius: 6px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 14px;
     cursor: pointer;
+    transition: background 0.15s ease;
 }
 
 .iptv-header:hover {
@@ -326,6 +482,7 @@ html, body {
 .iptv-name {
     flex: 1;
     font-size: 14px;
+    font-weight: 500;
 }
 
 .iptv-toggle {
@@ -336,13 +493,17 @@ html, body {
     font-size: 16px;
     display: inline-flex;
     align-items: center;
-    gap: 2px;
-    padding: 0;
-    min-width: 20px;
+    gap: 4px;
+    padding: 4px;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    justify-content: center;
 }
 
 .iptv-toggle:hover {
     color: var(--primary-bg);
+    background: var(--btn-bg);
 }
 
 .iptv-count-badge {
@@ -366,7 +527,8 @@ html, body {
     gap: 8px;
     padding: 8px 12px;
     background: var(--card-bg);
-    border-radius: 4px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 10px;
     margin-bottom: 4px;
 }
 
@@ -403,10 +565,10 @@ html, body {
 /* Generic IPTV badge styles */
 .iptv-badge {
     margin-left: 6px;
-    padding: 2px 4px;
+    padding: 3px 6px;
     font-size: 10px;
-    border-radius: 3px;
-    font-weight: 500;
+    border-radius: 6px;
+    font-weight: 600;
 }
 
 .iptv-ip-badge {
@@ -424,27 +586,31 @@ html, body {
     font-size: 12px;
     color: var(--subtle);
     margin-bottom: 12px;
-    padding: 8px 12px;
+    padding: 10px 12px;
     background: var(--card-bg);
-    border-radius: 6px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 12px;
+    line-height: 1.5;
 }
 
 /* Search input */
 .search-input {
     width: 100%;
-    padding: 10px 12px;
+    padding: 10px 14px;
     font-size: 16px;
-    border: 1px solid var(--divider);
-    border-radius: 6px;
+    font-family: inherit;
+    border: 0.5px solid var(--card-border);
+    border-radius: 12px;
     background: var(--card-bg);
     color: var(--fg);
     margin-bottom: 12px;
     box-sizing: border-box;
+    transition: box-shadow 0.15s ease;
 }
 
 .search-input:focus {
     outline: none;
-    border-color: var(--primary-bg);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
 }
 
 .search-input::placeholder {
@@ -454,10 +620,11 @@ html, body {
 /* Language select */
 .language-select {
     width: 100%;
-    padding: 10px 12px;
+    padding: 10px 14px;
     font-size: 16px;
-    border: 1px solid var(--divider);
-    border-radius: 6px;
+    font-family: inherit;
+    border: 0.5px solid var(--card-border);
+    border-radius: 12px;
     background: var(--card-bg);
     color: var(--fg);
     margin-bottom: 16px;
@@ -466,24 +633,77 @@ html, body {
 
 .language-select:focus {
     outline: none;
-    border-color: var(--primary-bg);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
 }
 
-/* Setting toggle */
-.setting-toggle {
+/* Options render in the native (light) dropdown — keep text dark so
+   it stays readable against the white popup background */
+.language-select option {
+    color: #1c1c1e;
+    background: #fff;
+}
+
+/* Inline selects inside a setting row take the remaining space */
+.setting-label .language-select {
+    flex: 1;
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+/* Setting toggle — iOS switch (label left, switch right) */
+.setting-toggle,
+.setting-label.checkbox-label {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     padding: 10px 0;
     cursor: pointer;
     font-size: 15px;
+    justify-content: space-between;
 }
 
-.setting-toggle input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+.setting-toggle input[type="checkbox"],
+.checkbox-label input[type="checkbox"] {
+    order: 2;
+}
+
+.setting-toggle input[type="checkbox"],
+.checkbox-label input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 46px;
+    height: 28px;
+    border-radius: 14px;
+    background: rgba(120, 120, 128, 0.32);
     cursor: pointer;
-    accent-color: var(--primary-bg);
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+    margin: 0;
+}
+
+.setting-toggle input[type="checkbox"]::after,
+.checkbox-label input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease;
+}
+
+.setting-toggle input[type="checkbox"]:checked,
+.checkbox-label input[type="checkbox"]:checked {
+    background: #34c759;
+}
+
+.setting-toggle input[type="checkbox"]:checked::after,
+.checkbox-label input[type="checkbox"]:checked::after {
+    transform: translateX(18px);
 }
 
 /* Setting label with input */
@@ -503,15 +723,16 @@ html, body {
     flex: 1;
     padding: 8px 12px;
     font-size: 14px;
-    border: 1px solid var(--divider);
-    border-radius: 6px;
+    font-family: inherit;
+    border: 0.5px solid var(--card-border);
+    border-radius: 10px;
     background: var(--card-bg);
     color: var(--fg);
 }
 
 .setting-input:focus {
     outline: none;
-    border-color: var(--primary-bg);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
 }
 
 .setting-input::placeholder {
@@ -524,11 +745,12 @@ html, body {
 }
 
 .setting-input-small {
-    width: 60px;
-    padding: 6px 8px;
+    width: 64px;
+    padding: 7px 8px;
     font-size: 14px;
-    border: 1px solid var(--divider);
-    border-radius: 6px;
+    font-family: inherit;
+    border: 0.5px solid var(--card-border);
+    border-radius: 10px;
     background: var(--card-bg);
     color: var(--fg);
     text-align: center;
@@ -536,7 +758,7 @@ html, body {
 
 .setting-input-small:focus {
     outline: none;
-    border-color: var(--primary-bg);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
 }
 
 /* Setting hint text */
@@ -545,6 +767,7 @@ html, body {
     color: var(--subtle);
     margin: 4px 0 12px 0;
     padding-left: 0;
+    line-height: 1.5;
 }
 
 /* Now Playing item */
@@ -577,14 +800,22 @@ html, body {
     white-space: nowrap;
 }
 
+.np-item-title .icon {
+    display: inline-block;
+    vertical-align: -2px;
+    width: 13px;
+    height: 13px;
+}
+
 /* Now Playing - Progress Section */
 .progress-section {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 12px 16px;
+    padding: 14px 16px;
     background: var(--card-bg);
-    border-radius: 12px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 16px;
     margin-bottom: 16px;
 }
 
@@ -594,34 +825,8 @@ html, body {
 
 .progress-section .progress-row #npProgressBar {
     width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--divider);
-    outline: none;
-    cursor: pointer;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-.progress-section .progress-row #npProgressBar::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--primary-bg);
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.progress-section .progress-row #npProgressBar::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--primary-bg);
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    height: 22px;
+    background: transparent;
 }
 
 .progress-section .time-volume-row {
@@ -634,7 +839,8 @@ html, body {
 .progress-section .time-volume-row #npTimeDisplay {
     font-size: 12px;
     color: var(--subtle);
-    font-family: 'SF Mono', 'Consolas', monospace;
+    font-family: ui-monospace, 'SF Mono', 'Consolas', monospace;
+    font-variant-numeric: tabular-nums;
 }
 
 .progress-section .time-volume-row .volume-row {
@@ -649,37 +855,21 @@ html, body {
     color: var(--fg);
     font-size: 16px;
     cursor: pointer;
-    padding: 2px;
+    padding: 4px;
+    border-radius: 50%;
+    min-width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-section .time-volume-row .volume-row #npVolumeToggle:hover {
+    background: var(--btn-bg);
 }
 
 .progress-section .time-volume-row .volume-row #npVolumeSlider {
     width: 80px;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--divider);
-    outline: none;
-    cursor: pointer;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-.progress-section .time-volume-row .volume-row #npVolumeSlider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--primary-bg);
-    cursor: pointer;
-}
-
-.progress-section .time-volume-row .volume-row #npVolumeSlider::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--primary-bg);
-    cursor: pointer;
-    border: none;
 }
 
 /* Now Playing - Controls */
@@ -688,9 +878,10 @@ html, body {
     justify-content: center;
     align-items: center;
     gap: 0px;
-    padding: 16px;
+    padding: 14px 16px;
     background: var(--card-bg);
-    border-radius: 12px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 16px;
     margin-bottom: 16px;
 }
 
@@ -707,7 +898,7 @@ html, body {
 }
 
 .np-controls button {
-    background: var(--btn-bg);
+    background: transparent;
     color: var(--btn-fg);
     border: none;
     padding: 12px;
@@ -715,59 +906,79 @@ html, body {
     font-size: 18px;
     cursor: pointer;
     transition: background 0.15s ease, transform 0.1s ease;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: 46px;
+    min-height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .np-controls.compact button {
-    font-size: 16px;
+    font-size: 15px;
     padding: 8px;
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 38px;
+    min-height: 38px;
 }
 
 .np-controls.normal button {
     font-size: 18px;
     padding: 12px;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: 46px;
+    min-height: 46px;
 }
 
 .np-controls.large button {
-    font-size: 22px;
-    padding: 16px;
-    min-width: 56px;
-    min-height: 56px;
+    font-size: 21px;
+    padding: 14px;
+    min-width: 54px;
+    min-height: 54px;
 }
 
 .np-controls button:hover {
-    background: var(--btn-hover);
+    background: var(--btn-bg);
 }
 
 .np-controls button:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
+}
+
+/* Main play button gets the accent treatment */
+.np-controls #npPlayBtn {
+    background: var(--primary-bg);
+    color: #fff;
+}
+
+.np-controls #npPlayBtn:hover {
+    background: var(--primary-hover);
 }
 
 /* Now Playing - Info */
 .now-playing-info {
-    padding: 20px;
+    padding: 22px 20px;
     background: var(--card-bg);
-    border-radius: 12px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 16px;
     margin-bottom: 16px;
     text-align: center;
 }
 
 .now-playing-info .track-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
+    letter-spacing: -0.2px;
     color: var(--fg);
     margin-bottom: 8px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.now-playing-info .track-title .icon {
+    display: inline-block;
+    vertical-align: -2px;
+    width: 16px;
+    height: 16px;
+    color: var(--subtle);
 }
 
 .now-playing-info .track-artist {
@@ -779,7 +990,7 @@ html, body {
 .now-playing-info .track-url {
     font-size: 12px;
     color: var(--subtle);
-    opacity: 0.7;
+    opacity: 0.75;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

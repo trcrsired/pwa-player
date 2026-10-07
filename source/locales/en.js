@@ -1,13 +1,13 @@
 // English translations
 const EN_TRANSLATIONS = {
     // Navigation
-    nowPlaying: "▶️ Now Playing",
-    playlist: "🎵 Playlist",
-    playlists: "🎵 Playlists",
-    storage: "🗂️ Storage",
-    iptv: "📺 IPTV",
-    settings: "⚙️ Settings",
-    storageManager: "🗂️ Storage Manager",
+    nowPlaying: "Now Playing",
+    playlist: "Playlist",
+    playlists: "Playlists",
+    storage: "Storage",
+    iptv: "IPTV",
+    settings: "Settings",
+    storageManager: "Storage Manager",
 
     // Player controls
     play: "Play",
@@ -78,6 +78,10 @@ const EN_TRANSLATIONS = {
 
     // Playlist
     addToPlaylist: "Add to Playlist",
+    addToQueue: "Add to Queue",
+    addedToQueue: "Added to queue",
+    noOtherPlaylists: "No other playlists available.",
+    alreadyInPlaylist: "{name} is already in playlist {playlist}",
     newPlaylist: "New Playlist",
     whichPlaylist: "Add to which playlist?",
     playKeepPanel: "Play (keep panel open)",
@@ -109,7 +113,7 @@ const EN_TRANSLATIONS = {
     playlistLoadError: "Error loading playlist",
 
     // IPTV
-    iptvChannels: "📺 IPTV Channels",
+    iptvChannels: "IPTV Channels",
     searchChannels: "Search channels...",
     iptvCorsHint: "IP addresses always need CORS bypass. HTTP URLs often need CORS. HTTPS usually works without CORS. If a channel doesn't play, try enabling CORS bypass.",
     import: "Import",
@@ -169,6 +173,13 @@ const EN_TRANSLATIONS = {
     compact: "Compact",
     normal: "Normal",
     large: "Large",
+    sidePanel: "Side Panel",
+    sidePanelLeft: "Left",
+    sidePanelRight: "Right",
+    sidePanelOff: "Off",
+    sidePanelHint: "Hover the screen edge or swipe inward from it to reveal a floating bar with quick access to Now Playing, Playlists, Storage, IPTV and Settings — without leaving the player.",
+    backToPlayer: "Back to Player",
+    showControls: "Show Controls",
     keyboardShortcuts: "Keyboard Shortcuts",
     shortcutSpeedEnabled: "A/D/S - Speed control",
     shortcutLoopEnabled: "J/K/L - A-B Loop",
@@ -230,6 +241,7 @@ const EN_TRANSLATIONS = {
     // Common
     close: "Close",
     cancel: "Cancel",
+    ok: "OK",
     removeFromQueue: "Remove from Queue",
     confirm: "Confirm",
     yes: "Yes",
@@ -342,9 +354,9 @@ const EN_TRANSLATIONS = {
     screenshotFailed: "Unable to capture screenshot. The video source may be cross-origin without CORS.",
     saveLocations: "Save Locations",
     saveLocationsHint: "Configure where screen recordings, video recordings, and screenshots are saved. Set via Storage directory context menu.",
-    screenRecordingLocationLabel: "📹 Screen Recording:",
-    videoRecordingLocationLabel: "🎬 Video Recording:",
-    screenshotLocationLabel: "🖼️ Screenshot:",
+    screenRecordingLocationLabel: "Screen Recording:",
+    videoRecordingLocationLabel: "Video Recording:",
+    screenshotLocationLabel: "Screenshot:",
     noLocationSet: "Not set (downloads to browser default)",
     clearScreenRecordingLocation: "Clear Screen Recording",
     clearVideoRecordingLocation: "Clear Video Recording",
@@ -399,6 +411,12 @@ const EN_TRANSLATIONS = {
     // Skip iframes in background
     skipIframesInBackground: "Skip embedded content when playing in background",
     skipIframesInBackgroundHint: "When tab is hidden, skip YouTube/Spotify/etc. entries to avoid browser autoplay policy issues.",
+    embeddedEndBehavior: "When embedded media ends",
+    embeddedEndPause: "Pause",
+    embeddedEndNext: "Play next in playlist",
+    embeddedEndBehaviorHint: "What to do when an embedded or network entry (YouTube, Spotify, IPTV link...) finishes.",
+    useUrlPlaylist: "Use playlist embedded in URL",
+    useUrlPlaylistHint: "When a URL carries its own playlist (e.g. YouTube list= parameter), let the site play through it. Off: a playlist URL plays only its first video, and a watch?v=&list= URL plays just that video.",
 
     // Remote Storage
     mountRemote: "Mount Remote",

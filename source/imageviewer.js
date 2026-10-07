@@ -443,7 +443,7 @@ function handleZoomedImageClick(event) {
     imageElement.style.transformOrigin = `${xPercent}% ${yPercent}%`;
 }
 
-function handleNextWithLoopCheck() {
+async function handleNextWithLoopCheck() {
     const pos = getImageQueuePosition();
     if (!pos) {
         if (typeof playNext === 'function') playNext();
@@ -451,7 +451,7 @@ function handleNextWithLoopCheck() {
     }
     if (pos.index >= pos.total) {
         const t = (key) => window.i18n ? window.i18n.t(key) : key;
-        if (confirm(t('loopToFirstImage', 'Jump back to first image?'))) {
+        if (await glassConfirm(t('loopToFirstImage', 'Jump back to first image?'))) {
             jumpToImageIndex(0);
         }
         return;
@@ -508,7 +508,7 @@ function handleMagnifierClick(event) {
 function updateMagnifierButton() {
     const btn = document.getElementById('magnifierBtn');
     if (!btn) return;
-    btn.textContent = getCurrentScale() >= 2 ? '🔎' : '🔍';
+    setIcon(btn, getCurrentScale() >= 2 ? 'zoomOut' : 'zoomIn');
     btn.title = getCurrentScale() >= 2 ? 'Zoom Out' : 'Zoom In';
 }
 
@@ -541,9 +541,9 @@ function updatePlayButtonForSlideshow() {
     if (!isImageViewerActive()) return;
     const playBtn = document.getElementById('playBtn');
     const npPlayBtn = document.getElementById('npPlayBtn');
-    const text = isSlideshowActive ? '⏸️' : '▶️';
-    if (playBtn) playBtn.textContent = text;
-    if (npPlayBtn) npPlayBtn.textContent = text;
+    const iconName = isSlideshowActive ? 'pause' : 'play';
+    if (playBtn) setIcon(playBtn, iconName);
+    if (npPlayBtn) setIcon(npPlayBtn, iconName);
 }
 
 function startSlideshow(intervalMs = null) {
@@ -768,8 +768,8 @@ function hideImageViewer() {
 
     const playBtn = document.getElementById('playBtn');
     const npPlayBtn = document.getElementById('npPlayBtn');
-    if (playBtn) playBtn.textContent = '▶️';
-    if (npPlayBtn) npPlayBtn.textContent = '▶️';
+    if (playBtn) setIcon(playBtn, 'play');
+    if (npPlayBtn) setIcon(npPlayBtn, 'play');
 
     const controls = document.getElementById('controls');
     if (controls) controls.classList.remove('hidden');

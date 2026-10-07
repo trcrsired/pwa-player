@@ -100,7 +100,9 @@ function getSwitchCaptureBtn() {
     return switchCaptureBtn;
 }
 
-// Draw captured video to canvas continuously
+// Draw captured video to canvas continuously.
+// setInterval keeps running (throttled) when the tab is hidden —
+// requestAnimationFrame would pause entirely and freeze the recording
 function drawCaptureToCanvas() {
     if (!captureCtx || !currentCaptureVideo) return;
 
@@ -115,8 +117,6 @@ function drawCaptureToCanvas() {
         }
         captureCtx.drawImage(currentCaptureVideo, 0, 0, vw, vh);
     }
-
-    captureAnimationId = requestAnimationFrame(drawCaptureToCanvas);
 }
 
 screenCaptureBtn.addEventListener("click", async () => {
@@ -141,8 +141,8 @@ screenCaptureBtn.addEventListener("click", async () => {
         currentCaptureVideo.muted = true;
         await currentCaptureVideo.play();
 
-        // Start drawing to canvas
-        drawCaptureToCanvas();
+        // Start drawing to canvas (~30fps, survives tab being hidden)
+        captureAnimationId = setInterval(drawCaptureToCanvas, 33);
 
         // Set up AudioContext for mixing
         audioContext = new AudioContext();
@@ -189,11 +189,11 @@ screenCaptureBtn.addEventListener("click", async () => {
         if (micBtn) micBtn.style.display = "";
         const switchBtn = getSwitchCaptureBtn();
         if (switchBtn) switchBtn.style.display = "";
-        screenCaptureBtn.textContent = "⏹️";
+        setIcon(screenCaptureBtn, "stop");
 
         // Ask user if they want to enable microphone
         const t = (key) => window.i18n ? window.i18n.t(key) : key;
-        if (confirm(t("enableMicrophonePrompt") || "Enable microphone for this recording?")) {
+        if (await glassConfirm(t("enableMicrophonePrompt") || "Enable microphone for this recording?")) {
             toggleMicInRecording();
         }
 
@@ -226,7 +226,7 @@ async function toggleMicInRecording() {
             micGainNode.gain.value = 0;
         }
         isMicEnabled = false;
-        if (micBtn) micBtn.textContent = "🎤";
+        if (micBtn) setIcon(micBtn, "mic");
     } else {
         // Turn on mic
         try {
@@ -239,7 +239,7 @@ async function toggleMicInRecording() {
             }
             micGainNode.gain.value = 1;
             isMicEnabled = true;
-            if (micBtn) micBtn.textContent = "🎙️";
+            if (micBtn) setIcon(micBtn, "micOn");
         } catch (micErr) {
             console.warn("Could not get microphone:", micErr);
             alert("Could not access microphone.");
@@ -305,9 +305,9 @@ async function switchCaptureSource() {
 }
 
 function cleanupCaptureResources() {
-    // Stop animation loop
+    // Stop draw loop
     if (captureAnimationId) {
-        cancelAnimationFrame(captureAnimationId);
+        clearInterval(captureAnimationId);
         captureAnimationId = null;
     }
 
@@ -319,6 +319,13 @@ function cleanupCaptureResources() {
 
     captureCanvas = null;
     captureCtx = null;
+
+    // Release the capture stream from the main video element —
+    // srcObject takes precedence over src, so leaving it set would
+    // block all subsequent playback
+    if (video) {
+        video.srcObject = null;
+    }
 
     if (micStream) {
         micStream.getTracks().forEach(track => track.stop());
@@ -361,6 +368,11 @@ if (switchBtnImmediate) {
 
 function saveScreenRecording() {
     const blob = new Blob(screenChunks, { type: "video/webm" });
+    screenChunks = [];
+    screenRecorder = null;
+    if (blob.size === 0) {
+        return;
+    }
     const filename = `screen-recording-${Date.now()}.webm`;
     if (typeof saveFileToConfiguredLocation === 'function') {
         saveFileToConfiguredLocation('screenRecording', blob, filename);
@@ -399,20 +411,26 @@ function stopScreenRecording() {
     // Clear recording start time
     screenRecordingStartTime = null;
 
-    if (screenRecorder && screenRecorder.state === "recording") {
-        screenRecorder.requestData();
-        screenRecorder.stop();
+    if (screenRecorder) {
+        if (screenRecorder.state === "recording") {
+            screenRecorder.requestData();
+            screenRecorder.stop();
+        } else {
+            // Recorder already stopped (e.g. stream ended externally) —
+            // save whatever was captured instead of dropping it
+            saveScreenRecording();
+        }
     }
 
     cleanupCaptureResources();
 
     video.muted = previousVideoMuted;
 
-    screenCaptureBtn.textContent = "🖥️";
+    setIcon(screenCaptureBtn, "monitor");
     const micBtn = getMicToggleBtn();
     if (micBtn) {
         micBtn.style.display = "none";
-        micBtn.textContent = "🎤";
+        setIcon(micBtn, "mic");
     }
     const switchBtn = getSwitchCaptureBtn();
     if (switchBtn) {
@@ -429,8 +447,8 @@ if (navigator.getBattery) {
     navigator.getBattery().then(battery => {
         const updateBattery = () => {
             const level = Math.round(battery.level * 100);
-            const charging = battery.charging ? "⚡" : "";
-            batteryStatus.textContent = `🔋 ${level}%${charging}`;
+            const charging = battery.charging ? icon("bolt") : "";
+            batteryStatus.innerHTML = `${icon("battery")} ${level}%${charging}`;
         };
 
         updateBattery();
@@ -441,7 +459,7 @@ if (navigator.getBattery) {
         console.error("Battery API error:", e);
     });
 } else {
-    batteryStatus.textContent = "🔋 n/a";
+    batteryStatus.innerHTML = `${icon("battery")} n/a`;
 }
 
 
@@ -492,6 +510,7 @@ function fallbackDownload(blob, filename) {
     a.download = filename;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
+    if (typeof showToast === 'function') showToast(filename);
 }
 
 // Start recording the <video> element
@@ -549,7 +568,7 @@ function startVideoRecording() {
 
     // Use timeslice for better file integrity
     mediaRecorder.start(1000);
-    mediaRecordBtn.textContent = "⏹️";
+    setIcon(mediaRecordBtn, "stop");
     alert(t('recordingStarted') || "Recording started.");
 }
 
@@ -577,7 +596,7 @@ function stopVideoRecording() {
         mediaRecorder.requestData();
         mediaRecorder.stop();
     }
-    mediaRecordBtn.textContent = "⏺️";
+    setIcon(mediaRecordBtn, "record");
     alert(t('recordingStopped') || "Recording stopped.");
 }
 
@@ -596,7 +615,7 @@ mediaRecordBtn.addEventListener("click", () => {
         videoRecordingStartTime = Date.now();
 
         mediaRecorder.start(1000);
-        mediaRecordBtn.textContent = "⏹️";
+        setIcon(mediaRecordBtn, "stop");
         alert(t('recordingStarted') || "Recording started.");
     }
 });
@@ -711,20 +730,20 @@ const connection = navigator.connection || navigator.mozConnection || navigator.
 
 function updateNetwork() {
     if (!connection) {
-        networkStatus.textContent = "🌐 n/a";
+        networkStatus.innerHTML = `${icon("globe")} n/a`;
         return;
     }
 
     const type = connection.effectiveType || "unknown";
     const down = connection.downlink ? `${connection.downlink}Mbps` : "";
-    networkStatus.textContent = `🌐 ${type} ${down}`.trim();
+    networkStatus.innerHTML = `${icon("globe")} ${type} ${down}`.trim();
 }
 
 if (connection) {
     updateNetwork();
     connection.addEventListener("change", updateNetwork);
 } else {
-    networkStatus.textContent = "🌐 n/a";
+    networkStatus.innerHTML = `${icon("globe")} n/a`;
 }
 
 // ===============================

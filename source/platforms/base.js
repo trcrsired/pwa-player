@@ -178,6 +178,15 @@ class BasePlatform {
             return true;
         }
 
+        // Embedded end behavior setting: 'pause' stops here instead of
+        // auto-advancing to the next entry in our playlist
+        const endBehavior = typeof getEmbeddedEndBehavior === 'function'
+            ? getEmbeddedEndBehavior()
+            : 'next';
+        if (endBehavior === 'pause') {
+            return true;
+        }
+
         // Call the global handler for playlist continuation
         if (typeof handleEmbeddedVideoEnded === 'function') {
             handleEmbeddedVideoEnded();

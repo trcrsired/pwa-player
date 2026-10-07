@@ -1,13 +1,13 @@
 // Japanese translations
 const JA_TRANSLATIONS = {
     // Navigation
-    nowPlaying: "▶️ 再生中",
-    playlist: "🎵 プレイリスト",
-    playlists: "🎵 プレイリスト",
-    storage: "🗂️ ストレージ",
-    iptv: "📺 IPTV",
-    settings: "⚙️ 設定",
-    storageManager: "🗂️ ストレージ管理",
+    nowPlaying: "再生中",
+    playlist: "プレイリスト",
+    playlists: "プレイリスト",
+    storage: "ストレージ",
+    iptv: "IPTV",
+    settings: "設定",
+    storageManager: "ストレージ管理",
 
     // Player controls
     play: "再生",
@@ -75,6 +75,10 @@ const JA_TRANSLATIONS = {
 
     // Playlist
     addToPlaylist: "プレイリストに追加",
+    addToQueue: "キューに追加",
+    addedToQueue: "キューに追加しました",
+    noOtherPlaylists: "他のプレイリストがありません。",
+    alreadyInPlaylist: "{name} は既にプレイリスト {playlist} にあります",
     newPlaylist: "新規プレイリスト",
     whichPlaylist: "どのプレイリストに追加しますか？",
     playKeepPanel: "再生（パネルを開いたまま）",
@@ -106,7 +110,7 @@ const JA_TRANSLATIONS = {
     playlistLoadError: "プレイリスト読み込みエラー",
 
     // IPTV
-    iptvChannels: "📺 IPTVチャンネル",
+    iptvChannels: "IPTVチャンネル",
     searchChannels: "チャンネルを検索...",
     iptvCorsHint: "IPアドレスは常にCORSバイパスが必要。HTTP URLは多くの場合CORSが必要。HTTPSは通常CORS不要。チャンネルが再生されない場合はCORSバイパスを有効にしてください。",
     import: "インポート",
@@ -166,6 +170,13 @@ const JA_TRANSLATIONS = {
     compact: "コンパクト",
     normal: "標準",
     large: "大",
+    sidePanel: "サイドパネル",
+    sidePanelLeft: "左",
+    sidePanelRight: "右",
+    sidePanelOff: "オフ",
+    sidePanelHint: "画面端にカーソルを合わせるか、端から内側にスワイプするとフローティングバーが表示され、プレーヤーを離れずに再生中・プレイリスト・ストレージ・IPTV・設定へアクセスできます。",
+    backToPlayer: "プレーヤーに戻る",
+    showControls: "コントロールを表示",
     keyboardShortcuts: "キーボードショートカット",
     shortcutSpeedEnabled: "A/D/S - 速度制御",
     shortcutLoopEnabled: "J/K/L - A-Bループ",
@@ -227,6 +238,7 @@ const JA_TRANSLATIONS = {
     // Common
     close: "閉じる",
     cancel: "キャンセル",
+    ok: "OK",
     removeFromQueue: "キューから削除",
     confirm: "確認",
     yes: "はい",
@@ -339,9 +351,9 @@ const JA_TRANSLATIONS = {
     screenshotFailed: "スクリーンショットを取得できません。動画ソースがクロスオリジンまたはCORSが有効でない可能性があります。",
     saveLocations: "保存場所",
     saveLocationsHint: "画面録画、動画録画、スクリーンショットの保存場所を設定。ストレージディレクトリの右クリックメニューで設定。",
-    screenRecordingLocationLabel: "📹 画面録画：",
-    videoRecordingLocationLabel: "🎬 動画録画：",
-    screenshotLocationLabel: "🖼️ スクリーンショット：",
+    screenRecordingLocationLabel: "画面録画：",
+    videoRecordingLocationLabel: "動画録画：",
+    screenshotLocationLabel: "スクリーンショット：",
     noLocationSet: "未設定（ブラウザのデフォルトにダウンロード）",
     clearScreenRecordingLocation: "画面録画を清除",
     clearVideoRecordingLocation: "動画録画を清除",
@@ -396,6 +408,12 @@ const JA_TRANSLATIONS = {
     // Skip iframes in background
     skipIframesInBackground: "バックグラウンド再生時に埋め込みコンテンツをスキップ",
     skipIframesInBackgroundHint: "タブが非表示の時、YouTube/Spotifyなどをスキップしてブラウザの自動再生ポリシー問題を回避します。",
+    embeddedEndBehavior: "埋め込みメディアの再生終了時",
+    embeddedEndPause: "一時停止",
+    embeddedEndNext: "プレイリストの次を再生",
+    embeddedEndBehaviorHint: "埋め込み/ネットワーク項目（YouTube、Spotify、IPTVリンクなど）の再生終了時の動作。",
+    useUrlPlaylist: "URL内のプレイリストを使用",
+    useUrlPlaylistHint: "URLがプレイリストを持つ場合（例：YouTubeのlist=パラメータ）、サイト側で順次再生します。オフの場合：プレイリストURLは最初の動画のみ、watch?v=&list=のURLはその動画のみ再生します。",
 
     // Remote Storage
     mountRemote: "リモートをマウント",

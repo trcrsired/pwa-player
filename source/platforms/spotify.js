@@ -236,8 +236,8 @@ class SpotifyPlatform extends BasePlatform {
 
                 const playBtn = document.getElementById("playBtn");
                 const npPlayBtn = document.getElementById("npPlayBtn");
-                if (playBtn) playBtn.textContent = "⏸️";
-                if (npPlayBtn) npPlayBtn.textContent = "⏸️";
+                if (playBtn) setIcon(playBtn, "pause");
+                if (npPlayBtn) setIcon(npPlayBtn, "pause");
                 navigator.mediaSession.playbackState = 'playing';
             });
 
@@ -312,12 +312,12 @@ class SpotifyPlatform extends BasePlatform {
                 const playBtn = document.getElementById("playBtn");
                 const npPlayBtn = document.getElementById("npPlayBtn");
                 if (isPaused) {
-                    if (playBtn) playBtn.textContent = "▶️";
-                    if (npPlayBtn) npPlayBtn.textContent = "▶️";
+                    if (playBtn) setIcon(playBtn, "play");
+                    if (npPlayBtn) setIcon(npPlayBtn, "play");
                     navigator.mediaSession.playbackState = 'paused';
                 } else {
-                    if (playBtn) playBtn.textContent = "⏸️";
-                    if (npPlayBtn) npPlayBtn.textContent = "⏸️";
+                    if (playBtn) setIcon(playBtn, "pause");
+                    if (npPlayBtn) setIcon(npPlayBtn, "pause");
                     navigator.mediaSession.playbackState = 'playing';
                 }
 
@@ -544,8 +544,8 @@ window.onSpotifyIframeApiReady = (IFrameAPI) => {
 
                 const playBtn = document.getElementById("playBtn");
                 const npPlayBtn = document.getElementById("npPlayBtn");
-                if (playBtn) playBtn.textContent = "⏸️";
-                if (npPlayBtn) npPlayBtn.textContent = "⏸️";
+                if (playBtn) setIcon(playBtn, "pause");
+                if (npPlayBtn) setIcon(npPlayBtn, "pause");
                 navigator.mediaSession.playbackState = 'playing';
             });
 
@@ -620,12 +620,12 @@ window.onSpotifyIframeApiReady = (IFrameAPI) => {
                 const playBtn = document.getElementById("playBtn");
                 const npPlayBtn = document.getElementById("npPlayBtn");
                 if (isPaused) {
-                    if (playBtn) playBtn.textContent = "▶️";
-                    if (npPlayBtn) npPlayBtn.textContent = "▶️";
+                    if (playBtn) setIcon(playBtn, "play");
+                    if (npPlayBtn) setIcon(npPlayBtn, "play");
                     navigator.mediaSession.playbackState = 'paused';
                 } else {
-                    if (playBtn) playBtn.textContent = "⏸️";
-                    if (npPlayBtn) npPlayBtn.textContent = "⏸️";
+                    if (playBtn) setIcon(playBtn, "pause");
+                    if (npPlayBtn) setIcon(npPlayBtn, "pause");
                     navigator.mediaSession.playbackState = 'playing';
                 }
 

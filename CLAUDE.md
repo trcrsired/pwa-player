@@ -39,6 +39,7 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 | `sw.js` / `sw-register.js` | Service Worker registration |
 | `locale.js` | Internationalization (en, zh-CN, ja) |
 | `wakelock.js` | Screen wake lock API |
+| `sidepanel.js` | Edge rail + slide-over sheets for views (left/right/off via `sidePanelPosition` setting) |
 | `manifest.json` | PWA manifest with file handlers |
 
 ### Platform Adapters

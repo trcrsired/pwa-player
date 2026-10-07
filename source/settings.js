@@ -276,8 +276,9 @@ function applyButtonSize(size) {
     }
 }
 
-// Load saved preference (default: normal)
-const savedButtonSize = localStorage.getItem("buttonSize") || "normal";
+// Load saved preference (default: compact on small screens, normal otherwise)
+const defaultButtonSize = window.matchMedia("(max-width: 600px)").matches ? "compact" : "normal";
+const savedButtonSize = localStorage.getItem("buttonSize") || defaultButtonSize;
 buttonSizeSelect.value = savedButtonSize;
 applyButtonSize(savedButtonSize);
 
@@ -288,7 +289,24 @@ buttonSizeSelect.addEventListener("change", () => {
 });
 
 function getButtonSize() {
-    return localStorage.getItem("buttonSize") || "normal";
+    return localStorage.getItem("buttonSize") || defaultButtonSize;
+}
+
+// =====================================================
+// Side Panel (floating rail) position: left | right | off
+// =====================================================
+const sidePanelPositionSelect = document.getElementById("sidePanelPosition");
+
+function getSidePanelPosition() {
+    return localStorage.getItem("sidePanelPosition") || "left";
+}
+
+if (sidePanelPositionSelect) {
+    sidePanelPositionSelect.value = getSidePanelPosition();
+    sidePanelPositionSelect.addEventListener("change", () => {
+        localStorage.setItem("sidePanelPosition", sidePanelPositionSelect.value);
+        if (typeof applySidePanelPosition === "function") applySidePanelPosition();
+    });
 }
 
 // =====================================================
@@ -661,7 +679,7 @@ if (videoForABLoop) {
 
 // Get active player current time (handles both video and embedded)
 function getActiveCurrentTime() {
-    if (window.pendingSeekTarget != null) {
+    if (window.pendingSeekTarget != null && isFinite(window.pendingSeekTarget)) {
       return window.pendingSeekTarget;
     }
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
@@ -671,12 +689,12 @@ function getActiveCurrentTime() {
             if (time && typeof time.then === 'function') {
                 return window._cachedEmbeddedCurrentTime || 0;
             }
-            return time || 0;
+            return isFinite(time) ? time : 0;
         }
         return 0;
     }
     const video = document.getElementById("player");
-    return video ? video.currentTime : 0;
+    return video && isFinite(video.currentTime) ? video.currentTime : 0;
 }
 
 // Check if video is non-live (handles both video and embedded)
@@ -692,6 +710,7 @@ function isNonLiveVideo() {
 
 // Format time helper
 function formatTime(seconds) {
+    if (!isFinite(seconds) || seconds < 0) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -1071,6 +1090,8 @@ function getProfileSettingsKeys() {
         "shortcutSpeedEnabled",
         "shortcutLoopEnabled",
         "videoPreviewEnabled",
+        "embeddedEndBehavior",
+        "useUrlPlaylist",
         "corsBypassUrl",
         "networkRetryCount",
         "iptvSourceRetryCount",
@@ -1123,6 +1144,8 @@ function createDefaultProfileData() {
             shortcutSpeedEnabled: "true",
             shortcutLoopEnabled: "true",
             videoPreviewEnabled: "true",
+            embeddedEndBehavior: "pause",
+            useUrlPlaylist: "false",
             corsBypassUrl: "",
             networkRetryCount: DEFAULT_NETWORK_RETRY_COUNT.toString(),
             iptvSourceRetryCount: DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString(),
@@ -1227,6 +1250,12 @@ async function applyProfileData(profileData) {
     const retryBeforeSrcResetInput = document.getElementById("retryBeforeSrcReset");
     if (retryBeforeSrcResetInput) retryBeforeSrcResetInput.value = localStorage.getItem("retryBeforeSrcReset") || DEFAULT_RETRY_BEFORE_SRC_RESET.toString();
 
+    const embeddedEndBehaviorSelect = document.getElementById("embeddedEndBehavior");
+    if (embeddedEndBehaviorSelect) embeddedEndBehaviorSelect.value = localStorage.getItem("embeddedEndBehavior") || "pause";
+
+    const useUrlPlaylistCheckbox = document.getElementById("useUrlPlaylist");
+    if (useUrlPlaylistCheckbox) useUrlPlaylistCheckbox.checked = localStorage.getItem("useUrlPlaylist") === "true";
+
     showToast(t('profileLoaded', 'Profile loaded'));
 }
 
@@ -1296,7 +1325,7 @@ function initProfiles() {
     // New profile
     if (newBtn) {
         newBtn.addEventListener("click", async () => {
-            const name = prompt(t('newProfileName', 'New profile name:'));
+            const name = await glassPrompt(t('newProfileName', 'New profile name:'));
             if (!name || !name.trim()) return;
 
             const profiles = getProfiles();
@@ -1321,7 +1350,7 @@ function initProfiles() {
     // Duplicate profile (copy current settings)
     if (duplicateBtn) {
         duplicateBtn.addEventListener("click", async () => {
-            const name = prompt(t('newProfileName', 'New profile name:'));
+            const name = await glassPrompt(t('newProfileName', 'New profile name:'));
             if (!name || !name.trim()) return;
 
             const profiles = getProfiles();
@@ -1345,14 +1374,14 @@ function initProfiles() {
 
     // Rename profile
     if (renameBtn) {
-        renameBtn.addEventListener("click", () => {
+        renameBtn.addEventListener("click", async () => {
             const oldName = getCurrentProfileName();
             if (oldName === DEFAULT_PROFILE_NAME) {
                 alert(t('cannotRenameDefault', 'Cannot rename default profile'));
                 return;
             }
 
-            const newName = prompt(t('newProfileName', 'New profile name:'), oldName);
+            const newName = await glassPrompt(t('newProfileName', 'New profile name:'), oldName);
             if (!newName || !newName.trim() || newName === oldName) return;
 
             const profiles = getProfiles();
@@ -1373,7 +1402,7 @@ function initProfiles() {
     // Reset profile
     if (resetBtn) {
         resetBtn.addEventListener("click", async () => {
-            if (!confirm(t('confirmResetProfile', 'Reset this profile to default settings?'))) return;
+            if (!await glassConfirm(t('confirmResetProfile', 'Reset this profile to default settings?'))) return;
 
             const name = getCurrentProfileName();
             const profiles = getProfiles();
@@ -1387,14 +1416,14 @@ function initProfiles() {
 
     // Delete profile
     if (deleteBtn) {
-        deleteBtn.addEventListener("click", () => {
+        deleteBtn.addEventListener("click", async () => {
             const name = getCurrentProfileName();
             if (name === DEFAULT_PROFILE_NAME) {
                 alert(t('cannotDeleteDefault', 'Cannot delete default profile'));
                 return;
             }
 
-            if (!confirm(t('confirmDeleteProfile', 'Delete this profile?'))) return;
+            if (!await glassConfirm(t('confirmDeleteProfile', 'Delete this profile?'))) return;
 
             const profiles = getProfiles();
             delete profiles[name];
@@ -1442,7 +1471,7 @@ function initProfiles() {
 
                 // Ask for profile name
                 const defaultName = profileData.profileName || t('importedProfile', 'Imported');
-                const name = prompt(t('newProfileName', 'New profile name:'), defaultName);
+                const name = await glassPrompt(t('newProfileName', 'New profile name:'), defaultName);
                 if (!name || !name.trim()) return;
 
                 const profiles = getProfiles();
@@ -1450,7 +1479,7 @@ function initProfiles() {
                 saveProfiles(profiles);
 
                 // Ask if user wants to switch to imported profile
-                if (confirm(t('switchToImportedProfile', 'Switch to imported profile?'))) {
+                if (await glassConfirm(t('switchToImportedProfile', 'Switch to imported profile?'))) {
                     setCurrentProfileName(name);
                     await applyProfileData(profileData);
                 }
@@ -1498,9 +1527,9 @@ function initSaveLocationClearHandlers() {
     const videoInput = document.getElementById("videoRecordingLocationInput");
     const screenshotInput = document.getElementById("screenshotLocationInput");
 
-    const clearHandler = (type) => {
+    const clearHandler = async (type) => {
         if (!localStorage.getItem(`saveLocation_${type}`)) return;
-        if (confirm("Clear this save location?")) {
+        if (await glassConfirm("Clear this save location?")) {
             localStorage.removeItem(`saveLocation_${type}`);
             updateSaveLocationsDisplay();
             showToast("Save location cleared.");
@@ -1627,4 +1656,42 @@ if (skipIframesInBackgroundCheckbox) {
 // Helper function to check if skipping iframes in background is enabled
 function isSkipIframesInBackgroundEnabled() {
     return localStorage.getItem("skipIframesInBackground") !== "false";
+}
+
+// =====================================================
+// Embedded End Behavior Setting
+// =====================================================
+const embeddedEndBehaviorSelect = document.getElementById("embeddedEndBehavior");
+
+if (embeddedEndBehaviorSelect) {
+    embeddedEndBehaviorSelect.value = localStorage.getItem("embeddedEndBehavior") || "pause";
+
+    embeddedEndBehaviorSelect.addEventListener("change", () => {
+        localStorage.setItem("embeddedEndBehavior", embeddedEndBehaviorSelect.value);
+    });
+}
+
+// 'pause' = stop when an embedded/network entry finishes;
+// 'next' = advance to the next entry in our playlist
+function getEmbeddedEndBehavior() {
+    return localStorage.getItem("embeddedEndBehavior") || "pause";
+}
+
+// =====================================================
+// URL Playlist Setting
+// =====================================================
+const useUrlPlaylistCheckbox = document.getElementById("useUrlPlaylist");
+
+if (useUrlPlaylistCheckbox) {
+    useUrlPlaylistCheckbox.checked = localStorage.getItem("useUrlPlaylist") === "true";
+
+    useUrlPlaylistCheckbox.addEventListener("change", () => {
+        localStorage.setItem("useUrlPlaylist", useUrlPlaylistCheckbox.checked ? "true" : "false");
+    });
+}
+
+// Whether a URL that carries its own playlist (e.g. YouTube list=) may
+// let the remote site advance through that playlist
+function isUrlPlaylistEnabled() {
+    return localStorage.getItem("useUrlPlaylist") === "true";
 }

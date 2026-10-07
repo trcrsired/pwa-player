@@ -106,7 +106,7 @@ function importCustomChannels() {
 async function clearCustomChannels() {
     const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
-    if (!confirm(t('confirmClearChannels', 'Delete all custom channels?'))) return;
+    if (!await glassConfirm(t('confirmClearChannels', 'Delete all custom channels?'))) return;
 
     await saveCustomIptvChannels([]);
     renderIPTVList();
@@ -194,20 +194,14 @@ function showIPTVChannelMenu(channel, url, button) {
                 const playlists = await playlists_load();
                 const names = Object.keys(playlists);
 
-                const choice = prompt(
-                    t('whichPlaylist') + "\n" +
-                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-                    "1"
-                );
-
-                if (!choice) {
+                if (names.length === 0) {
+                    alert(t('noPlaylistsAvailable', 'No playlists available. Please create a playlist first.'));
                     closeMenu();
                     return;
                 }
 
-                const index = parseInt(choice, 10) - 1;
-                if (index < 0 || index >= names.length) {
-                    alert(t('invalidSelection'));
+                const index = await pickOption(t('whichPlaylist'), names);
+                if (index === null) {
                     closeMenu();
                     return;
                 }
@@ -362,7 +356,7 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
     // Build the toggle content
     const toggleText = document.createElement("span");
     toggleText.className = "iptv-toggle-text";
-    toggleText.textContent = "+";
+    toggleText.innerHTML = icon("chevronRight");
 
     if (urlList.length > 1) {
         const countBadge = document.createElement("span");
@@ -371,7 +365,7 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
         expandBtn.appendChild(toggleText);
         expandBtn.appendChild(countBadge);
     } else {
-        expandBtn.textContent = "+";
+        expandBtn.innerHTML = icon("chevronRight");
     }
 
     const nameSpan = document.createElement("span");
@@ -427,7 +421,7 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
     // Menu button (⋮)
     const menuBtn = document.createElement("button");
     menuBtn.className = "iptv-menu";
-    menuBtn.textContent = "⋮";
+    setIcon(menuBtn, "ellipsisV");
     menuBtn.title = "Menu";
     menuBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -489,7 +483,7 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
         // Menu button for this URL
         const addBtn = document.createElement("button");
         addBtn.className = "iptv-sub-menu";
-        addBtn.textContent = "⋮";
+        setIcon(addBtn, "ellipsisV");
         addBtn.title = "Menu";
         addBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -509,10 +503,11 @@ function renderChannel(channel, searchFilter, isCustom, customIndex) {
     // Click on + expands/collapses
     expandBtn.addEventListener("click", () => {
         const hidden = subList.classList.toggle("hidden");
+        const chevron = hidden ? "chevronRight" : "chevronDown";
         if (urlList.length > 1) {
-            expandBtn.querySelector(".iptv-toggle-text").textContent = hidden ? "+" : "−";
+            setIcon(expandBtn.querySelector(".iptv-toggle-text"), chevron);
         } else {
-            expandBtn.textContent = hidden ? "+" : "−";
+            setIcon(expandBtn, chevron);
         }
     });
 
@@ -585,20 +580,14 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
                 const playlists = await playlists_load();
                 const names = Object.keys(playlists);
 
-                const choice = prompt(
-                    t('whichPlaylist', 'Add to which playlist?') + "\n" +
-                    names.map((n, i) => `${i + 1}. ${n}`).join("\n"),
-                    "1"
-                );
-
-                if (!choice) {
+                if (names.length === 0) {
+                    alert(t('noPlaylistsAvailable', 'No playlists available. Please create a playlist first.'));
                     closeMenu();
                     return;
                 }
 
-                const index = parseInt(choice, 10) - 1;
-                if (index < 0 || index >= names.length) {
-                    alert(t('invalidSelection', 'Invalid selection'));
+                const index = await pickOption(t('whichPlaylist', 'Add to which playlist?'), names);
+                if (index === null) {
                     closeMenu();
                     return;
                 }
@@ -666,7 +655,7 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
             }
 
             if (action === "rename") {
-                const newName = prompt(t('newChannelName', 'New channel name:'), channel.name);
+                const newName = await glassPrompt(t('newChannelName', 'New channel name:'), channel.name);
                 if (newName && newName.trim()) {
                     let customChannels = await loadCustomIptvChannels();
                     customChannels[customIndex].name = newName.trim();
@@ -676,7 +665,7 @@ function showCustomChannelMenu(channel, url, button, customIndex) {
             }
 
             if (action === "delete") {
-                if (confirm(t('confirmDeleteChannel', 'Delete this channel?'))) {
+                if (await glassConfirm(t('confirmDeleteChannel', 'Delete this channel?'))) {
                     let customChannels = await loadCustomIptvChannels();
                     customChannels.splice(customIndex, 1);
                     await saveCustomIptvChannels(customChannels);

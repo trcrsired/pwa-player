@@ -4,11 +4,11 @@ const wakeBtn = document.getElementById('wakeLockBtn');
 async function requestWakeLock() {
     try {
         wakeLock = await navigator.wakeLock.request('screen');
-        wakeBtn.textContent = '🔓';
+        setIcon(wakeBtn, "lockOpen");
         wakeBtn.title = 'Disable Screen Awake';
 
         wakeLock.addEventListener('release', () => {
-            wakeBtn.textContent = '🔒';
+            setIcon(wakeBtn, "lock");
             wakeBtn.title = 'Keep Screen Awake';
         });
     } catch (err) {
@@ -21,7 +21,7 @@ function releaseWakeLock() {
         wakeLock.release();
         wakeLock = null;
     }
-    wakeBtn.textContent = '🔒';
+    setIcon(wakeBtn, "lock");
     wakeBtn.title = 'Keep Screen Awake';
 }
 
