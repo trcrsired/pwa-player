@@ -487,6 +487,11 @@ body.side-left #sideRailToggleBtn,
 body.side-right #sideRailToggleBtn,
 body.side-top #sideRailToggleBtn { display: inline-flex; }
 body.rail-shown #sideRailToggleBtn { color: var(--accent); }
+/* The extra button crowds the row — shrink the volume slider so the
+   battery display doesn't wrap onto the next line */
+body.side-left #volumeSlider,
+body.side-right #volumeSlider,
+body.side-top #volumeSlider { --volume-width: 64px; }
 
 /* The config row duplicates the side rail's shortcuts — it only shows in
    "bottom" mode (rail merged into the dock's first row). Rail positions

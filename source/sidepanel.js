@@ -324,6 +324,7 @@ document.addEventListener("pointerdown", (e) => {
     const view = document.getElementById(sidePanelViewId);
     if (!view || view.contains(e.target)) return;
     if (sideRail && sideRail.contains(e.target)) return;
+    if (sideRailToggleBtn && sideRailToggleBtn.contains(e.target)) return;
     if (sideEdgeTrigger && sideEdgeTrigger.contains(e.target)) return;
     if (e.target.closest && e.target.closest(".context-menu")) return;
     if (e.target.closest && e.target.closest(".scroll-btn")) return;
@@ -335,6 +336,7 @@ document.addEventListener("pointerdown", (e) => {
 document.addEventListener("pointerdown", (e) => {
     if (!sideRail || !sideRail.classList.contains("rail-visible")) return;
     if (sideRail.contains(e.target)) return;
+    if (sideRailToggleBtn && sideRailToggleBtn.contains(e.target)) return;
     if (sideEdgeTrigger && sideEdgeTrigger.contains(e.target)) return;
     hideSideRail();
 });
