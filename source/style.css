@@ -101,6 +101,26 @@ body {
 #player.rot180 { transform: rotate(180deg); }
 #player.rot270 { transform: rotate(270deg); }
 
+/* Audio cover — fills the viewport behind the video element */
+#audioCover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* Rotate with the view — 90/270 need swapped box dimensions like the video */
+#audioCover.rot90,
+#audioCover.rot270 {
+  width: 100vh;
+  height: 100vw;
+  top: 50%;
+  left: 50%;
+}
+#audioCover.rot90  { transform: translate(-50%, -50%) rotate(90deg); }
+#audioCover.rot180 { transform: rotate(180deg); }
+#audioCover.rot270 { transform: translate(-50%, -50%) rotate(270deg); }
+
 /* When fullscreen is active (element OR document level), Chrome may promote
    the video to a hardware overlay plane whose geometry is synced separately
    from the DOM compositor — every overlay show/hide can then flash a stale

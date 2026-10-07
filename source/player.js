@@ -2020,6 +2020,13 @@ function setVideoRotation(deg) {
   video.classList.toggle("rot90", videoRotationDeg === 90);
   video.classList.toggle("rot180", videoRotationDeg === 180);
   video.classList.toggle("rot270", videoRotationDeg === 270);
+  // Rotate the audio cover the same way so music art follows the view
+  const coverEl = document.getElementById("audioCover");
+  if (coverEl) {
+    coverEl.classList.toggle("rot90", videoRotationDeg === 90);
+    coverEl.classList.toggle("rot180", videoRotationDeg === 180);
+    coverEl.classList.toggle("rot270", videoRotationDeg === 270);
+  }
 }
 
 rotationBtn.addEventListener("click", () => {

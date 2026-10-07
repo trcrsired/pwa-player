@@ -497,20 +497,75 @@ screenshotBtn.addEventListener("click", async () => {
         return;
     }
 
+    // Embedded iframes can't be captured — cross-origin pixels are
+    // unreadable; screen capture (getDisplayMedia) is the only option
+    if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
+        alert(t('useScreenRecordForEmbedded') || "Use Screen Capture for embedded content (YouTube, Vimeo, etc.).");
+        return;
+    }
+
+    // Current view rotation (rot90/rot180/rot270 on the video element)
+    const viewRotation = video.classList.contains("rot90") ? 90 :
+        video.classList.contains("rot270") ? 270 :
+        video.classList.contains("rot180") ? 180 : 0;
+
+    // Audio-only playback shows the cover image instead of video frames —
+    // screenshot the cover itself (a frame grab would be blank/black)
+    const coverEl = document.getElementById("audioCover");
+    if (coverEl && !coverEl.classList.contains("hidden") && coverEl.src &&
+        coverEl.naturalWidth > 0) {
+        const isRotated90or270 = viewRotation === 90 || viewRotation === 270;
+        const canvas = document.createElement("canvas");
+        canvas.width = isRotated90or270 ? coverEl.naturalHeight : coverEl.naturalWidth;
+        canvas.height = isRotated90or270 ? coverEl.naturalWidth : coverEl.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(viewRotation * Math.PI / 180);
+        ctx.drawImage(coverEl, -coverEl.naturalWidth / 2, -coverEl.naturalHeight / 2,
+            coverEl.naturalWidth, coverEl.naturalHeight);
+        ctx.restore();
+
+        try {
+            canvas.toBlob(blob => {
+            if (!blob) {
+                alert(t('screenshotFailed') || "Screenshot failed.");
+                return;
+            }
+            const filename = `cover-${Date.now()}.webp`;
+            if (typeof saveFileToConfiguredLocation === 'function') {
+                saveFileToConfiguredLocation('screenshot', blob, filename);
+            } else {
+                fallbackDownload(blob, filename);
+            }
+            }, "image/webp");
+        } catch (err) {
+            alert(t('screenshotFailed') || "Unable to capture screenshot. The cover source may be cross-origin without CORS.");
+            console.error(err);
+        }
+        return;
+    }
+
     // Ensure video is ready
     if (video.readyState < 2) {
         alert(t('videoNotReady') || "Video is not ready yet. Please start playing the video first.");
         return;
     }
 
-    // Prepare canvas
+    // Prepare canvas — swapped dimensions when the view is rotated 90/270
+    const isRotated90or270 = viewRotation === 90 || viewRotation === 270;
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = isRotated90or270 ? video.videoHeight : video.videoWidth;
+    canvas.height = isRotated90or270 ? video.videoWidth : video.videoHeight;
     const ctx = canvas.getContext("2d");
 
     try {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(viewRotation * Math.PI / 180);
+        ctx.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2,
+            video.videoWidth, video.videoHeight);
+        ctx.restore();
     } catch (err) {
         alert(t('screenshotFailed') || "Unable to capture screenshot. The video source may be cross-origin without CORS.");
         console.error(err);
