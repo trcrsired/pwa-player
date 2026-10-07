@@ -36,8 +36,8 @@ function getSidePanelView() {
 function getSidePanelSide() {
     const pos = (typeof getSidePanelPosition === "function")
         ? getSidePanelPosition()
-        : (localStorage.getItem("sidePanelPosition") || "left");
-    return pos === "right" ? "right" : (pos === "top" ? "top" : (pos === "off" ? "off" : "left"));
+        : (localStorage.getItem("sidePanelPosition") || "bottom");
+    return pos === "right" ? "right" : (pos === "top" ? "top" : (pos === "bottom" ? "bottom" : (pos === "off" ? "off" : "left")));
 }
 
 // Apply the configured side to body classes, trigger visibility,
@@ -47,8 +47,11 @@ function applySidePanelPosition() {
     document.body.classList.toggle("side-left", side === "left");
     document.body.classList.toggle("side-right", side === "right");
     document.body.classList.toggle("side-top", side === "top");
+    document.body.classList.toggle("side-off", side === "off");
 
-    if (side === "off") {
+    // "bottom" merges the shortcuts into the control dock's first row —
+    // no floating rail, no edge trigger, sheets fall back to full-page views
+    if (side === "off" || side === "bottom") {
         hideSideRail();
         closeSidePanel(true);
         if (sideEdgeTrigger) sideEdgeTrigger.classList.add("hidden");
@@ -84,7 +87,9 @@ function setSheetBackIcon(view, side) {
 // ---------- rail show / hide ----------
 
 function showSideRail() {
-    if (!sideRail || getSidePanelSide() === "off") return;
+    if (!sideRail) return;
+    const railSide = getSidePanelSide();
+    if (railSide === "off" || railSide === "bottom") return;
     clearTimeout(railHideTimer);
     clearTimeout(railAutoHideTimer);
 
@@ -131,7 +136,8 @@ function openSidePanel(viewId, fromPopstate = false) {
     if (!view) return;
 
     // Rail disabled — fall back to the classic full-page view
-    if (getSidePanelSide() === "off") {
+    const openSide = getSidePanelSide();
+    if (openSide === "off" || openSide === "bottom") {
         switchView(viewId);
         return;
     }
@@ -328,7 +334,7 @@ document.addEventListener("touchstart", (e) => {
     if (coarsePointer) return;
     if (e.touches.length !== 1) return;
     const side = getSidePanelSide();
-    if (side === "off") return;
+    if (side === "off" || side === "bottom") return;
     const t = e.touches[0];
     const EDGE = 28;
     if (side === "left" && t.clientX <= EDGE) {

@@ -480,11 +480,13 @@ input[type="range"]::-moz-range-thumb {
   width: 100%;
 }
 
-/* The config row duplicates the side rail's shortcuts — only show it
-   when the rail is off */
+/* The config row duplicates the side rail's shortcuts — it only shows in
+   "bottom" mode (rail merged into the dock's first row). Rail positions
+   and "off" hide it. */
 body.side-left #configOptions,
 body.side-right #configOptions,
-body.side-top #configOptions {
+body.side-top #configOptions,
+body.side-off #configOptions {
   display: none;
 }
 

@@ -293,12 +293,12 @@ function getButtonSize() {
 }
 
 // =====================================================
-// Side Panel (floating rail) position: left | right | off
+// Side Panel (floating rail) position: left | right | top | bottom | off
 // =====================================================
 const sidePanelPositionSelect = document.getElementById("sidePanelPosition");
 
 function getSidePanelPosition() {
-    return localStorage.getItem("sidePanelPosition") || "left";
+    return localStorage.getItem("sidePanelPosition") || "bottom";
 }
 
 if (sidePanelPositionSelect) {
