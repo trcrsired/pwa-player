@@ -47,6 +47,7 @@ function applySidePanelPosition() {
     document.body.classList.toggle("side-left", side === "left");
     document.body.classList.toggle("side-right", side === "right");
     document.body.classList.toggle("side-top", side === "top");
+    document.body.classList.toggle("side-bottom", side === "bottom");
     document.body.classList.toggle("side-off", side === "off");
 
     // "bottom" merges the shortcuts into the control dock's first row —

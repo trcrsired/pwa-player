@@ -811,7 +811,26 @@ function hideAudioCover() {
   currentCoverURL = null;
 }
 
+// Build a replayable queue entry for an ad-hoc source (file/URL played
+// outside of the now-playing queue)
+function makeAdhocQueueEntry(sourceobject, mediametadata, playlist) {
+  const name = playlist?.entryName || mediametadata?.title || "media";
+  // Storage paths resolve back to the file — the preferred replay key
+  if (playlist?.entryPath) return { name, path: playlist.entryPath };
+  if (typeof sourceobject === "string") return { name, path: sourceobject };
+  if (sourceobject && typeof sourceobject.getFile === "function") return { name, handle: sourceobject };
+  if (sourceobject instanceof File || sourceobject instanceof Blob) return { name, file: sourceobject };
+  return { name, path: null }; // MediaStream etc. — cannot replay
+}
+
 async function play_source_internal(blobURL, mediametadata, sourceobject, playlist, corsBypass = null) {
+  // Queue plays carry an index; anything else is ad-hoc and becomes its
+  // own single-item queue so an old playlist can't resume when this ends
+  const isQueuePlay = playlist && typeof playlist.index === 'number';
+  if (!isQueuePlay && typeof setAdhocNowPlayingQueue === 'function') {
+    setAdhocNowPlayingQueue(makeAdhocQueueEntry(sourceobject, mediametadata, playlist));
+  }
+
   // Check if this is an embedded URL (YouTube, Vimeo, etc.) - use embedded player instead
   if (typeof playEmbeddedUrl === 'function' && typeof isEmbeddedUrl === 'function' && isEmbeddedUrl(blobURL)) {
     // Use entry name from playlist if provided
@@ -1041,6 +1060,11 @@ async function play_source(sourceobject, playlist, corsBypass = null) {
 // corsBypass: whether to use CORS bypass
 async function play_iptv_with_fallback(urls, title, corsBypass = null) {
   if (!urls || urls.length === 0) return;
+
+  // Channel played outside the queue — single-item ad-hoc queue
+  if (typeof setAdhocNowPlayingQueue === 'function') {
+    setAdhocNowPlayingQueue({ name: title, path: urls[0] });
+  }
 
   const retryPerSource = typeof getIptvSourceRetryCount === 'function' ? getIptvSourceRetryCount() : 3;
   const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;

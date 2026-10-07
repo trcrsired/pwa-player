@@ -51,6 +51,12 @@ function playEmbeddedUrl(url, metadata = {}) {
         return false;
     }
 
+    // Ad-hoc embed (e.g. URL typed into the web prompt) gets its own
+    // single-item queue so it can't resume a previous playlist on end
+    if (!metadata.playlist && typeof setAdhocNowPlayingQueue === 'function') {
+        setAdhocNowPlayingQueue({ name: metadata.entryName || metadata.title || url, path: url });
+    }
+
     // Save playlist metadata
     currentEmbeddedPlaylist = metadata.playlist;
     currentEmbeddedTitle = metadata.title;

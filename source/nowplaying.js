@@ -23,7 +23,8 @@ async function nowPlaying_playIndex(index) {
         ? shuffledQueue[index]
         : nowPlayingQueue[index];
 
-    if (!entry) return;
+    // Ad-hoc entries without a resolvable source can't be replayed
+    if (!entry || (!entry.handle && !entry.file && !entry.path)) return;
 
     // Check if we should skip iframe entries when in background
     const isBackground = document.visibilityState === 'hidden';
@@ -157,6 +158,16 @@ async function startNowPlayingFromPlaylist(playlistName, startIndex, randomStart
     const list = playlists[playlistName];
     if (!list) return;
     await startNowPlayingFromPlaylistTable(list, startIndex, playlistName, false, randomStart);
+}
+
+// A file/URL played outside the queue becomes its own single-item queue —
+// otherwise the previous playlist would resume when it ends
+function setAdhocNowPlayingQueue(entry) {
+    nowPlayingQueue = [entry];
+    shuffledQueue = nowPlayingQueue.slice();
+    nowPlayingIndex = 0;
+    currentTrackEntry = entry;
+    renderNowPlayingQueue();
 }
 
 async function playPrevious() {

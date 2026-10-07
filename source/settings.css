@@ -166,6 +166,12 @@ html, body {
     box-sizing: border-box;
 }
 
+/* Bottom mode merges the rail into the control dock — the views are the
+   app itself, not floating panels, so they use the full width */
+body.side-bottom .content {
+    max-width: none;
+}
+
 /* Section headers — quiet iOS-style group labels */
 .content h3 {
     font-size: 13px;
