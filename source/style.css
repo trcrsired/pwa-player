@@ -480,6 +480,14 @@ input[type="range"]::-moz-range-thumb {
   width: 100%;
 }
 
+/* Rail toggle in the dock — only meaningful when the rail is a floating
+   panel (left/right/top); hidden when merged into controls or off */
+#sideRailToggleBtn { display: none; }
+body.side-left #sideRailToggleBtn,
+body.side-right #sideRailToggleBtn,
+body.side-top #sideRailToggleBtn { display: inline-flex; }
+body.rail-shown #sideRailToggleBtn { color: var(--accent); }
+
 /* The config row duplicates the side rail's shortcuts — it only shows in
    "bottom" mode (rail merged into the dock's first row). Rail positions
    and "off" hide it. */

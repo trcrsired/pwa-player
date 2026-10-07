@@ -41,6 +41,7 @@ const ZHCN_TRANSLATIONS = {
     openWebView: "打开网页",
     loadSubtitles: "加载字幕",
     more: "更多",
+    toggleSidePanel: "切换侧边栏",
     toggleMicrophone: "切换麦克风",
     switchCapture: "切换捕获源",
     rotateView: "旋转视图",

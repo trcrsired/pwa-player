@@ -41,6 +41,7 @@ const EN_TRANSLATIONS = {
     openWebView: "Open Web View",
     loadSubtitles: "Load Subtitles",
     more: "More",
+    toggleSidePanel: "Toggle side panel",
     toggleMicrophone: "Toggle Microphone",
     switchCapture: "Switch Capture",
     rotateView: "Rotate View",

@@ -129,6 +129,20 @@ function scheduleRailHide(delay = 400) {
     railHideTimer = setTimeout(hideSideRail, delay);
 }
 
+// Dock button (visible only when the rail is a floating panel) toggles it
+function toggleSideRail() {
+    if (sideRail && sideRail.classList.contains("rail-visible")) {
+        hideSideRail();
+    } else {
+        showSideRail();
+    }
+}
+
+const sideRailToggleBtn = document.getElementById("sideRailToggleBtn");
+if (sideRailToggleBtn) {
+    sideRailToggleBtn.addEventListener("click", toggleSideRail);
+}
+
 // ---------- slide-over sheets ----------
 
 function openSidePanel(viewId, fromPopstate = false) {

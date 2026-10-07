@@ -38,6 +38,7 @@ const JA_TRANSLATIONS = {
     openWebView: "ウェブビューを開く",
     loadSubtitles: "字幕を読み込む",
     more: "その他",
+    toggleSidePanel: "サイドパネル切替",
     toggleMicrophone: "マイク切替",
     switchCapture: "キャプチャ源切替",
     rotateView: "ビュー回転",
