@@ -163,8 +163,6 @@ body {
   font-size: var(--button-font-size);
 
   background: var(--glass-bg);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow),
               inset 0 0.5px 0 var(--glass-highlight);
@@ -1401,18 +1399,9 @@ body.side-top #sideEdgeTrigger {
 }
 
 @media (pointer: coarse) {
-    /* The dock's backdrop blur must re-composite over the hardware video
-       surface every time it shows/hides; on mobile Chrome this can flash a
-       black rectangle for a frame. Use a stronger solid glass instead. */
-    #controls {
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-        background: rgba(28, 28, 32, 0.85);
-        /* Lift the dock above gesture bars / rounded screen edges */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-    }
-    /* Same compositing artifact applies to every always-on-top blurred
-       surface over the video — strip the blur there too. */
+    /* Always-on-top blurred surfaces must re-composite over the hardware
+       video surface every time they show/hide; on mobile Chrome this can
+       flash a black rectangle for a frame — strip the blur. */
     .video-status-content {
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
@@ -1420,9 +1409,6 @@ body.side-top #sideEdgeTrigger {
     }
 }
 @media (pointer: coarse) and (prefers-color-scheme: light) {
-    #controls {
-        background: rgba(250, 250, 252, 0.88);
-    }
     .video-status-content {
         background: rgba(250, 250, 252, 0.9);
     }

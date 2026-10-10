@@ -387,13 +387,9 @@
                 </label>
                 <label class="setting-label">
                     <span data-i18n="controlsBgColor">Background color</span>
-                    <input type="color" id="controlsBgColor" class="setting-input-small">
+                    <input type="color" id="controlsBgColor" class="setting-input-small" alpha>
                 </label>
-                <label class="setting-label">
-                    <span data-i18n="controlsBgOpacity">Background opacity (%)</span>
-                    <input type="number" id="controlsBgOpacity" class="setting-input-small" min="0" max="100" step="1">
-                </label>
-                <p class="setting-hint" data-i18n="controlsBgHint">Overrides the glass background of the bottom control dock and the side rail. Opacity 0 = fully transparent, 100 = solid.</p>
+                <p class="setting-hint" data-i18n="controlsBgHint">Overrides the background of the bottom control dock and the side rail. Transparency is set by the color picker's alpha channel.</p>
 
                 <h3 data-i18n="keyboardShortcuts">Keyboard Shortcuts</h3>
                 <label class="setting-toggle">

@@ -1211,12 +1211,22 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
 const player = video;
 const container = document.getElementById("playerContainer");
 
+// Only drags carrying real files count as drops — those always come from
+// outside the window. In-page drags (images, selected text, links) never
+// have a "Files" type and are left to the browser's default behavior.
+function isExternalFileDrag(e) {
+    const types = e.dataTransfer && e.dataTransfer.types;
+    return !!types && Array.prototype.indexOf.call(types, "Files") !== -1;
+}
+
 ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
-    window.addEventListener(eventName, e => e.preventDefault());
+    window.addEventListener(eventName, e => {
+        if (isExternalFileDrag(e)) e.preventDefault();
+    });
 });
 
-window.addEventListener("dragover", () => {
-    container.style.outline = "3px dashed #4caf50";
+window.addEventListener("dragover", e => {
+    container.style.outline = isExternalFileDrag(e) ? "3px dashed #4caf50" : "none";
 });
 
 window.addEventListener("dragleave", () => {
@@ -1224,8 +1234,9 @@ window.addEventListener("dragleave", () => {
 });
 
 window.addEventListener("drop", async e => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     container.style.outline = "none";
+    if (!isExternalFileDrag(e)) return;
+    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     // Check for directory drag (using DataTransferItem)
     const items = e.dataTransfer.items;

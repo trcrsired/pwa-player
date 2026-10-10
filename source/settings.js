@@ -326,8 +326,16 @@ if (touchGesturesEnabledCheckbox) {
 // =====================================================
 const controlsBgEnabledCheckbox = document.getElementById("controlsBgEnabled");
 const controlsBgColorInput = document.getElementById("controlsBgColor");
-const controlsBgOpacityInput = document.getElementById("controlsBgOpacity");
 const sideRailEl = document.getElementById("sideRail");
+
+// <input type=color alpha> makes the picker return #rrggbbaa.
+const colorPickerHasAlpha = (() => {
+    const probe = document.createElement("input");
+    probe.type = "color";
+    probe.setAttribute("alpha", "");
+    probe.value = "#1c1c20ff";
+    return probe.value === "#1c1c20ff";
+})();
 
 function applyControlsBackground() {
     if (!controlsBgEnabledCheckbox || !controlsBgEnabledCheckbox.checked) {
@@ -335,19 +343,24 @@ function applyControlsBackground() {
         if (sideRailEl) sideRailEl.style.background = "";
         return;
     }
-    const hex = controlsBgColorInput.value || "#1c1c20";
-    const n = parseInt(hex.replace("#", ""), 16);
-    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-    const alpha = Math.min(100, Math.max(0, parseInt(controlsBgOpacityInput.value, 10) || 0)) / 100;
-    const bg = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    const bg = controlsBgColorInput.value || "#1c1c20";
     if (controlsEl) controlsEl.style.background = bg;
     if (sideRailEl) sideRailEl.style.background = bg;
 }
 
-if (controlsBgEnabledCheckbox && controlsBgColorInput && controlsBgOpacityInput) {
+if (controlsBgEnabledCheckbox && controlsBgColorInput) {
     controlsBgEnabledCheckbox.checked = localStorage.getItem("controlsBgEnabled") === "true";
-    controlsBgColorInput.value = localStorage.getItem("controlsBgColor") || "#1c1c20";
-    controlsBgOpacityInput.value = localStorage.getItem("controlsBgOpacity") || "5";
+    const storedColor = localStorage.getItem("controlsBgColor") || "#1c1c20";
+    if (colorPickerHasAlpha && storedColor.length !== 9) {
+        // Fold the old % opacity setting into the picker's alpha channel
+        const storedOpacity = localStorage.getItem("controlsBgOpacity") || "60";
+        const alphaHex = Math.round(Math.min(100, Math.max(0, parseInt(storedOpacity, 10) || 0)) * 255 / 100)
+            .toString(16).padStart(2, "0");
+        controlsBgColorInput.value = storedColor + alphaHex;
+        localStorage.setItem("controlsBgColor", controlsBgColorInput.value);
+    } else {
+        controlsBgColorInput.value = storedColor;
+    }
 
     controlsBgEnabledCheckbox.addEventListener("change", () => {
         localStorage.setItem("controlsBgEnabled", controlsBgEnabledCheckbox.checked ? "true" : "false");
@@ -355,10 +368,6 @@ if (controlsBgEnabledCheckbox && controlsBgColorInput && controlsBgOpacityInput)
     });
     controlsBgColorInput.addEventListener("input", () => {
         localStorage.setItem("controlsBgColor", controlsBgColorInput.value);
-        applyControlsBackground();
-    });
-    controlsBgOpacityInput.addEventListener("change", () => {
-        localStorage.setItem("controlsBgOpacity", controlsBgOpacityInput.value);
         applyControlsBackground();
     });
     applyControlsBackground();
