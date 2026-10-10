@@ -185,7 +185,7 @@ const ZHCN_TRANSLATIONS = {
     touchGesturesHint: "仅触屏设备。长按视频右侧 2 倍速播放，长按左侧快退；双击左右两侧快进/快退 10 秒；横向拖动调节进度。",
     controlsCustomBg: "自定义控制栏背景",
     controlsBgColor: "背景颜色",
-    controlsBgHint: "覆盖底部控制栏和侧边悬浮栏的背景。透明度由取色器的 Alpha 通道设置。",
+    controlsBgHint: "覆盖底部控制栏和侧边悬浮栏的背景。可使用取色器的 Alpha 通道或直接输入 #RRGGBBAA 值设置透明度。",
     backToPlayer: "返回播放器",
     showControls: "显示控制栏",
     keyboardShortcuts: "键盘快捷键",

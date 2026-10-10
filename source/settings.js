@@ -326,9 +326,12 @@ if (touchGesturesEnabledCheckbox) {
 // =====================================================
 const controlsBgEnabledCheckbox = document.getElementById("controlsBgEnabled");
 const controlsBgColorInput = document.getElementById("controlsBgColor");
+const controlsBgColorTextInput = document.getElementById("controlsBgColorText");
 const sideRailEl = document.getElementById("sideRail");
 
-// <input type=color alpha> makes the picker return #rrggbbaa.
+// Many OS pickers lack an alpha channel even with the alpha attribute —
+// the #RRGGBBAA text field is the authoritative value since 8-digit hex
+// works in CSS on every browser.
 const colorPickerHasAlpha = (() => {
     const probe = document.createElement("input");
     probe.type = "color";
@@ -337,37 +340,63 @@ const colorPickerHasAlpha = (() => {
     return probe.value === "#1c1c20ff";
 })();
 
+function parseControlsBgColor(text) {
+    const m = /^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.exec((text || "").trim());
+    return m ? "#" + m[1].toLowerCase() : null;
+}
+
+function controlsBgPickerValue(color) {
+    // A picker without alpha support can only display the rgb part
+    if (colorPickerHasAlpha) return color.length === 9 ? color : color + "ff";
+    return color.slice(0, 7);
+}
+
 function applyControlsBackground() {
     if (!controlsBgEnabledCheckbox || !controlsBgEnabledCheckbox.checked) {
         if (controlsEl) controlsEl.style.background = "";
         if (sideRailEl) sideRailEl.style.background = "";
         return;
     }
-    const bg = controlsBgColorInput.value || "#1c1c20";
+    const bg = (controlsBgColorTextInput && parseControlsBgColor(controlsBgColorTextInput.value))
+        || controlsBgColorInput.value || "#1c1c20";
     if (controlsEl) controlsEl.style.background = bg;
     if (sideRailEl) sideRailEl.style.background = bg;
 }
 
-if (controlsBgEnabledCheckbox && controlsBgColorInput) {
+if (controlsBgEnabledCheckbox && controlsBgColorInput && controlsBgColorTextInput) {
     controlsBgEnabledCheckbox.checked = localStorage.getItem("controlsBgEnabled") === "true";
-    const storedColor = localStorage.getItem("controlsBgColor") || "#1c1c20";
-    if (colorPickerHasAlpha && storedColor.length !== 9) {
-        // Fold the old % opacity setting into the picker's alpha channel
+    let storedColor = parseControlsBgColor(localStorage.getItem("controlsBgColor")) || "#1c1c20";
+    if (storedColor.length !== 9) {
+        // Fold the old % opacity setting into the color's alpha channel
         const storedOpacity = localStorage.getItem("controlsBgOpacity") || "60";
         const alphaHex = Math.round(Math.min(100, Math.max(0, parseInt(storedOpacity, 10) || 0)) * 255 / 100)
             .toString(16).padStart(2, "0");
-        controlsBgColorInput.value = storedColor + alphaHex;
-        localStorage.setItem("controlsBgColor", controlsBgColorInput.value);
-    } else {
-        controlsBgColorInput.value = storedColor;
+        storedColor += alphaHex;
+        localStorage.setItem("controlsBgColor", storedColor);
     }
+    controlsBgColorTextInput.value = storedColor;
+    controlsBgColorInput.value = controlsBgPickerValue(storedColor);
 
     controlsBgEnabledCheckbox.addEventListener("change", () => {
         localStorage.setItem("controlsBgEnabled", controlsBgEnabledCheckbox.checked ? "true" : "false");
         applyControlsBackground();
     });
     controlsBgColorInput.addEventListener("input", () => {
-        localStorage.setItem("controlsBgColor", controlsBgColorInput.value);
+        let color = controlsBgColorInput.value;
+        // Keep the typed alpha when a non-alpha picker reports rgb only
+        const prev = parseControlsBgColor(controlsBgColorTextInput.value);
+        if (color.length === 7 && prev && prev.length === 9) color += prev.slice(7);
+        controlsBgColorTextInput.value = color;
+        localStorage.setItem("controlsBgColor", color);
+        applyControlsBackground();
+    });
+    controlsBgColorTextInput.addEventListener("input", () => {
+        const color = parseControlsBgColor(controlsBgColorTextInput.value);
+        controlsBgColorTextInput.style.borderColor =
+            color || controlsBgColorTextInput.value === "" ? "" : "var(--danger)";
+        if (!color) return;
+        controlsBgColorInput.value = controlsBgPickerValue(color);
+        localStorage.setItem("controlsBgColor", color);
         applyControlsBackground();
     });
     applyControlsBackground();

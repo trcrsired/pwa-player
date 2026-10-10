@@ -185,7 +185,7 @@ const EN_TRANSLATIONS = {
     touchGesturesHint: "Touch devices only. Long-press the right side of the video for 2× speed, the left side to rewind; double-tap left/right to skip 10s; drag horizontally to scrub.",
     controlsCustomBg: "Custom controls background",
     controlsBgColor: "Background color",
-    controlsBgHint: "Overrides the background of the bottom control dock and the side rail. Transparency is set by the color picker's alpha channel.",
+    controlsBgHint: "Overrides the background of the bottom control dock and the side rail. Set transparency with the picker's alpha channel or type a #RRGGBBAA value.",
     backToPlayer: "Back to Player",
     showControls: "Show Controls",
     keyboardShortcuts: "Keyboard Shortcuts",

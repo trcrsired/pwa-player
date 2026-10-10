@@ -182,7 +182,7 @@ const JA_TRANSLATIONS = {
     touchGesturesHint: "タッチデバイスのみ。動画の右側を長押しで2倍速、左側を長押しで巻き戻し。左右をダブルタップで±10秒スキップ、横にドラッグでスクラブ。",
     controlsCustomBg: "コントロール背景のカスタマイズ",
     controlsBgColor: "背景色",
-    controlsBgHint: "下部のコントロールドックとサイドレールの背景を上書きします。透明度はカラーピッカーのアルファチャンネルで設定します。",
+    controlsBgHint: "下部のコントロールドックとサイドレールの背景を上書きします。透明度はカラーピッカーのアルファチャンネル、または #RRGGBBAA 形式の直接入力で設定します。",
     backToPlayer: "プレーヤーに戻る",
     showControls: "コントロールを表示",
     keyboardShortcuts: "キーボードショートカット",
