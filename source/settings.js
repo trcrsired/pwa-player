@@ -347,7 +347,7 @@ function applyControlsBackground() {
 if (controlsBgEnabledCheckbox && controlsBgColorInput && controlsBgOpacityInput) {
     controlsBgEnabledCheckbox.checked = localStorage.getItem("controlsBgEnabled") === "true";
     controlsBgColorInput.value = localStorage.getItem("controlsBgColor") || "#1c1c20";
-    controlsBgOpacityInput.value = localStorage.getItem("controlsBgOpacity") || "60";
+    controlsBgOpacityInput.value = localStorage.getItem("controlsBgOpacity") || "5";
 
     controlsBgEnabledCheckbox.addEventListener("change", () => {
         localStorage.setItem("controlsBgEnabled", controlsBgEnabledCheckbox.checked ? "true" : "false");
