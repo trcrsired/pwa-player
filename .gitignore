@@ -1,5 +1,6 @@
 # Ignore all dotfiles and dotfolders
 .*
+*.exe
 
 # But keep Git's own files
 !.gitignore
@@ -11,3 +12,5 @@ node_modules/
 package.json
 package-lock.json
 diff.txt
+cors-bypass/pwa-player-server
+
