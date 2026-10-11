@@ -2029,6 +2029,7 @@ int main(int argc, char const **argv)
 					  u8"\nCORS (--cors[=headers]): ",
 					  cfg.cors ? fi::u8cstring_view{u8"enabled"}
 							   : fi::u8cstring_view{u8"disabled"},
+					  u8"\nPort (--port): ", port,
 					  u8"\nCache (-c): ", cfg.cache_seconds,
 					  u8" seconds\n"
 					  u8"Directory Listings (--no-dir): ",
@@ -2054,7 +2055,7 @@ int main(int argc, char const **argv)
 			fi::io::print(w, u8"Allowed peers:\n");
 			for (auto const &p : cfg.allowed_peers)
 			{
-				fi::io::print(w, u8"  ", p, u8"\n");
+				fi::io::println(w, u8"  ", p);
 			}
 		}
 		if (fi::native_ifaddrs_file ifas{fi::ifaddrs_enumerate}; ifas)
@@ -2075,7 +2076,7 @@ int main(int argc, char const **argv)
 					{
 						/* ip prints [::v6]:port / v4:port — brackets and
 						 * port are part of the type's own format */
-						fi::io::print(w, u8"  http://", fi::ip{addr, port}, u8"\n");
+						fi::io::println(w, u8"  http://", fi::ip{addr, port});
 					}
 				}
 			}
