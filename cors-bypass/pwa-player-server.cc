@@ -320,7 +320,7 @@ static bool decode_target(fi::u8string_view target, fi::u8string &out,
 		fi::u8string_view const piece{seg, static_cast<::std::size_t>(e - seg)};
 		if (piece == fi::u8string_view{u8".."})
 		{
-			if (!out.empty())
+			if (!out.is_empty())
 			{
 				auto n{out.size()};
 				while (n != 0 && out.data()[n - 1] != u8'/')
@@ -330,9 +330,9 @@ static bool decode_target(fi::u8string_view target, fi::u8string &out,
 				out.assign(fi::u8string_view{out.data(), n == 0 ? 0 : n - 1});
 			}
 		}
-		else if (!piece.empty() && piece != fi::u8string_view{u8"."})
+		else if (!piece.is_empty() && piece != fi::u8string_view{u8"."})
 		{
-			if (!out.empty())
+			if (!out.is_empty())
 			{
 				out.push_back(u8'/');
 			}
@@ -664,7 +664,7 @@ respond_file(fi::io_async_observer sched, fi::u8iobuf_socket_file &sock,
 			i = j;
 		}
 	}
-	if (!not_modified && !req.ims.empty())
+	if (!not_modified && !req.ims.is_empty())
 	{
 		try
 		{
@@ -711,11 +711,11 @@ respond_file(fi::io_async_observer sched, fi::u8iobuf_socket_file &sock,
 	 * full 200 — video clients send it so a changed file isn't resumed
 	 * mid-byte. ETag form wins; otherwise it's an HTTP date.
 	 */
-	if (rng.present && !req.if_range.empty())
+	if (rng.present && !req.if_range.is_empty())
 	{
 		fi::u8string_view iv{req.if_range};
 		bool match;
-		if (!iv.empty() && iv.data()[0] == u8'"')
+		if (!iv.is_empty() && iv.data()[0] == u8'"')
 		{
 			match = iv == ev;
 		}
@@ -741,6 +741,18 @@ respond_file(fi::io_async_observer sched, fi::u8iobuf_socket_file &sock,
 		}
 	}
 	auto const length{rng.present ? rng.length : st.size};
+	/*
+	 * size_t_opt carries a ::std::size_t, so on a 32-bit target a body
+	 * wider than SIZE_MAX cannot be represented. Answer 500 here rather
+	 * than advertise the real Content-Length and then transmit a body
+	 * truncated by the cast below.
+	 */
+	constexpr ::std::size_t szmax{::std::numeric_limits<::std::size_t>::max()};
+	if (length > szmax)
+	{
+		co_await respond_status(sched, sock, 500, u8"Internal Server Error", req, cfg);
+		co_return;
+	}
 
 	co_await fi::io::async_print(
 		sched, {}, sock,
@@ -765,7 +777,7 @@ respond_file(fi::io_async_observer sched, fi::u8iobuf_socket_file &sock,
 			static_cast<::fast_io::intfpos_t>(rng.start)};
 		co_await fop::async_transmit_all_bytes(sched, {}, sock, {}, file,
 											   ::fast_io::intfpos_opt{off, true},
-											   fi::size_t_opt{length});
+											   fi::size_t_opt{static_cast<::std::size_t>(length)});
 	}
 	co_await fop::async_output_stream_flush(sched, {}, sock);
 }
@@ -811,7 +823,7 @@ respond_directory(fi::io_async_observer sched, fi::u8iobuf_socket_file &sock,
 		try
 		{
 			fi::u8native_file idxf{dirat, fi::u8cstring_view{u8"index.html"},
-								   fi::open_mode::in};
+								   fi::open_mode::in | fi::open_mode::no_block};
 			auto const st{fi::status(idxf)};
 			if (st.type == fi::file_type::regular)
 			{
@@ -847,12 +859,12 @@ static bool has_token(fi::u8string_view list, fi::u8string_view tok) noexcept
 			}
 		}
 		auto seg{fi::u8string_view{list.data() + off, comma - off}};
-		while (!seg.empty() &&
+		while (!seg.is_empty() &&
 			   (seg.front() == char8_t{' '} || seg.front() == char8_t{'\t'}))
 		{
 			seg.remove_prefix(1);
 		}
-		while (!seg.empty() &&
+		while (!seg.is_empty() &&
 			   (seg.back() == char8_t{' '} || seg.back() == char8_t{'\t'}))
 		{
 			seg.remove_suffix(1);
@@ -958,7 +970,7 @@ static bool parse_proxy_target(fi::u8string_view target,
 		}
 	}
 	u.name = fi::u8string_view{rest.data(), colon};
-	if (u.name.empty())
+	if (u.name.is_empty())
 	{
 		return false;
 	}
@@ -1019,7 +1031,7 @@ static fi::u8string resolve_url(fi::u8string_view base, fi::u8string_view rel)
 		out.append(fi::u8string_view{rel.data() + 1, rel.size() - 1});
 		return out;
 	}
-	if (!rel.empty() && rel[0] == char8_t{'/'})
+	if (!rel.is_empty() && rel[0] == char8_t{'/'})
 	{
 		fi::u8string out{fi::u8string_view{base.data(), origin_end}};
 		out.append(rel);
@@ -1095,7 +1107,7 @@ static fi::u8string rewrite_manifest(fi::u8string_view content,
 			break;
 		}
 		auto line{fi::u8string_view{content.data() + off, eol - off}};
-		if (!line.empty() && line.back() == char8_t{'\r'})
+		if (!line.is_empty() && line.back() == char8_t{'\r'})
 		{
 			line.remove_suffix(1);
 		}
@@ -1167,7 +1179,7 @@ static fi::u8string rewrite_manifest(fi::u8string_view content,
 static fi::u8string bypass_cors_block(fi::u8string_view origin)
 {
 	fi::u8string b{u8"Access-Control-Allow-Origin: "};
-	b.append(origin.empty() ? fi::u8string_view{u8"*"} : origin);
+	b.append(origin.is_empty() ? fi::u8string_view{u8"*"} : origin);
 	b.append(u8"\r\nAccess-Control-Allow-Methods: GET, HEAD, OPTIONS");
 	b.append(u8"\r\nAccess-Control-Allow-Headers: Content-Type, Authorization, "
 			 u8"Range, X-Requested-With");
@@ -1275,7 +1287,7 @@ proxy_relay(fi::io_async_observer sched, fi::u8iobuf_socket_file &client,
 
 	/* 3xx + Location -> caller re-requests; the body may sit unread —
 	 * upstream Connection: close makes that fine */
-	if (code.size() == 3 && code[0] == char8_t{'3'} && !location.empty())
+	if (code.size() == 3 && code[0] == char8_t{'3'} && !location.is_empty())
 	{
 		out.kind = proxy_outcome::kind_t::redirect;
 		out.location = location;
@@ -1304,7 +1316,7 @@ proxy_relay(fi::io_async_observer sched, fi::u8iobuf_socket_file &client,
 										 u8"\r\n");
 		}
 	}
-	if (manifest && cache_control.empty())
+	if (manifest && cache_control.is_empty())
 	{
 		/* a playlist the browser could cache is a stale sequence number
 		 * waiting to happen */
@@ -1440,8 +1452,8 @@ respond_proxy(fi::io_async_observer sched, fi::u8iobuf_socket_file &client,
 	auto const cors_str{bypass_cors_block(req.origin)};
 	fi::u8string_view const cors{cors_str.data(), cors_str.size()};
 	fi::u8string bypass_base{u8"http://"};
-	bypass_base.append(req.host.empty() ? fi::u8string_view{u8"localhost"}
-										: req.host);
+	bypass_base.append(req.host.is_empty() ? fi::u8string_view{u8"localhost"}
+										   : req.host);
 	bypass_base.push_back(char8_t{'/'});
 	fi::u8string_view const bypass_basev{bypass_base.data(), bypass_base.size()};
 
@@ -1514,7 +1526,7 @@ static bool is_ws_upgrade(http_request const &req) noexcept
 {
 	return req.method == fi::u8string_view{u8"GET"} &&
 		   ascii_ieq(req.upgrade, u8"websocket") &&
-		   has_token(req.connection, u8"upgrade") && !req.wskey.empty() &&
+		   has_token(req.connection, u8"upgrade") && !req.wskey.is_empty() &&
 		   req.wsver == fi::u8string_view{u8"13"};
 }
 
@@ -1708,7 +1720,7 @@ static fi::io_async_task<> session(fi::io_async_observer sched,
 			/* node's handleOptionsMethod / the js bypass's preflight:
 			 * a bare 200 carrying the CORS headers — the bypass set is
 			 * generated per-request so it can echo Origin */
-			if (cfg.cors_block.empty())
+			if (cfg.cors_block.is_empty())
 			{
 				/* bypass mode — the cors set is generated per-request so
 				 * it can echo Origin */
@@ -1782,7 +1794,7 @@ static fi::io_async_task<> session(fi::io_async_observer sched,
 			{
 				co_await respond_status(sched, sock, 400, u8"Bad Request", req, cfg);
 			}
-			else if (rel.empty())
+			else if (rel.is_empty())
 			{
 				/* "/" — the root handle itself is the directory */
 				co_await respond_directory(sched, sock, req, req.target, cfg.root, cfg,
@@ -1807,7 +1819,7 @@ static fi::io_async_task<> session(fi::io_async_observer sched,
 					}
 					else if (st.type == fi::file_type::regular)
 					{
-						fi::u8native_file f{cfg.root, relc, fi::open_mode::in};
+						fi::u8native_file f{cfg.root, relc, fi::open_mode::in | fi::open_mode::no_block};
 						co_await respond_file(sched, sock, f, st, req,
 											  fi::u8string_view{rel.data(), rel.size()},
 											  cfg);
@@ -2006,8 +2018,8 @@ int main(int argc, char const **argv)
 				u8"\r\nAccess-Control-Allow-Origin: *"
 				u8"\r\nAccess-Control-Allow-Headers: Authorization, Content-Type, "
 				"If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since",
-				cors_extra.empty() ? fi::u8string{}
-								   : fi::u8concat_fast_io(u8", ", cors_extra));
+				cors_extra.is_empty() ? fi::u8string{}
+									  : fi::u8concat_fast_io(u8", ", cors_extra));
 		}
 
 		/* build the whole banner in one string — each perr is a write()
