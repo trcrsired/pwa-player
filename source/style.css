@@ -897,18 +897,20 @@ body.side-off #configOptions {
     --danger: #ff3b30;
   }
 
+  /* Light mode: the dock floats over the video, so it keeps a light glass
+     pill (glass-bg-strong, not the near-transparent glass-bg) while the
+     icons/text/dim/hover come from the light :root tokens above — black
+     icons instead of the old white ones, which were lost over bright video.
+     The side rail uses the same tokens via its base rule. */
   #controls {
-    background: rgba(30, 30, 34, 0.4);
-    border-color: rgba(255, 255, 255, 0.16);
-    color: rgba(255, 255, 255, 0.92);
-    --color-fg: rgba(255, 255, 255, 0.92);
-    --color-text: rgba(255, 255, 255, 0.92);
-    --color-dim: rgba(235, 235, 245, 0.6);
-    --color-hover: rgba(255, 255, 255, 0.16);
+    background: var(--glass-bg-strong);
+    border-color: var(--glass-border);
+    color: var(--color-fg);
   }
 
-  input[type="range"]::-webkit-slider-thumb {
-    background: #fff;
+  input[type="range"]::-webkit-slider-thumb,
+  input[type="range"]::-moz-range-thumb {
+    background: var(--color-fg);
   }
 
   .overlay-view,
@@ -1546,16 +1548,5 @@ body.sheet-open.side-right .scroll-btn {
     body.sheet-open.side-right #controls {
         left: calc((100vw - min(400px, 100vw - 24px) - 12px) / 2);
         max-width: calc(100vw - min(400px, 100vw - 24px) - 40px);
-    }
-}
-
-@media (prefers-color-scheme: light) {
-    /* Keep the rail a dark glass pill over bright video, like the dock */
-    #sideRail {
-        background: rgba(30, 30, 34, 0.55);
-        border-color: rgba(255, 255, 255, 0.16);
-        color: rgba(255, 255, 255, 0.92);
-        --color-fg: rgba(255, 255, 255, 0.92);
-        --color-hover: rgba(255, 255, 255, 0.16);
     }
 }
