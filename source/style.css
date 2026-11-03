@@ -956,6 +956,36 @@ body.side-off #configOptions {
   z-index: 1;  /* Below trigger zone and controls */
 }
 
+/* Rotate embeds (YouTube/Spotify/... iframes) with the rotation button.
+   The iframe is painted into this box and then CSS-transformed, so the
+   third-party content follows the view. 90/270 swap the box dimensions
+   and leave the element off-canvas, hence the 50%/-50% re-centering. */
+#embeddedPlayer.rot90,
+#embeddedPlayer.rot270 {
+  width: 100vh;
+  height: 100vw;
+  top: 50%;
+  left: 50%;
+}
+#embeddedPlayer.rot90  { transform: translate(-50%, -50%) rotate(90deg); }
+#embeddedPlayer.rot180 { transform: rotate(180deg); }
+#embeddedPlayer.rot270 { transform: translate(-50%, -50%) rotate(270deg); }
+
+/* An iframe that fullscreens itself (the platform's own FS button with
+   allowfullscreen) is promoted to the top layer and stops inheriting the
+   container transform; the rotation classes move onto the iframe instead. */
+#embeddedPlayer iframe.rot90,
+#embeddedPlayer iframe.rot270 {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 100vh;
+  height: 100vw;
+}
+#embeddedPlayer iframe.rot90  { transform: translate(-50%, -50%) rotate(90deg); }
+#embeddedPlayer iframe.rot180 { transform: rotate(180deg); }
+#embeddedPlayer iframe.rot270 { transform: translate(-50%, -50%) rotate(270deg); }
+
 #embeddedPlayer iframe {
   width: 100%;
   height: 100%;

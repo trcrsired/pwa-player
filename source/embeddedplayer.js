@@ -102,6 +102,11 @@ function playEmbeddedUrl(url, metadata = {}) {
     videoPlayer.classList.add('hidden');
     embeddedPlayer.classList.remove('hidden');
 
+    // Match normal playback: every new source starts unrotated
+    if (typeof setVideoRotation === 'function') {
+        setVideoRotation(0);
+    }
+
     // Create new platform instance
     currentPlatformInstance = new platformClass();
 
@@ -640,6 +645,11 @@ function handleFullscreenChange() {
         const triggerZone = document.getElementById("embeddedShowBtnTriggerZone");
         if (triggerZone && triggerZone.classList.contains("hidden")) {
             triggerZone.classList.remove("hidden");
+        }
+        // A self-fullscreening iframe leaves the rotated container behind,
+        // so hand the view rotation over to whichever element is on screen
+        if (typeof refreshEmbeddedRotation === 'function') {
+            refreshEmbeddedRotation();
         }
     }
     // For normal video player, showControls/hideControls handle visibility

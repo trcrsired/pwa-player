@@ -2028,17 +2028,51 @@ let videoRotationDeg = 0;
 
 function setVideoRotation(deg) {
   videoRotationDeg = ((deg % 360) + 360) % 360;
-  video.classList.toggle("rot90", videoRotationDeg === 90);
-  video.classList.toggle("rot180", videoRotationDeg === 180);
-  video.classList.toggle("rot270", videoRotationDeg === 270);
+  const applyRotClasses = (el) => {
+    if (!el) return;
+    el.classList.toggle("rot90", videoRotationDeg === 90);
+    el.classList.toggle("rot180", videoRotationDeg === 180);
+    el.classList.toggle("rot270", videoRotationDeg === 270);
+  };
+  applyRotClasses(video);
   // Rotate the audio cover the same way so music art follows the view
-  const coverEl = document.getElementById("audioCover");
-  if (coverEl) {
-    coverEl.classList.toggle("rot90", videoRotationDeg === 90);
-    coverEl.classList.toggle("rot180", videoRotationDeg === 180);
-    coverEl.classList.toggle("rot270", videoRotationDeg === 270);
+  applyRotClasses(document.getElementById("audioCover"));
+  // Rotate the embedded player (YouTube/Spotify/... iframes) as well. The
+  // iframe content is painted first and then transformed by CSS, so this
+  // works for third-party embeds we cannot script into.
+  refreshEmbeddedRotation();
+}
+
+// Rotation for embeds lives on #embeddedPlayer, whose transform reaches the
+// iframe inside it. An iframe that fullscreens itself (platform FS button /
+// allowfullscreen) is promoted to the top layer and no longer inherits that
+// transform, so the classes are moved onto the iframe instead.
+function refreshEmbeddedRotation() {
+  const container = document.getElementById("embeddedPlayer");
+  if (!container) return;
+  const rotClasses = ["rot90", "rot180", "rot270"];
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
+               document.mozFullScreenElement || null;
+  const fsIframe = fsEl && fsEl.tagName === "IFRAME" && container.contains(fsEl) ? fsEl : null;
+  const applyTo = (el) => {
+    rotClasses.forEach((cls) => {
+      el.classList.toggle(cls, videoRotationDeg === parseInt(cls.slice(3), 10));
+    });
+  };
+  const strip = (el) => rotClasses.forEach((cls) => el.classList.remove(cls));
+
+  // Only one element may carry the rotation, otherwise it is applied twice
+  container.querySelectorAll("iframe").forEach((f) => {
+    if (f !== fsIframe) strip(f);
+  });
+  if (fsIframe) {
+    strip(container);
+    applyTo(fsIframe);
+  } else {
+    applyTo(container);
   }
 }
+window.refreshEmbeddedRotation = refreshEmbeddedRotation;
 
 rotationBtn.addEventListener("click", () => {
   setVideoRotation(videoRotationDeg + 90);
