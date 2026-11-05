@@ -14,6 +14,12 @@ let currentPlatformInstance = null;
 let currentEmbeddedPlaylist = null;
 let currentEmbeddedTitle = null;
 
+// Last embedded source, kept so the dock can reload the stream on demand
+let currentEmbeddedUrl = null;
+let currentEmbeddedMetadata = null;
+// A reload keeps the dock up if the user clicked the reload button from it
+let showControlsAfterReload = false;
+
 // Auto-hide timers
 let showBtnAutoHideTimer = null;
 let controlsAutoHideTimer = null;
@@ -60,6 +66,10 @@ function playEmbeddedUrl(url, metadata = {}) {
     // Save playlist metadata
     currentEmbeddedPlaylist = metadata.playlist;
     currentEmbeddedTitle = metadata.title;
+
+    // Remember the source so reloadEmbeddedPlayer() can re-mount it
+    currentEmbeddedUrl = url;
+    currentEmbeddedMetadata = metadata;
 
     // Destroy previous platform instance if any
     if (currentPlatformInstance) {
@@ -135,6 +145,13 @@ function playEmbeddedUrl(url, metadata = {}) {
 
             // Start periodic fullscreen check for iframe internal fullscreen
             startFullscreenCheck();
+
+            // Only an embedded stream can be reloaded from the dock
+            updateEmbeddedReloadBtn(true);
+            if (showControlsAfterReload) {
+                showControlsAfterReload = false;
+                showEmbeddedControls();
+            }
 
             // Re-render now playing queue to show playing indicator
             if (typeof renderNowPlayingQueue === 'function') {
@@ -286,6 +303,8 @@ function stopEmbeddedPlayer() {
     const controls = document.getElementById("controls");
     if (controls) controls.classList.remove("hidden");
 
+    updateEmbeddedReloadBtn(false);
+
     document.title = 'PWA Player';
     navigator.mediaSession.metadata = new MediaMetadata({});
     navigator.mediaSession.playbackState = 'paused';
@@ -323,6 +342,27 @@ function stopEmbeddedPlayer() {
 function isEmbeddedPlayerActive() {
     return !embeddedPlayer.classList.contains('hidden');
 }
+
+// The reload button only exists while an embedded site is playing
+function updateEmbeddedReloadBtn(visible) {
+    const btn = document.getElementById("embeddedReloadBtn");
+    if (btn) btn.classList.toggle("hidden", !visible);
+}
+
+// Re-mount the current embedded source. Third-party embeds can hang on a
+// stalled stream (or a dead ad/DRM handshake) and expose no retry of their
+// own, so the user needs a manual way to re-request the same URL.
+function reloadEmbeddedPlayer() {
+    if (!currentEmbeddedUrl || !isEmbeddedPlayerActive()) return;
+
+    const controls = document.getElementById("controls");
+    showControlsAfterReload = !!controls && !controls.classList.contains("hidden");
+
+    if (!playEmbeddedUrl(currentEmbeddedUrl, currentEmbeddedMetadata || {})) {
+        showControlsAfterReload = false;
+    }
+}
+window.reloadEmbeddedPlayer = reloadEmbeddedPlayer;
 
 // Get embedded player duration in seconds
 function getEmbeddedDuration() {
@@ -454,6 +494,13 @@ window.toggleStopBtn = async function() {
         await _originalToggleStopBtn();
     }
 };
+
+// Reload the current embedded stream from the dock
+document.getElementById("embeddedReloadBtn")?.addEventListener("click", () => {
+    if (isEmbeddedPlayerActive()) {
+        reloadEmbeddedPlayer();
+    }
+});
 
 // Hook into play button to toggle embedded player
 document.getElementById("playBtn")?.addEventListener("click", () => {

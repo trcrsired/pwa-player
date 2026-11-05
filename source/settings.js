@@ -243,6 +243,23 @@ function isRotateBtnDisabled() {
     return localStorage.getItem("disableRotateBtn") === "true";
 }
 
+// Remember rotate direction toggle — keeps the direction picked with the
+// rotate button for the next source (default: true)
+const keepRotationCheckbox = document.getElementById("keepRotation");
+
+if (keepRotationCheckbox) {
+    keepRotationCheckbox.checked = localStorage.getItem("keepRotation") !== "false";
+
+    keepRotationCheckbox.addEventListener("change", () => {
+        localStorage.setItem("keepRotation", keepRotationCheckbox.checked ? "true" : "false");
+        // Turning it off drops the stored direction, so the next source starts
+        // upright; the current picture keeps whatever it already has.
+        if (!keepRotationCheckbox.checked && typeof setVideoRotation === "function") {
+            setVideoRotation(0);
+        }
+    });
+}
+
 // =====================================================
 // Button Size Control
 // =====================================================
@@ -1201,6 +1218,7 @@ function getProfileSettingsKeys() {
         "autoHidePanel",
         "autoResizeWindow",
         "disableRotateBtn",
+        "keepRotation",
         "playbackSpeed",
         "preservePitch",
         "speedStep",
@@ -1256,6 +1274,7 @@ function createDefaultProfileData() {
             autoHidePanel: "false",
             autoResizeWindow: "false",
             disableRotateBtn: "false",
+            keepRotation: "true",
             playbackSpeed: "1",
             preservePitch: "false",
             speedStep: "0.05",
@@ -1356,6 +1375,9 @@ async function applyProfileData(profileData) {
 
     const disableRotateBtn = document.getElementById("disableRotateBtn");
     if (disableRotateBtn) disableRotateBtn.checked = localStorage.getItem("disableRotateBtn") === "true";
+
+    const keepRotation = document.getElementById("keepRotation");
+    if (keepRotation) keepRotation.checked = localStorage.getItem("keepRotation") !== "false";
 
     const corsBypassUrl = document.getElementById("corsBypassUrl");
     if (corsBypassUrl) corsBypassUrl.value = localStorage.getItem("corsBypassUrl") || "";

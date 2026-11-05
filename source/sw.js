@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "490";
+const PWAPLAYER_VERSION = "491";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "./",

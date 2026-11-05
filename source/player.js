@@ -2014,8 +2014,13 @@ volumeToggleBtn.addEventListener("click", volumeToggleBtnClick);
 npVolumeToggleBtn.addEventListener("click", volumeToggleBtnClick);
 
 // The rotate-view button is a view preference, not a per-file property: the
-// last direction is remembered and reused for every source and page load.
+// last direction is remembered and reused for every source and page load,
+// unless Settings → "Remember rotate direction" is turned off.
 const VIDEO_ROTATION_STORAGE_KEY = "videoRotationDeg";
+
+function isKeepRotationEnabled() {
+  return localStorage.getItem("keepRotation") !== "false";
+}
 
 function normalizeVideoRotation(deg) {
   const rounded = Math.round((Number(deg) || 0) / 90) * 90;
@@ -2023,6 +2028,7 @@ function normalizeVideoRotation(deg) {
 }
 
 function getSavedVideoRotation() {
+  if (!isKeepRotationEnabled()) return 0;
   try {
     const saved = parseInt(localStorage.getItem(VIDEO_ROTATION_STORAGE_KEY), 10);
     return normalizeVideoRotation(saved);
@@ -2033,7 +2039,11 @@ function getSavedVideoRotation() {
 
 function saveVideoRotation(deg) {
   try {
-    localStorage.setItem(VIDEO_ROTATION_STORAGE_KEY, String(deg));
+    if (isKeepRotationEnabled()) {
+      localStorage.setItem(VIDEO_ROTATION_STORAGE_KEY, String(deg));
+    } else {
+      localStorage.removeItem(VIDEO_ROTATION_STORAGE_KEY);
+    }
   } catch (e) {}
 }
 

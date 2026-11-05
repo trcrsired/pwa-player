@@ -83,6 +83,7 @@
                         <button id="skipForwardBtn" data-icon="fastForward" data-i18n-title="skipForward"></button>
                         <button id="nextBtn" data-icon="next" data-i18n-title="next"></button>
                         <button id="stopBtn" data-icon="stop" data-i18n-title="stop"></button>
+                        <button id="embeddedReloadBtn" data-icon="refresh" data-i18n-title="reloadEmbedded" class="hidden"></button>
                         <button id="playModeBtn" data-icon="shuffle" data-i18n-title="playbackMode"></button>
                         <button id="magnifierBtn" data-icon="zoomIn" data-i18n-title="zoomIn" class="hidden"></button>
                         <button id="rotateLeftBtn" data-icon="rotateLeft" data-i18n-title="rotateLeft" class="hidden"></button>
@@ -304,6 +305,11 @@
                     <span data-i18n="disableRotateBtn">Disable rotate screen button</span>
                 </label>
                 <p class="setting-hint" data-i18n="disableRotateBtnHint">On some devices like VR headsets, the rotate screen feature may not work correctly and could make the device unusable.</p>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="keepRotation" checked>
+                    <span data-i18n="keepRotation">Remember rotate direction</span>
+                </label>
+                <p class="setting-hint" data-i18n="keepRotationHint">Keep the direction chosen with the rotate screen button for the next video and after a reload. When off, every new video starts upright.</p>
 
                 <h3 data-i18n="playback">Playback</h3>
                 <label class="setting-label">
