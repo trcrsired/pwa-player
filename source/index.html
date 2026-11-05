@@ -381,6 +381,14 @@
                     </select>
                 </label>
                 <p class="setting-hint" data-i18n="sidePanelHint">Hover the screen edge or swipe inward from it to reveal a floating bar with quick access to Now Playing, Playlists, Storage, IPTV and Settings — without leaving the player.</p>
+                <label class="setting-label">
+                    <span data-i18n="iconStyle">Icons</span>
+                    <select id="iconStyleSelect" class="language-select">
+                        <option value="emoji" data-i18n="iconStyleEmoji" selected>Emoji (lightest)</option>
+                        <option value="svg" data-i18n="iconStyleSvg">SVG</option>
+                    </select>
+                </label>
+                <p class="setting-hint" data-i18n="iconStyleHint">Emoji icons are a single text node, which keeps the page about 600 DOM elements and several MB smaller than SVG. Switch to SVG if your system does not render color emoji.</p>
                 <label class="setting-toggle">
                     <input type="checkbox" id="touchGesturesEnabled">
                     <span data-i18n="touchGestures">Touch gestures</span>
@@ -560,9 +568,6 @@
         <script src="icons.js"></script>
         <script src="dialog.js"></script>
         <script src="indexeddb.js"></script>
-        <script src="locales/en.js"></script>
-        <script src="locales/zhcn.js"></script>
-        <script src="locales/ja.js"></script>
         <script src="locale.js"></script>
         <script src="wasm.js"></script>
         <script src="nowplaying.js"></script>

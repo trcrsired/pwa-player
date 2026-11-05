@@ -1,8 +1,17 @@
-/* SVG icon system — SF Symbols-inspired thin-stroke/filled icons.
+/* Icon system.
+ *
+ * Two representations, chosen by the `iconStyle` setting:
+ *   "emoji" (default) -> one text node per icon, no extra elements
+ *   "svg"             -> inline <svg> (SF Symbols-inspired thin stroke)
+ * Emoji is the default because a text node costs a fraction of what an
+ * <svg> subtree costs Blink (element + layout + paint objects), and the DOM
+ * for the channel list and the control rails holds ~600 icons.
+ *
  * Usage:
- *   icon('play')            -> svg string
- *   setIcon(el, 'pause')    -> el.innerHTML = svg; el.dataset.icon = 'pause'
+ *   icon('play')            -> markup/text for the current style
+ *   setIcon(el, 'pause')    -> render the icon inside el; el.dataset.icon = 'pause'
  *   <button data-icon="play"></button> -> auto-initialized on load
+ *   setIconStyle('svg')     -> switch representation, re-renders every icon
  */
 (function () {
     "use strict";
@@ -91,31 +100,107 @@
         close: S('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
     };
 
-    window.icon = function (name, cls) {
+    /* Emoji twin of every SVG above. Kept in the same order so a missing
+     * entry is obvious; setIcon() falls back to the SVG when absent. */
+    const EMOJI = {
+        play: "▶️", pause: "⏸️", stop: "⏹️", prev: "⏮️", next: "⏭️",
+        rewind: "⏪", fastForward: "⏩", once: "➡️", shuffle: "🔀",
+        repeat: "🔁", repeatOne: "🔂",
+        volume: "🔊", volumeOff: "🔇", mic: "🎤", micOn: "🎙️",
+        record: "⏺️", battery: "🔋", bolt: "⚡",
+        fullscreen: "⛶", pip: "🪟", monitor: "🖥️", tv: "📺",
+        rotateScreen: "🔄", rotateLeft: "↺", rotateRight: "↻",
+        flipH: "↔️", flipV: "↕️", zoomIn: "🔍", zoomOut: "🔎",
+        folder: "📁", file: "📄", archive: "🗂️", harddrive: "💾",
+        photo: "🖼️", video: "🎬", film: "🎞️", globe: "🌐",
+        antenna: "📡", camera: "📷", subtitles: "📝", subtitlesOn: "💬",
+        gear: "⚙️", sliders: "🎛️", home: "🏠", panel: "🗔",
+        ellipsis: "⋯", ellipsisV: "⋮", back: "↩️",
+        chevronUp: "▲", chevronDown: "▼", chevronRight: "▶", chevronLeft: "◀",
+        plus: "➕", import: "📥", export: "📤", trash: "🗑️",
+        duplicate: "📋", pencil: "✏️", reset: "⟲", refresh: "🔄",
+        lock: "🔒", lockOpen: "🔓", waveform: "〰️", musicList: "🎵",
+        star: "⭐", check: "✔️", error: "⚠️", close: "✖️",
+    };
+
+    /* "emoji" (default) or "svg"; read straight from localStorage so the very
+     * first setIcon() call already uses the saved style (no flash of SVG). */
+    let iconStyle = "emoji";
+    try {
+        if (localStorage.getItem("iconStyle") === "svg") iconStyle = "svg";
+    } catch (e) { /* private mode */ }
+
+    const svgFor = (name, cls) => {
         const svg = ICONS[name] || "";
         return cls ? svg.replace('class="icon"', `class="icon icon-${cls}"`) : svg;
     };
 
+    window.getIconStyle = () => iconStyle;
+
+    window.icon = function (name, cls) {
+        return iconStyle === "svg" || !EMOJI[name] ? svgFor(name, cls) : EMOJI[name];
+    };
+
+    /* Remove the previously rendered representation, whatever the style was. */
+    function clearIcon(el) {
+        const svg = el.querySelector(":scope > svg.icon");
+        if (svg) {
+            svg.remove();
+            return;
+        }
+        const previous = EMOJI[el.dataset.icon];
+        const first = el.firstChild;
+        if (previous && first && first.nodeType === 3 && first.data === previous) {
+            first.remove();
+        }
+    }
+
     window.setIcon = function (el, name) {
         if (!el) return;
-        const svg = window.icon(name);
-        const existing = el.querySelector(":scope > svg.icon");
-        if (existing) {
-            existing.outerHTML = svg;
-        } else if (el.childNodes.length) {
-            el.insertAdjacentHTML("afterbegin", svg);
+        clearIcon(el);
+        if (iconStyle === "svg" || !EMOJI[name]) {
+            const svg = svgFor(name);
+            // Keep any label the element already carries (menus, toggles).
+            if (el.firstChild) {
+                el.insertAdjacentHTML("afterbegin", svg);
+            } else {
+                el.innerHTML = svg;
+            }
+        } else if (el.firstChild) {
+            el.insertAdjacentText("afterbegin", EMOJI[name]);
         } else {
-            el.innerHTML = svg;
+            el.textContent = EMOJI[name];
         }
         el.dataset.icon = name;
     };
 
-    /* Auto-initialize any element carrying a data-icon attribute */
     function initDataIcons() {
         document.querySelectorAll("[data-icon]").forEach((el) => {
             window.setIcon(el, el.dataset.icon);
         });
     }
+
+    window.refreshIcons = initDataIcons;
+
+    /* True when el already shows its icon in the current style - lets the
+     * channel-list hydrator skip elements that are already done. */
+    window.iconRendered = function (el) {
+        if (!el) return false;
+        if (el.querySelector(":scope > svg.icon")) return true;
+        const emoji = EMOJI[el.dataset.icon];
+        const first = el.firstChild;
+        return !!(emoji && first && first.nodeType === 3 && first.data === emoji);
+    };
+
+    window.setIconStyle = function (style) {
+        const next = style === "svg" ? "svg" : "emoji";
+        if (next === iconStyle) return;
+        iconStyle = next;
+        try {
+            localStorage.setItem("iconStyle", next);
+        } catch (e) { /* private mode */ }
+        initDataIcons();
+    };
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", initDataIcons);
     } else {

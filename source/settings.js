@@ -285,6 +285,15 @@ function getButtonSize() {
 // =====================================================
 // Side Panel (floating rail) position: left | right | top | bottom | off
 // =====================================================
+const iconStyleSelect = document.getElementById("iconStyleSelect");
+
+if (iconStyleSelect) {
+    iconStyleSelect.value = typeof getIconStyle === "function" ? getIconStyle() : "emoji";
+    iconStyleSelect.addEventListener("change", () => {
+        if (typeof setIconStyle === "function") setIconStyle(iconStyleSelect.value);
+    });
+}
+
 const sidePanelPositionSelect = document.getElementById("sidePanelPosition");
 
 function getSidePanelPosition() {

@@ -41,7 +41,8 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 | `hls.js` | HLS.js loader/initializer |
 | `util.js` | Shared helpers: `showToast`/`hideToast`, `escapeHTML`, `buildShareText`, `shareOrCopy` |
 | `sw.js` / `sw-register.js` | Service Worker registration |
-| `locale.js` | Internationalization (en, zh-CN, ja) |
+| `locale.js` | Internationalization loader (en, zh-CN, ja), TOML on demand |
+| `icons.js` | Icon renderer: emoji by default, inline SVG on request |
 | `wakelock.js` | Screen wake lock API |
 | `sidepanel.js` | Edge rail + slide-over sheets for views (left/right/off via `sidePanelPosition` setting) |
 | `manifest.json` | PWA manifest with file handlers |
@@ -59,10 +60,64 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 
 - **Never re-declare the translation helper.** `locale.js` defines a global `t(key, params)`; do not add `const t = (key, params) => window.i18n ? ... : ...` inside functions.
 - **Use `util.js`** for toasts, HTML escaping and sharing instead of local copies.
+- **Adding a translation**: add the key to `source/locales/*.toml` — never to a JS
+  file, and never to C++.
+- **Adding an icon**: add it to both `ICONS` (SVG) and `EMOJI` in `icons.js`;
+  `setIcon()` falls back to the SVG if the emoji entry is missing.
 
 ### Locales
 
-`source/locales/` contains translation files: `en.js`, `zhcn.js`, `ja.js`.
+`source/locales/` contains `en.toml`, `zhcn.toml` and `ja.toml`. The format is one
+`key = "value"` per line with `#` comments and `\"` `\\` `\n` `\t` `\r` escapes —
+a TOML subset, not full TOML. `parseLocaleText()` in `locale.js` is the only
+parser.
+
+- **Only the active language is fetched** (`locales/<lang>.toml`, cache-first from
+  the Service Worker). The other two are never downloaded or parsed.
+- `t(key, params)` replaces `{name}` placeholders without building a `RegExp`
+  (that allocation was the hottest part of translation) and returns the literal
+  directly when there are no params.
+- Editing a translation is a data change: **no rebuild of anything**, and no wasm
+  recompile.
+- **Translations stay in JavaScript.** A `::fast_io::u8str_swiss_map` in wasm was
+  implemented and measured (`build/bench_locale.js`): the lookup plus the call is
+  only ~45 ns, but every `t()` then costs a `TextEncoder` (~100 ns) and a
+  `TextDecoder` (~235 ns) for ~350 ns, against ~4-11 ns for a `Map` hit. The
+  boundary copies dominate, so the wasm path was removed rather than shipped.
+  The corollary that *does* pay: render whole pages in C++ (the IPTV list), where
+  the strings never cross the boundary individually.
+- Translation is pure data, so nothing has to be rebuilt when a string changes.
+
+### Formatting numbers
+
+Also measured and rejected (`build/bench_format.js`, `build/bench_format.cpp`):
+
+| | JS | wasm + `TextDecoder` |
+|---|---|---|
+| `formatTime(sec)` | 41 ns | 245 ns |
+| `v.toFixed(2)` | 121 ns | 492 ns (call alone 241 ns) |
+| 1000 rows in bulk | 0.156 ms | 0.238–0.269 ms |
+
+fast_io's integer path is fast and its fixed-point path is exact-by-construction,
+but V8's `toFixed` is a specialised builtin and every wasm result still pays the
+decode. `-O2`/`-O3` do not change the ordering. Keep number formatting in JS,
+except inside markup C++ already renders itself.
+
+### Icons
+
+`icons.js` renders one of two representations per icon, chosen by the
+`iconStyle` setting (Settings → Icons), default **emoji**:
+
+- `"emoji"` — a single text node, no extra elements. The controls + channel list
+  hold ~600 icons, so this mode keeps the default view at **964 elements**.
+- `"svg"` — inline `<svg>` (thin stroke set), for systems without color emoji.
+  Same view costs **1772 elements**.
+
+Measured A/B in one process (same page, `setIconStyle()` and back): the SVG set
+costs +808 elements / +581 DOM nodes and **+2.3 MB** of renderer private memory,
+and JS heap is unchanged. `setIconStyle()` re-renders every `[data-icon]` element,
+so the toggle is live; the channel-list hydrator uses `iconRendered(el)` to skip
+elements that already show their icon.
 
 ## Commands
 

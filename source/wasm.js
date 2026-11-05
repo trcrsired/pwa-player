@@ -5,6 +5,8 @@
  *   - the filtering / paging / DOM markup rendering of that catalogue,
  *   - the queue shuffle permutation (::std::shuffle over fast_io entropy).
  *
+ * UI translations are deliberately NOT here: see build/bench_locale.js.
+ *
  * The helpers below never keep a JS copy of the catalogue, so the browser does
  * not allocate ~671 channel objects plus ~750 URL strings, and there is nothing
  * for the garbage collector to trace beyond the module memory itself.
@@ -92,15 +94,15 @@
     }
 
     // Copies text into the module's shared input buffer; returns the byte length.
+    // encodeInto() writes straight into wasm memory: `encoder.encode()` plus a
+    // .set() allocated and copied a Uint8Array on every call, which measured at
+    // ~1.3 us for a short key versus ~0.14 us here - more than the whole wasm
+    // call it feeds.
     function writeInput(text) {
         const ex = state.exports;
         const capacity = ex.pwa_input_capacity();
-        const bytes = encoder.encode(text || "");
-        const n = Math.min(bytes.length, capacity);
-        if (n > 0) {
-            new Uint8Array(ex.memory.buffer, ex.pwa_input_ptr(), n).set(bytes.subarray(0, n));
-        }
-        return n;
+        const view = new Uint8Array(ex.memory.buffer, ex.pwa_input_ptr(), capacity - 1);
+        return text ? encoder.encodeInto(text, view).written : 0;
     }
 
     // 0 = en, 1 = zhcn, 2 = ja; drives which stored name the renderer picks.

@@ -16,6 +16,10 @@
  *   3. Shuffle a permutation with ::std::shuffle over fast_io's white-hole
  *      entropy engine, used by the JavaScript queue randomiser.
  *
+ * UI translations deliberately stay in JavaScript: a per-string wasm call costs
+ * ~350 ns (UTF-8 encode + TextDecoder) against ~11 ns for a JS Map lookup, no
+ * matter how fast the C++ side is. See build/bench_locale.js.
+ *
  * Exported entry points are declared at the bottom of this file.
  */
 #include <cstddef>
@@ -584,4 +588,5 @@ extern "C"
 	{
 		return shuffle_length;
 	}
+
 }

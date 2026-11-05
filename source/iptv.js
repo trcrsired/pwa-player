@@ -280,14 +280,12 @@ function showIPTVChannelMenu(channel, url, button) {    const menu = document.cr
  * Rendering
  * ------------------------------------------------------------------ */
 
-// Fill in every `data-icon` placeholder that has no <svg> yet. C++ emits the
+// Fill in every `data-icon` placeholder that has no icon yet. C++ emits the
 // markup with icon placeholders instead of duplicating the SVG paths there.
 function hydrateIcons(root) {
     if (typeof setIcon !== "function") return;
     root.querySelectorAll("[data-icon]").forEach(el => {
-        if (!el.querySelector(":scope > svg.icon")) {
-            setIcon(el, el.dataset.icon);
-        }
+        if (!iconRendered(el)) setIcon(el, el.dataset.icon);
     });
 }
 
