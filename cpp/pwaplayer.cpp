@@ -68,6 +68,11 @@ inline ::fast_io::u8string html_str;
 inline ::fast_io::array<char8_t, input_capacity> input_buffer{};
 inline ::fast_io::vector<::std::uint_least32_t> shuffle_buffer;
 inline ::std::size_t shuffle_length{};
+// One engine for the lifetime of the module, not one per shuffle_permutation()
+// call: the engine buffers what it pulls from the OS, so a per-call engine
+// throws that entropy away on every call and re-seeds from the same source
+// every time. Keeping it global keeps the stream continuous.
+inline ::fast_io::ibuf_white_hole_engine shuffle_engine;
 
 } // namespace
 
@@ -574,8 +579,7 @@ extern "C"
 		{
 			shuffle_buffer[i] = static_cast<::std::uint_least32_t>(i);
 		}
-		::fast_io::ibuf_white_hole_engine engine;
-		::std::shuffle(shuffle_buffer.data(), shuffle_buffer.data() + n, engine);
+		::std::shuffle(shuffle_buffer.data(), shuffle_buffer.data() + n, shuffle_engine);
 		return shuffle_length;
 	}
 

@@ -3,8 +3,8 @@
 #
 # Mirrors the WasmPass (https://github.com/trcrsired/WasmPass) setup: a
 # wasm32-wasip1 sysroot through a clang --config file, exceptions and RTTI
-# off (herbceptions are used instead of C++ exceptions), thin LTO and a
-# stripped binary.
+# off (herbceptions are used instead of C++ exceptions), LTO and a stripped
+# binary.
 #
 # Usage: sh cpp/build.sh [project_root]
 set -eu
@@ -49,7 +49,7 @@ mkdir -p "$ROOT/source"
 # shellcheck disable=SC2086
 "$CXX" --config="$CONFIG" \
     -fherbceptions -lherbceptions \
-    -flto=thin -s -Oz \
+    -O3 -flto -s \
     -fno-exceptions -fno-rtti \
     -nostartfiles -Wl,--no-entry \
     $EXPORTS \

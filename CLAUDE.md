@@ -148,7 +148,7 @@ node build/build.js <project_root>
 **wasm core only (`source/pwaplayer.wasm`):**
 ```bash
 sh cpp/build.sh <project_root>
-# uses --config=$HOME/cfgs/wasm32-wasip1-noeh-nomtg.cfg -fherbceptions -lherbceptions -flto=thin -s -Oz
+# uses --config=$HOME/cfgs/wasm32-wasip1-noeh-nomtg.cfg -fherbceptions -lherbceptions -O3 -flto -s
 # override the config with PWA_WASM_CONFIG=/path/to/wasm32-wasip1.cfg, compiler with CXX=clang++
 ```
 
