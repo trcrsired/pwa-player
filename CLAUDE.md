@@ -79,8 +79,11 @@ them like the manifest.
   request can land after the user already picked a language and silently flip
   the UI back — the settings select and the actual table must never disagree.
 - **English is the default, always**: the active language is the saved preference
-  or `en`. `navigator.language` is deliberately ignored (it used to pick the UI
-  language, which surprised users whose browser was not in English).
+  or `en`, and nothing else. `navigator.language`/`navigator.languages` are
+  deliberately NOT consulted — a browser that reports `ja`/`zh` without the user
+  ever choosing it would open the app in a language they never picked, and the
+  settings select then disagreed with the app. An unknown stored value also
+  falls back to `en`. Settings is the only way to change the language.
 - `t(key, params)` returns the literal immediately when there are no params, and
   when there are it uses a cached pre-split template (`compileTemplate()` →
   literal parts + parameter names), so a two-placeholder string costs ~114 ns

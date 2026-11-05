@@ -27,12 +27,15 @@ let loadToken = 0;                 // only the newest request may publish a tabl
 // encode+decode of the result alone costs ~270 ns).
 const templateCache = new Map();
 
-// The active language is the saved preference, or English. The browser's own
-// language is deliberately ignored: the UI starts in English unless the user
-// picked something else in Settings.
+// The active language: the user's saved choice, otherwise English.
+//
+// The browser's own language list is deliberately NOT consulted. Users whose
+// browser reports ja/zh without them ever picking it got a UI in a language
+// they never selected, and the settings select then disagreed with the app.
+// English is the default; Settings is the only way to change it.
 function detectLanguage() {
     const saved = localStorage.getItem('language');
-    return saved && LANGUAGES[saved] ? saved : 'en';
+    return saved && Object.prototype.hasOwnProperty.call(LANGUAGES, saved) ? saved : 'en';
 }
 
 // Fetches one locale file and returns its table (does not install it).
