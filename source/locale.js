@@ -27,15 +27,37 @@ let loadToken = 0;                 // only the newest request may publish a tabl
 // encode+decode of the result alone costs ~270 ns).
 const templateCache = new Map();
 
-// The active language: the user's saved choice, otherwise English.
-//
-// The browser's own language list is deliberately NOT consulted. Users whose
-// browser reports ja/zh without them ever picking it got a UI in a language
-// they never selected, and the settings select then disagreed with the app.
-// English is the default; Settings is the only way to change it.
+// Maps a browser language tag onto one of ours: "ja-JP" -> ja, "zh-CN"/"zh-TW"
+// -> zhcn, "en-GB" -> en. Returns null for languages we do not ship.
+function matchLanguage(tag) {
+    const primary = String(tag || "").toLowerCase().split("-")[0];
+    if (!primary) return null;
+    if (primary === "zh") return "zhcn";
+    return Object.prototype.hasOwnProperty.call(LANGUAGES, primary) ? primary : null;
+}
+
+// The active language, in order of precedence:
+//   1. the language the user picked in Settings, if we ship it;
+//   2. English, as soon as the browser advertises it anywhere in its list -
+//      a browser reporting ["ja", "en-US", "en"] gets English, not Japanese;
+//   3. the first language in the browser's list that we do ship;
+//   4. English.
+// The settings select always shows what this resolved to, so the two can never
+// disagree.
 function detectLanguage() {
-    const saved = localStorage.getItem('language');
-    return saved && Object.prototype.hasOwnProperty.call(LANGUAGES, saved) ? saved : 'en';
+    const saved = localStorage.getItem("language");
+    if (saved && Object.prototype.hasOwnProperty.call(LANGUAGES, saved)) return saved;
+
+    const candidates = navigator.languages && navigator.languages.length
+        ? navigator.languages
+        : [navigator.language];
+    let firstMatch = null;
+    for (const tag of candidates) {
+        const match = matchLanguage(tag);
+        if (match === "en") return "en";
+        if (match && firstMatch === null) firstMatch = match;
+    }
+    return firstMatch || "en";
 }
 
 // Fetches one locale file and returns its table (does not install it).

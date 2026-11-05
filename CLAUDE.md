@@ -78,12 +78,15 @@ them like the manifest.
   the newest one may install its table. Without that, a slow auto-detected
   request can land after the user already picked a language and silently flip
   the UI back — the settings select and the actual table must never disagree.
-- **English is the default, always**: the active language is the saved preference
-  or `en`, and nothing else. `navigator.language`/`navigator.languages` are
-  deliberately NOT consulted — a browser that reports `ja`/`zh` without the user
-  ever choosing it would open the app in a language they never picked, and the
-  settings select then disagreed with the app. An unknown stored value also
-  falls back to `en`. Settings is the only way to change the language.
+- **Language resolution** (`detectLanguage()`), in order:
+  1. the language picked in Settings, if we ship it;
+  2. **English as soon as the browser advertises it anywhere** in
+     `navigator.languages` — a list like `["ja", "en-US", "en"]` gets English,
+     not Japanese;
+  3. the first language in that list we do ship (`zh-*` → `zhcn`);
+  4. English.
+  The settings select is always pinned to what actually loaded, so the widget and
+  the UI cannot disagree (that mismatch was the "UI is Japanese" bug report).
 - `t(key, params)` returns the literal immediately when there are no params, and
   when there are it uses a cached pre-split template (`compileTemplate()` →
   literal parts + parameter names), so a two-placeholder string costs ~114 ns
