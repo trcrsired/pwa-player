@@ -384,11 +384,11 @@
                 <label class="setting-label">
                     <span data-i18n="iconStyle">Icons</span>
                     <select id="iconStyleSelect" class="language-select">
-                        <option value="emoji" data-i18n="iconStyleEmoji" selected>Emoji (lightest)</option>
-                        <option value="svg" data-i18n="iconStyleSvg">SVG</option>
+                        <option value="svg" data-i18n="iconStyleSvg" selected>SVG (default)</option>
+                        <option value="emoji" data-i18n="iconStyleEmoji">Emoji</option>
                     </select>
                 </label>
-                <p class="setting-hint" data-i18n="iconStyleHint">Emoji icons are a single text node, which keeps the page about 600 DOM elements and several MB smaller than SVG. Switch to SVG if your system does not render color emoji.</p>
+                <p class="setting-hint" data-i18n="iconStyleHint">SVG icons are the default: emoji glyphs need a colour emoji font that some Linux distributions do not install, and there they show up as empty boxes. Emoji icons are one text node each, so they keep the page about 800 elements and a few MB of renderer memory smaller - switch back if your system renders them.</p>
                 <label class="setting-toggle">
                     <input type="checkbox" id="touchGesturesEnabled">
                     <span data-i18n="touchGestures">Touch gestures</span>

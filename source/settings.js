@@ -288,7 +288,7 @@ function getButtonSize() {
 const iconStyleSelect = document.getElementById("iconStyleSelect");
 
 if (iconStyleSelect) {
-    iconStyleSelect.value = typeof getIconStyle === "function" ? getIconStyle() : "emoji";
+    iconStyleSelect.value = typeof getIconStyle === "function" ? getIconStyle() : "svg";
     iconStyleSelect.addEventListener("change", () => {
         if (typeof setIconStyle === "function") setIconStyle(iconStyleSelect.value);
     });

@@ -216,6 +216,12 @@ function applyTranslations() {
         const translated = t(key);
         if (translated !== key) {
             el.textContent = translated;
+            // textContent replaced the children, which took the leading icon
+            // with it: put it back for elements that carry both attributes
+            // (the storage buttons do). setIcon keeps the label we just set.
+            if (el.dataset.icon && typeof window.setIcon === 'function') {
+                window.setIcon(el, el.dataset.icon);
+            }
         }
     });
 

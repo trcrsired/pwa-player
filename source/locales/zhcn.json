@@ -417,5 +417,9 @@
   "failedToCreateFolder": "创建文件夹失败",
   "to": "到",
   "copying": "复制中",
-  "downloading": "下载中"
+  "downloading": "下载中",
+  "iconStyle": "图标",
+  "iconStyleSvg": "SVG（默认）",
+  "iconStyleEmoji": "Emoji 表情",
+  "iconStyleHint": "图标默认为 SVG：Emoji 字形需要彩色 Emoji 字体，部分 Linux 发行版并未安装，此时图标会显示为空白方块。Emoji 图标每个只占一个文本节点，可让页面少约 800 个元素、渲染内存少几 MB；如果你的系统能正常显示 Emoji，仍可切换回去。"
 }

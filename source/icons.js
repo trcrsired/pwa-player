@@ -123,11 +123,14 @@
         star: "⭐", check: "✔️", error: "⚠️", close: "✖️",
     };
 
-    /* "emoji" (default) or "svg"; read straight from localStorage so the very
-     * first setIcon() call already uses the saved style (no flash of SVG). */
-    let iconStyle = "emoji";
+    /* "svg" (default) or "emoji"; read straight from localStorage so the very
+     * first setIcon() call already uses the saved style, with no flash.
+     * SVG is the default because emoji glyphs need a colour emoji font, which
+     * some Linux distributions simply do not ship - there the icons render as
+     * empty boxes. An explicit "emoji" choice is still honoured. */
+    let iconStyle = "svg";
     try {
-        if (localStorage.getItem("iconStyle") === "svg") iconStyle = "svg";
+        if (localStorage.getItem("iconStyle") === "emoji") iconStyle = "emoji";
     } catch (e) { /* private mode */ }
 
     const svgFor = (name, cls) => {
@@ -193,7 +196,7 @@
     };
 
     window.setIconStyle = function (style) {
-        const next = style === "svg" ? "svg" : "emoji";
+        const next = style === "emoji" ? "emoji" : "svg";
         if (next === iconStyle) return;
         iconStyle = next;
         try {

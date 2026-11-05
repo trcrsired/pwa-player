@@ -418,5 +418,9 @@
   "failedToCreateFolder": "Failed to create folder",
   "to": "to",
   "copying": "Copying",
-  "downloading": "Downloading"
+  "downloading": "Downloading",
+  "iconStyle": "Icons",
+  "iconStyleSvg": "SVG (default)",
+  "iconStyleEmoji": "Emoji",
+  "iconStyleHint": "SVG icons are the default: emoji glyphs need a colour emoji font that some Linux distributions do not install, and there they show up as empty boxes. Emoji icons are one text node each, so they keep the page about 800 elements and a few MB of renderer memory smaller - switch back if your system renders them."
 }
