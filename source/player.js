@@ -269,7 +269,6 @@ const videoStatusText = document.getElementById("videoStatusText");
 
 function showVideoLoading() {
   if (!videoStatusOverlay) return;
-  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
   videoStatusOverlay.classList.remove("compact");
   videoStatusIcon.className = "video-status-icon loading";
   videoStatusIcon.textContent = "";
@@ -353,8 +352,6 @@ function isLikelyUnsupportedVideo(filename) {
 }
 
 function getUnsupportedVideoMessage(filename) {
-  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
   if (isLikelyUnsupportedVideo(filename)) {
     return t("videoFormatNotSupported", `This video format may not be supported. .webm is the web standard format that works best across all platforms with no licensing fees. For example, Microsoft Edge on Android only supports .webm videos. Convert to .webm using tools such as FFmpeg, or try another browser such as Google Chrome.`);
   }
@@ -907,8 +904,7 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
       if (isNetworkUrl && retryCount < maxRetries) {
         ++retryCount;
         ++srcResetCount;
-        const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-        const retryMsg = t('retryingLoad', 'Retrying ({count}/{max})...').replace('{count}', retryCount).replace('{max}', maxRetries);
+            const retryMsg = t('retryingLoad', 'Retrying ({count}/{max})...').replace('{count}', retryCount).replace('{max}', maxRetries);
         showVideoError(retryMsg);
         videoStatusOverlay.classList.remove("hidden");
         videoStatusIcon.className = "video-status-icon loading";
@@ -1067,8 +1063,6 @@ async function play_iptv_with_fallback(urls, title, corsBypass = null) {
   }
 
   const retryPerSource = typeof getIptvSourceRetryCount === 'function' ? getIptvSourceRetryCount() : 3;
-  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
   for (let i = 0; i != urls.length; ++i) {
     const url = urls[i];
     const attemptNum = i + 1;
@@ -1101,8 +1095,6 @@ async function play_iptv_with_fallback(urls, title, corsBypass = null) {
 // Returns true if successful, false if failed
 function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources) {
   return new Promise((resolve) => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     revokeBlobURL();
     currentBlobURL = url;
     clearSubtitles();
@@ -1236,8 +1228,6 @@ window.addEventListener("dragleave", () => {
 window.addEventListener("drop", async e => {
     container.style.outline = "none";
     if (!isExternalFileDrag(e)) return;
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Check for directory drag (using DataTransferItem)
     const items = e.dataTransfer.items;
     if (items && items.length > 0) {
@@ -1319,8 +1309,6 @@ window.addEventListener("drop", async e => {
 
 // Play a temporary directory (not added to storage)
 async function playTemporaryDirectory(dirHandle) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Verify permission first
     if (!await verifyPermission(dirHandle)) {
         alert(t('permissionDenied', 'Permission denied'));
@@ -1947,7 +1935,6 @@ subtitleBtn.onclick = async () => {
 };
 
 webBtn.onclick = async () => {
-  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
   try {
     const url = await glassPrompt(t('enterWebURL', "Enter web URL:"));
 
@@ -2472,7 +2459,6 @@ if (npProgressBar) {
 
 function showVideoTimeSeek(pendingSeekTarget,duration) {
   if (!videoStatusOverlay) return;
-  const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
   videoStatusIcon.className = "";
   videoStatusIcon.textContent = "";
 

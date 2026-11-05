@@ -1,8 +1,3 @@
-function escapeHTML(str) {
-  if (typeof str !== "string") return "";
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
 class SimpleKVStore {
   constructor(dbName = "KVStore", storeName = "kv", version = 1) {
     this.dbName = dbName;

@@ -2,7 +2,7 @@
 // TikTok Platform
 // ===============================
 
-class TikTokPlatform extends BasePlatform {
+class TikTokPlatform extends PassiveEmbedPlatform {
     static get name() {
         return 'tiktok';
     }
@@ -50,16 +50,6 @@ class TikTokPlatform extends BasePlatform {
     }
 
     createPlayer(contentInfo, container, options = {}) {
-
-        // Get container element
-        const containerEl = typeof container === 'string'
-            ? document.getElementById(container)
-            : container;
-
-        if (!containerEl) return null;
-
-        // Clear container
-        containerEl.innerHTML = '';
         const videoId = contentInfo.videoId;
         this.currentVideoId = videoId;
 
@@ -69,90 +59,28 @@ class TikTokPlatform extends BasePlatform {
 
         const embedSrc = `https://www.tiktok.com/embed/v2/${videoId}`;
 
-        const iframe = document.createElement('iframe');
-        iframe.src = embedSrc;
-        iframe.setAttribute('allow', 'autoplay; fullscreen');
-        iframe.setAttribute('allowfullscreen', 'true');
-        iframe.setAttribute('playsinline', 'true');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.position = 'absolute';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.border = 'none';
-        iframe.style.minHeight = '400px';
-        iframe.id = 'tiktok-iframe';
-        containerEl.appendChild(iframe);
-
-        this.player = iframe;
+        const iframe = this.mountEmbedIframe(container, {
+            src: embedSrc,
+            id: 'tiktok-iframe',
+            allow: 'autoplay; fullscreen',
+            allowFullscreen: true,
+            playsInline: true,
+            styles: { minHeight: '400px' }
+        });
+        if (!iframe) return null;
 
         // Update title
-        document.title = 'TikTok Video - PWA Player';
-        navigator.mediaSession.metadata = new MediaMetadata({
+        this.applyEmbedNowPlaying({
             title: `TikTok: ${videoId}`,
             artist: 'TikTok',
-            album: 'TikTok'
+            album: 'TikTok',
+            url: this.getVideoUrl(videoId),
+            documentTitle: 'TikTok Video - PWA Player'
         });
-
-        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
-        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
-        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
-        if (titleEl) titleEl.textContent = `TikTok: ${videoId}`;
-        if (artistEl) artistEl.textContent = 'TikTok';
-        if (urlEl) urlEl.textContent = this.getVideoUrl(videoId);
-
-        // Set play button state
-        const playBtn = document.getElementById("playBtn");
-        const npPlayBtn = document.getElementById("npPlayBtn");
-        if (playBtn) setIcon(playBtn, "pause");
-        if (npPlayBtn) setIcon(npPlayBtn, "pause");
-        navigator.mediaSession.playbackState = 'playing';
 
         if (options.onReady) options.onReady();
 
         return this.player;
-    }
-
-    destroyPlayerInternal() {
-        if (this.player && this.player.parentNode) {
-            this.player.parentNode.removeChild(this.player);
-        }
-    }
-
-    play() {
-        // TikTok iframe doesn't support external control
-    }
-
-    pause() {
-        // TikTok iframe doesn't support external control
-    }
-
-    togglePlayPause() {
-        // Not supported
-    }
-
-    stop() {
-        this.destroyPlayer();
-    }
-
-    seekToPercent(percent) {
-        // Not supported
-    }
-
-    seekToTime(seconds) {
-        // Not supported
-    }
-
-    setVolume(percent) {
-        localStorage.setItem('volume', percent.toString());
-    }
-
-    getCurrentTime() {
-        return 0;
-    }
-
-    getDuration() {
-        return 0;
     }
 
     getTitle() {
@@ -165,9 +93,6 @@ class TikTokPlatform extends BasePlatform {
         return `https://www.tiktok.com/embed/v2/${videoId}`;
     }
 
-    isPlaying() {
-        return true;
-    }
 }
 
 // Register TikTok platform

@@ -8,7 +8,6 @@ if ("serviceWorker" in navigator) {
             newWorker.state === "installed" &&
             navigator.serviceWorker.controller
           ) {
-            const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
             const msg = t('newVersionAvailable', 'A new version of PWA Player is available.');
             const reload = t('reloadNow', 'Reload now?');
             if (await glassConfirm(`${msg}\n${reload}`)) {

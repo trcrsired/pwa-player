@@ -88,46 +88,12 @@ let storageClipboard = null; // Stores: { type: 'file'|'dir', source: {...}, nam
 // ============================================================
 // Toast notification for status display
 // ============================================================
-let toastElement = null;
-
-function showToast(message, duration = 0) {
-    if (!toastElement) {
-        toastElement = document.createElement("div");
-        toastElement.id = "storage-toast";
-        toastElement.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            border-radius: 8px;
-            z-index: 10000;
-            font-size: 14px;
-            max-width: 80vw;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        `;
-        document.body.appendChild(toastElement);
-    }
-    toastElement.textContent = message;
-    toastElement.style.display = "block";
-
-    if (duration > 0) {
-        setTimeout(() => hideToast(), duration);
-    }
-}
-
-function hideToast() {
-    if (toastElement) {
-        toastElement.style.display = "none";
-    }
-}
-
+// showToast()/hideToast() live in util.js. This helper just refreshes a toast
+// that is already on screen (progress messages) instead of restarting its timer.
 function updateToast(message) {
-    if (toastElement && toastElement.style.display === "block") {
-        toastElement.textContent = message;
+    const toast = document.getElementById("toast");
+    if (toast && toast.classList.contains("show")) {
+        toast.textContent = message;
     } else {
         showToast(message);
     }
@@ -271,7 +237,6 @@ async function idb_getFilesInFolder(folder) {
 
 // Add all files from an IndexedDB folder to a playlist
 async function addIndexedDBFolderToPlaylist(folderName, tonowplaying) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     try {
         const files = await idb_getFilesInFolder(folderName);
         if (!files || files.length === 0) {
@@ -328,7 +293,6 @@ async function addIndexedDBFolderToPlaylist(folderName, tonowplaying) {
 
 // Export all files from an IndexedDB folder
 async function exportIndexedDBFolder(folderName) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     try {
         const files = await idb_getFilesInFolder(folderName);
         if (!files || files.length === 0) {
@@ -367,20 +331,6 @@ async function exportIndexedDBFolder(folderName) {
 idb_init().catch(err => console.warn("IndexedDB init failed:", err));
 
 // ============================================================
-// Utility: escape HTML to prevent XSS
-// ============================================================
-function escapeHTML(str) {
-    if (typeof str !== "string") return "";
-    return str.replace(/[&<>"']/g, (c) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    })[c]);
-}
-
-// ============================================================
 // Utility: check if a directory exists under a parent handle
 // ============================================================
 async function dirExists(name, parentHandle) {
@@ -396,7 +346,6 @@ async function dirExists(name, parentHandle) {
 // Prompt user for a unique directory name
 // ============================================================
 async function promptForUniqueName(baseName, parentHandle) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     let attempts = 0;
 
     while (attempts < 3) {
@@ -618,8 +567,6 @@ async function copyDirectoryToPrivateStorage(sourceHandle, targetHandle, result 
 // Paste a file or directory from clipboard to a destination
 // ============================================================
 async function pasteToDestination(entry, dirName, parent) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     if (!storageClipboard) {
         alert(t('clipboardEmpty', "Clipboard is empty. Copy a file or directory first."));
         return;
@@ -719,8 +666,6 @@ async function pasteToDestination(entry, dirName, parent) {
 
 // Paste a single file
 async function pasteSingleFile(source, fileName, destSchema, targetDirHandle, targetFolderName, result, statusCallback) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Update status
     if (statusCallback) {
         const actionLabel = source.schema === "remote_storage"
@@ -795,8 +740,6 @@ async function pasteSingleFile(source, fileName, destSchema, targetDirHandle, ta
 
 // Paste a directory recursively
 async function pasteDirectory(source, dirName, destSchema, targetDirHandle, targetFolderName, result, statusCallback) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Update status
     if (statusCallback) {
         const actionLabel = source.schema === "remote_storage"
@@ -849,8 +792,6 @@ async function pasteDirectory(source, dirName, destSchema, targetDirHandle, targ
 
 // Download remote directory recursively
 async function downloadRemoteDirectory(remoteUrl, destSchema, targetDirHandle, targetFolderName, result, statusCallback) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     try {
         const response = await fetch(remoteUrl, { cache: "no-store", mode: "cors" });
         if (!response.ok) {
@@ -910,8 +851,6 @@ async function downloadRemoteDirectory(remoteUrl, destSchema, targetDirHandle, t
 
 // Copy FileSystem directory to destination recursively
 async function copyFileSystemDirToDest(sourceDirHandle, destSchema, targetDirHandle, targetFolderName, result, statusCallback) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     for await (const [name, handle] of sourceDirHandle.entries()) {
         if (handle.kind === "file") {
             if (!isAllowedFile(name)) continue;
@@ -1047,8 +986,6 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
     if (schema == "indexeddb") {
        return await addIndexedDBFolderToPlaylist(dirPath, !playlistName);
     }
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Check if images should be excluded from playlist/now playing
     const excludeImages = typeof window.isImageToPlaylistDisabled === 'function' && window.isImageToPlaylistDisabled();
 
@@ -1136,7 +1073,6 @@ async function addDirectoryToPlaylist(rootDirHandle, schema, rootName, dirPath, 
 // Choose playlist and add directory contents
 // ============================================================
 async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const playlists = await playlists_load();
     const names = Object.keys(playlists);
 
@@ -1162,7 +1098,6 @@ async function choosePlaylistAndAdd(rootDirHandle, entry, dirName) {
 
 // Export/Download files from a directory
 async function exportDirectory(entry, dirPath, parent) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     try {
         let targetDir;
 
@@ -1343,8 +1278,6 @@ window.positionMenu = function(menu, button) {
 };
 
 function showStorageDirMenu(entry, dirName, button) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Determine which menu items to show
     const isRoot = !dirName;
     const isTopLevel = dirName && !dirName.includes("/");
@@ -1902,8 +1835,6 @@ async function countFilesInDir(dirHandle) {
 
 // Show submenu for setting save location
 function showSaveLocationSubMenu(entry, dirName, parentButton) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Close any existing menu
     const existing = document.querySelector(".context-menu");
     if (existing) existing.remove();
@@ -1998,8 +1929,6 @@ function showSaveLocationSubMenu(entry, dirName, parentButton) {
 }
 
 function showStorageFileMenu(entry, name, handle, fullPath, button) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     const isPlayable = isPlayableOrImageFile(name) || isCoverFile(name);
     const isSubtitle = isSubtitleFile(name);
 
@@ -2350,7 +2279,6 @@ function showStorageFileMenu(entry, name, handle, fullPath, button) {
 }
 
 function renderFileItem(subList, name, handle, entry, currentPath = "") {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const li = document.createElement("li");
     li.className = "storage-file-item";
 
@@ -2426,7 +2354,6 @@ function renderFileItem(subList, name, handle, entry, currentPath = "") {
 // Render IndexedDB file item
 // ============================================================
 function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "") {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const li = document.createElement("li");
     li.className = "storage-file-item";
 
@@ -2498,8 +2425,6 @@ function renderIndexedDBFileItem(subList, name, fileEntry, entry, folderPath = "
 // Show menu for IndexedDB file
 // ============================================================
 function showIndexedDBFileMenu(entry, name, fileEntry, button, folderPath = "") {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     const isPlayable = isPlayableOrImageFile(name) || isCoverFile(name);
     const isSubtitle = isSubtitleFile(name);
 
@@ -2752,8 +2677,7 @@ function renderSubdirItem(subList, name, handle, parentHandle, entry, currentPat
     {
         // Click to expand/collapse subdirectories (recursive)
         header.addEventListener("click", async () => {
-            const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-            // For external storage, check/request permission first
+                    // For external storage, check/request permission first
             if (entry.schema === "external_storage" && handle) {
                 const hasPermission = await verifyPermission(handle);
                 if (!hasPermission) {
@@ -2993,7 +2917,6 @@ async function renderStorage() {
 // Import directory (showDirectoryPicker)
 // ============================================================
 document.getElementById("addImportBtn").addEventListener("click", async () => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     try {
         const sourceDir = await window.showDirectoryPicker({ startIn: "music" });
         const permission = await verifyPermission(sourceDir);
@@ -3028,7 +2951,6 @@ document.getElementById("addImportBtn").addEventListener("click", async () => {
 // Clear all import roots
 // ============================================================
 document.getElementById("clearImports").addEventListener("click", async () => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const confirmed = await glassConfirm(
         t('clearAllImportMountConfirm', "This will permanently delete all imported directories and mounted storages:\n") +
         IMPORT_ROOTS.map(r => `• "${r.dirName}"`).join("\n") +
@@ -3096,7 +3018,6 @@ document.getElementById("addFilesBtn").addEventListener("click", () => {
 });
 
 document.getElementById("filePicker").addEventListener("change", async (event) => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -3157,7 +3078,6 @@ async function loadExternalDirs() {
 
 
 document.getElementById("addExternalBtn").addEventListener("click", async () => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     try {
         const dir = await window.showDirectoryPicker();
         const ok = await verifyPermission(dir);
@@ -3194,7 +3114,6 @@ document.getElementById("addExternalBtn").addEventListener("click", async () => 
 // IndexedDB Import Handler (directory picker with file fallback)
 // ============================================================
 document.getElementById("addIndexedDBBtn").addEventListener("click", async () => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     try {
         // Create a timestamp-based virtual folder for this import
         const folder = `idb_${Date.now()}`;
@@ -3328,8 +3247,6 @@ async function saveRemoteRoots(roots) {
 window.loadRemoteRoots = loadRemoteRoots;
 
 document.getElementById("addRemoteBtn").addEventListener("click", async () => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     let url = await glassPrompt(
         `${t('enterRemoteUrl', 'Enter remote server URL')}:\n\n` +
         `${t('examples', 'Examples')}:\n` +

@@ -431,8 +431,6 @@ class YouTubePlatform extends BasePlatform {
     }
 
     onError(event, options) {
-        const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
         let errorMsg = t('youtubeError', 'YouTube playback error');
 
         switch (event.data) {

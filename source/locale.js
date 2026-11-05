@@ -73,6 +73,8 @@ function setLanguage(lang) {
     currentTranslations = LANGUAGES[lang].translations;
     localStorage.setItem('language', lang);
     applyTranslations();
+    // Views that render localized content (e.g. IPTV channel names) listen in
+    window.dispatchEvent(new CustomEvent('pwa-language-changed', { detail: { lang } }));
     return true;
 }
 

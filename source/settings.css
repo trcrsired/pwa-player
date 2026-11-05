@@ -517,6 +517,31 @@ body.side-bottom .content {
     color: var(--subtle);
 }
 
+/* IPTV paging bar */
+.iptv-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 10px 0 6px;
+}
+
+.iptv-pagination.hidden {
+    display: none;
+}
+
+.iptv-page-info {
+    font-size: 13px;
+    color: var(--subtle);
+    min-width: 6em;
+    text-align: center;
+}
+
+.iptv-pagination .btn[disabled] {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
 .iptv-sub {
     margin-top: 4px;
     padding-left: 16px;

@@ -116,6 +116,12 @@ const EN_TRANSLATIONS = {
     // IPTV
     iptvChannels: "IPTV Channels",
     searchChannels: "Search channels...",
+    channelsPerPage: "Channels per page",
+    channelsPerPageHint: "How many IPTV channels to list per page. Default 50. Set to 0 to disable paging and list every channel at once.",
+    pageOf: "Page {current} / {total}",
+    iptvCatalogueUnavailable: "The built-in channel list (pwaplayer.wasm) could not be loaded, so only your own channels are shown.",
+    previousPage: "Previous page",
+    nextPage: "Next page",
     iptvCorsHint: "IP addresses always need CORS bypass. HTTP URLs often need CORS. HTTPS usually works without CORS. If a channel doesn't play, try enabling CORS bypass.",
     import: "Import",
     export: "Export",

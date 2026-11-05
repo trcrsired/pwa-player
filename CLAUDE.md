@@ -10,6 +10,7 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 
 - **No framework** — vanilla JavaScript, HTML, CSS
 - **No bundler** — manual minification via a custom build script
+- **WebAssembly core** — `source/pwaplayer.wasm`, built from C++ with [fast_io](https://github.com/cppfastio/fast_io). Holds the IPTV channel catalogue, its paging/filtering/DOM rendering, and the queue shuffle
 - **Video/Audio** — HTML5 `<video>` element; HLS.js (v1.5.7, lazy-loaded from CDN) for M3U8 streams
 - **Storage** — IndexedDB for offline media persistence
 - **PWA** — Service Worker (cache-first strategy) + Web App Manifest with file handlers
@@ -18,9 +19,10 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 
 | Path | Purpose |
 |---|---|
-| `source/` | Unminified source code (development) |
+| `source/` | Unminified source code (development) + `pwaplayer.wasm` (build artifact, committed) |
 | `docs/` | Minified build output (production, deployed via GitHub Pages) |
 | `build/` | Build tooling and converters |
+| `cpp/` | C++ sources for `pwaplayer.wasm` (`pwaplayer.cpp`, generated `iptv_channels_data.inc`, channel data source `iptvchannels.js`) |
 | `cors-bypass/` | Standalone Node.js CORS proxy server |
 | `tvs/` | TV channel data |
 
@@ -32,10 +34,12 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 | `storage.js` | Media storage management via IndexedDB (~146KB) |
 | `settings.js` | Settings/preferences UI |
 | `playlist.js` | Playlist management |
-| `iptv.js` / `iptvchannels.js` | IPTV stream handling and channel list |
+| `iptv.js` | IPTV view: custom channels, paging glue, delegated clicks (the built-in list is rendered by `pwaplayer.wasm`) |
+| `wasm.js` | Loads `pwaplayer.wasm` and exposes the `pwaIptv*` / `pwaShufflePermutation` helpers |
 | `embeddedplayer.js` | Embedded third-party player orchestrator |
 | `extrafeatures.js` | Speed control, A-B loop, etc. |
 | `hls.js` | HLS.js loader/initializer |
+| `util.js` | Shared helpers: `showToast`/`hideToast`, `escapeHTML`, `buildShareText`, `shareOrCopy` |
 | `sw.js` / `sw-register.js` | Service Worker registration |
 | `locale.js` | Internationalization (en, zh-CN, ja) |
 | `wakelock.js` | Screen wake lock API |
@@ -44,7 +48,17 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 
 ### Platform Adapters
 
-`source/platforms/` contains embedded player adapters for external platforms (YouTube, Spotify, Twitch, Vimeo, Bilibili, TikTok, SoundCloud, Apple Music, Kick, NetEase Music). Each extends a base class defined in `embeddedplayer.js`.
+`source/platforms/` contains embedded player adapters for external platforms (YouTube, Spotify, Twitch, Vimeo, Bilibili, TikTok, SoundCloud, Apple Music, Kick, NetEase Music). Each extends the base class in `platforms/base.js`:
+
+- `BasePlatform.mountEmbedIframe(container, {src, id, allow, allowFullscreen, playsInline, styles})` — resolves the container, clears it, mounts one styled iframe, sets `this.player`.
+- `BasePlatform.applyEmbedNowPlaying({title, artist, album, url, documentTitle})` — document title, MediaSession metadata/playbackState, side-panel labels, play/pause icons.
+- `BasePlatform.removeEmbedIframe()`.
+- `PassiveEmbedPlatform` (extends `BasePlatform`) — the "iframe exposes no control API" base: no-op transport methods, `setVolume` persisting to localStorage, `destroyPlayerInternal()` → `removeEmbedIframe()`. **SoundCloud, Apple Music, NetEase, Kick, TikTok and Bilibili extend it**, so their only code is URL/id parsing, `getTitle()` and `getVideoUrl()`. SDK based adapters (YouTube, Spotify, Twitch, Vimeo, Douyin) still extend `BasePlatform`.
+
+### Conventions
+
+- **Never re-declare the translation helper.** `locale.js` defines a global `t(key, params)`; do not add `const t = (key, params) => window.i18n ? ... : ...` inside functions.
+- **Use `util.js`** for toasts, HTML escaping and sharing instead of local copies.
 
 ### Locales
 
@@ -52,9 +66,26 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 
 ## Commands
 
-**Build (minify source → docs/):**
+**Build (minify source → docs/, rebuild the wasm core first):**
 ```bash
 node build/build.js <project_root>
+```
+
+**wasm core only (`source/pwaplayer.wasm`):**
+```bash
+sh cpp/build.sh <project_root>
+# uses --config=$HOME/cfgs/wasm32-wasip1-noeh-nomtg.cfg -fherbceptions -lherbceptions -flto=thin -s -Oz
+# override the config with PWA_WASM_CONFIG=/path/to/wasm32-wasip1.cfg, compiler with CXX=clang++
+```
+
+**Channel table codegen (`cpp/iptvchannels.js` → `cpp/iptv_channels_data.inc`):**
+```bash
+node build/gen_iptv_cpp.js <project_root>
+```
+
+**Memory benchmark (JS table vs wasm table):**
+```bash
+node --expose-gc build/bench_iptv_memory.js <project_root>
 ```
 
 **CORS proxy (for local testing):**
@@ -73,12 +104,45 @@ python build/m3u8_to_channels.py
 
 ## Architecture Notes
 
+- **`pwaplayer.wasm` is the only binary shipped** — it replaces the 69KB `iptvchannels.js` catalogue. Job layout below.
 - **No `package.json`** — it's gitignored. Build dependencies (`uglify-js`, `html-minifier-terser`, `clean-css`) must be installed separately.
 - **`source/` is the working directory** — make all edits here, not in `docs/`.
 - **Build is a simple minification pipeline** — `walk(source/)` → minify HTML/CSS/JS → output to `docs/`. No bundling, no module resolution, no transpilation.
 - **Service Worker version** is tracked as a comment in `sw.js` (currently v438).
 - **Git commit messages** are short, imperative, lowercase — e.g., "add hls.js support", "change retry count to 8".
 - **HLS.js is lazy-loaded** from jsDelivr CDN at runtime, not bundled.
+
+## WebAssembly Core (`cpp/` + `source/pwaplayer.wasm`)
+
+C++ (built with fast_io, `wasm32-wasip1`, thin LTO, stripped, no exceptions/RTTI) owns
+everything that used to be a large JavaScript data structure:
+
+- **`cpp/iptvchannels.js`** — plain data module (`export const iptvChannels = [...]`), never shipped to the browser.
+  `build/gen_iptv_cpp.js` turns it into **`cpp/iptv_channels_data.inc`**: one big `inline constexpr` table where every
+  name and URL is a sized `::fast_io::u8string_view` (pointer + length, never NUL-scanned). Layout: a flat URL array,
+  a zhcn-name array, and `iptv_channel {name, url_first, url_count, flags, zhcn}` entries (24 bytes each).
+- **Filtering + paging + DOM markup** happen in C++ (`iptv_filtered_count`, `iptv_render_page`). JS uploads the search
+  text into the module's search buffer and receives one HTML string per page, then `insertAdjacentHTML`s it.
+  Icons are emitted as `data-icon` placeholders and filled in by `hydrateIcons()` in `iptv.js`.
+- **Shuffle**: `shuffle_permutation(n)` runs `::std::shuffle` over fast_io's white-hole (getrandom) engine and returns a
+  permutation; `shuffleArray()` in `nowplaying.js` reorders the JS queue with it. It falls back to Fisher–Yates until
+  `pwaWasmReady` resolves (or if WebAssembly is unavailable).
+- **Custom channels stay in JS** (IndexedDB, user data). `iptv.js` filters them, splits one page between custom and
+  built-in entries, and renders custom nodes itself — the markup shape matches C++ so one delegated click listener
+  handles both (`data-ch` / `data-custom` / `data-url` attributes).
+- **Paging**: `iptvChannelsPerPage` setting (default 50, `0` = no paging). Stored in localStorage, editable in Settings,
+  part of the profile export/import key list.
+- **URL classification** (`pwa_url_flags`) also lives in C++: `wasm.js` exposes `pwaUrlFlags()/isIpAddressUrl()/
+  isPlainHttpUrl()`, so the IP/HTTP badges on custom channels use the exact same host parser as the built-in ones.
+  JS writes into the shared 4 KiB input buffer (`pwa_input_ptr` / `pwa_input_capacity`) before each call.
+- Only `random_get` is imported from wasi; `wasm.js` provides it (plus `proc_exit`/`clock_time_get`).
+
+Measured (`node --expose-gc build/bench_iptv_memory.js`): the JS catalogue retained ~374 KiB of GC-traced JS heap;
+the wasm table retains ~12 KiB of JS heap plus ~192 KiB of linear memory (invisible to the GC), and loads ~3× faster.
+
+Size, all minified `docs/**/*.js` + the module: **446 KB → 375 KB of JS plus a 95 KB wasm** (gzip 111 KB → 94 KB + 33 KB).
+The JS side pays for the module by dropping the catalogue *and* the deduplicated boilerplate (platform adapters,
+share/toast/i18n helpers).
 
 ## Media Playback Flow
 

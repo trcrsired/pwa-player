@@ -8,16 +8,6 @@ const DEFAULT_RETRY_BEFORE_SRC_RESET = 8; // Reset src after this many retries
 
 let settingsClickCount = 0;
 
-function showToast(msg) {
-  const toast = document.getElementById("toast");
-  toast.textContent = msg;
-  toast.classList.add("show");
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2000);
-}
-
 // Startup view - switch to saved view on boot
 function applyStartupView() {
   const startupView = localStorage.getItem("startupView") || "player";
@@ -1085,6 +1075,32 @@ function getIptvSourceRetryCount() {
     return Math.max(0, count);
 }
 
+// Default number of IPTV channels rendered per page (0 = no paging)
+const DEFAULT_IPTV_CHANNELS_PER_PAGE = 50;
+
+// IPTV channels per page setting — rendering happens in pwaplayer.wasm
+const iptvChannelsPerPageInput = document.getElementById("iptvChannelsPerPage");
+
+if (iptvChannelsPerPageInput) {
+    const savedPerPage = localStorage.getItem("iptvChannelsPerPage");
+    iptvChannelsPerPageInput.value = savedPerPage !== null
+        ? savedPerPage
+        : DEFAULT_IPTV_CHANNELS_PER_PAGE.toString();
+
+    iptvChannelsPerPageInput.addEventListener("change", () => {
+        let value = parseInt(iptvChannelsPerPageInput.value, 10);
+        if (!Number.isFinite(value) || value < 0) {
+            value = DEFAULT_IPTV_CHANNELS_PER_PAGE;
+        }
+        if (value > 100000) {
+            value = 100000;
+        }
+        iptvChannelsPerPageInput.value = value.toString();
+        localStorage.setItem("iptvChannelsPerPage", value.toString());
+        if (typeof renderIPTVList === 'function') renderIPTVList();
+    });
+}
+
 // Retry delay setting (ms between retries)
 const retryDelayInput = document.getElementById("retryDelay");
 
@@ -1188,6 +1204,7 @@ function getProfileSettingsKeys() {
         "corsBypassUrl",
         "networkRetryCount",
         "iptvSourceRetryCount",
+        "iptvChannelsPerPage",
         "retryDelay",
         "retryBeforeSrcReset",
         "defaultPlaylist"
@@ -1242,6 +1259,7 @@ function createDefaultProfileData() {
             corsBypassUrl: "",
             networkRetryCount: DEFAULT_NETWORK_RETRY_COUNT.toString(),
             iptvSourceRetryCount: DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString(),
+            iptvChannelsPerPage: DEFAULT_IPTV_CHANNELS_PER_PAGE.toString(),
             retryDelay: DEFAULT_RETRY_DELAY.toString(),
             retryBeforeSrcReset: DEFAULT_RETRY_BEFORE_SRC_RESET.toString()
         },
@@ -1273,8 +1291,6 @@ async function importProfileData(profileData) {
 
 // Apply profile data to current session
 async function applyProfileData(profileData) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Apply settings
     if (profileData.settings) {
         for (const [key, value] of Object.entries(profileData.settings)) {
@@ -1337,6 +1353,9 @@ async function applyProfileData(profileData) {
     const iptvSourceRetryInput = document.getElementById("iptvSourceRetryCount");
     if (iptvSourceRetryInput) iptvSourceRetryInput.value = localStorage.getItem("iptvSourceRetryCount") || DEFAULT_IPTV_SOURCE_RETRY_COUNT.toString();
 
+    const iptvChannelsPerPage = document.getElementById("iptvChannelsPerPage");
+    if (iptvChannelsPerPage) iptvChannelsPerPage.value = localStorage.getItem("iptvChannelsPerPage") || DEFAULT_IPTV_CHANNELS_PER_PAGE.toString();
+
     const retryDelayInput = document.getElementById("retryDelay");
     if (retryDelayInput) retryDelayInput.value = localStorage.getItem("retryDelay") || DEFAULT_RETRY_DELAY.toString();
 
@@ -1391,8 +1410,6 @@ function initProfiles() {
     const fileInput = document.getElementById("profileFileInput");
 
     if (!select) return;
-
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
 
     // Populate select
     updateProfileSelect();

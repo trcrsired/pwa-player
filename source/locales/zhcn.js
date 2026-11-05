@@ -115,6 +115,12 @@ const ZHCN_TRANSLATIONS = {
     // IPTV
     iptvChannels: "网络电视频道",
     searchChannels: "搜索频道...",
+    channelsPerPage: "每页频道数",
+    channelsPerPageHint: "每页显示多少个网络电视频道。默认 50。设为 0 则不分页，一次性显示全部频道。",
+    pageOf: "第 {current} / {total} 页",
+    iptvCatalogueUnavailable: "内置频道列表（pwaplayer.wasm）加载失败，仅显示自定义频道。",
+    previousPage: "上一页",
+    nextPage: "下一页",
     iptvCorsHint: "IP地址始终需要CORS绕过。HTTP URL通常需要CORS。HTTPS通常不需要CORS。如果频道无法播放，请尝试启用CORS绕过。",
     import: "导入",
     export: "导出",

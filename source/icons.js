@@ -72,6 +72,7 @@
         chevronUp: S('<path d="M6 14.5l6-6 6 6"/>'),
         chevronDown: S('<path d="M6 9.5l6 6 6-6"/>'),
         chevronRight: S('<path d="M9.5 6l6 6-6 6"/>'),
+        chevronLeft: S('<path d="M14.5 6l-6 6 6 6"/>'),
         plus: S('<path d="M12 5v14M5 12h14"/>'),
         import: S('<path d="M12 3.5v9.5"/><path d="M8.5 9.5L12 13l3.5-3.5"/><path d="M4.5 15v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/>'),
         export: S('<path d="M12 13V3.5"/><path d="M8.5 7L12 3.5 15.5 7"/><path d="M4.5 15v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/>'),

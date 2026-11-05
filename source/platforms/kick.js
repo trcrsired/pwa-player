@@ -2,7 +2,7 @@
 // Kick Platform
 // ===============================
 
-class KickPlatform extends BasePlatform {
+class KickPlatform extends PassiveEmbedPlatform {
     static get name() {
         return 'kick';
     }
@@ -52,15 +52,7 @@ class KickPlatform extends BasePlatform {
 
     createPlayer(contentInfo, container, options = {}) {
 
-        const containerEl = typeof container === 'string'
-            ? document.getElementById(container)
-            : container;
-
-        if (!containerEl) return null;
-
-        containerEl.innerHTML = '';
         const videoId = contentInfo.videoId;
-
 
         let embedSrc;
         let displayName;
@@ -88,61 +80,26 @@ class KickPlatform extends BasePlatform {
             this.currentVideoId = videoId;
         }
 
-        const iframe = document.createElement('iframe');
-        iframe.src = embedSrc;
-        iframe.setAttribute('allow', 'autoplay; fullscreen');
-        iframe.setAttribute('allowfullscreen', 'true');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.position = 'absolute';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.border = 'none';
-        iframe.id = 'kick-iframe';
-        containerEl.appendChild(iframe);
+        const iframe = this.mountEmbedIframe(container, {
+            src: embedSrc,
+            id: 'kick-iframe',
+            allow: 'autoplay; fullscreen',
+            allowFullscreen: true
+        });
+        if (!iframe) return null;
 
-        this.player = iframe;
-
-        document.title = `${displayName} - PWA Player`;
-        navigator.mediaSession.metadata = new MediaMetadata({
+        this.applyEmbedNowPlaying({
             title: displayName,
             artist: 'Kick',
-            album: 'Kick'
+            album: 'Kick',
+            url: this.getVideoUrl(videoId)
         });
-
-        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
-        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
-        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
-        if (titleEl) titleEl.textContent = displayName;
-        if (artistEl) artistEl.textContent = 'Kick';
-        if (urlEl) urlEl.textContent = this.getVideoUrl(videoId);
-
-        const playBtn = document.getElementById("playBtn");
-        const npPlayBtn = document.getElementById("npPlayBtn");
-        if (playBtn) setIcon(playBtn, "pause");
-        if (npPlayBtn) setIcon(npPlayBtn, "pause");
-        navigator.mediaSession.playbackState = 'playing';
 
         if (options.onReady) options.onReady();
 
         return this.player;
     }
 
-    destroyPlayerInternal() {
-        if (this.player && this.player.parentNode) {
-            this.player.parentNode.removeChild(this.player);
-        }
-    }
-
-    play() { }
-    pause() { }
-    togglePlayPause() { }
-    stop() { this.destroyPlayer(); }
-    seekToPercent(percent) { }
-    seekToTime(seconds) { }
-    setVolume(percent) { localStorage.setItem('volume', percent.toString()); }
-    getCurrentTime() { return 0; }
-    getDuration() { return 0; }
     getTitle() { return `Kick: ${this.currentVideoId}`; }
 
     getVideoUrl(videoId) {
@@ -156,7 +113,6 @@ class KickPlatform extends BasePlatform {
         return `https://kick.com/${videoId}`;
     }
 
-    isPlaying() { return true; }
 }
 
 registerPlatform(KickPlatform);

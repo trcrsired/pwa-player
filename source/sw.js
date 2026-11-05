@@ -1,7 +1,8 @@
-const PWAPLAYER_VERSION = "484";
+const PWAPLAYER_VERSION = "486";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "./",
+  "./util.js",
   "./style.css",
   "./settings.css",
   "./icons.js",
@@ -12,7 +13,6 @@ const urlsToCache = [
   "./embeddedplayer.js",
   "./storage.js",
   "./playlist.js",
-  "./iptvchannels.js",
   "./iptv.js",
   "./extrafeatures.js",
   "./wakelock.js",
@@ -23,6 +23,8 @@ const urlsToCache = [
   "./manifest.json",
   "./icons/icon.webp",
   "./locale.js",
+  "./wasm.js",
+  "./pwaplayer.wasm",
   "./locales/en.js",
   "./locales/zhcn.js",
   "./locales/ja.js",

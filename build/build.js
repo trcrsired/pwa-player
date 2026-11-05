@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { execFileSync } = require("child_process");
 const UglifyJS = require("uglify-js");
 const { minify: minifyHTML } = require("html-minifier-terser");
 const CleanCSS = require("clean-css");
@@ -15,6 +16,25 @@ const docs = path.join(root, "docs");
 
 function ensureDir(dir) {
     fs.mkdirSync(dir, { recursive: true });
+}
+
+// Rebuild source/pwaplayer.wasm:
+//   1. cpp/iptvchannels.js  ->  cpp/iptv_channels_data.inc (C++ constexpr table)
+//   2. cpp/pwaplayer.cpp    ->  source/pwaplayer.wasm       (needs clang++)
+// The wasm output is a normal source/ asset, so the walk below copies it to
+// docs/ untouched (it is already binary and stripped).
+function buildWasm(root) {
+    try {
+        execFileSync(process.execPath, [path.join(__dirname, "gen_iptv_cpp.js"), root], { stdio: "inherit" });
+    } catch (err) {
+        console.error("IPTV table codegen failed:", err.message);
+    }
+
+    try {
+        execFileSync("sh", [path.join(root, "cpp", "build.sh"), root], { stdio: "inherit" });
+    } catch (err) {
+        console.warn("WASM build skipped (keeping the existing source/pwaplayer.wasm):", err.message);
+    }
 }
 
 async function processFile(srcPath, docsPath) {
@@ -86,6 +106,10 @@ async function walk(dir) {
         }
     }
 }
+
+// Rebuild the WebAssembly core (IPTV catalogue + shuffle) before the walk, so
+// source/pwaplayer.wasm always matches cpp/pwaplayer.cpp.
+buildWasm(root);
 
 // Clean docsput folder
 if (fs.existsSync(docs)) {

@@ -2,7 +2,7 @@
 // Bilibili Platform
 // ===============================
 
-class BilibiliPlatform extends BasePlatform {
+class BilibiliPlatform extends PassiveEmbedPlatform {
     static get name() {
         return 'bilibili';
     }
@@ -62,20 +62,8 @@ class BilibiliPlatform extends BasePlatform {
     }
 
     createPlayer(contentInfo, container, options = {}) {
-
-
-        // Get container element
-        const containerEl = typeof container === 'string'
-            ? document.getElementById(container)
-            : container;
-
-        if (!containerEl) return null;
-
         const videoId = contentInfo.videoId;
         this.currentVideoId = videoId;
-
-        // Clear container
-        containerEl.innerHTML = '';
 
         // Check play mode for looping
         const playMode = typeof getPlayMode === 'function' ? getPlayMode() : 'once';
@@ -100,102 +88,27 @@ class BilibiliPlatform extends BasePlatform {
             embedSrc += '&loop=1';
         }
 
-        const iframe = document.createElement('iframe');
-        iframe.src = embedSrc;
-        iframe.setAttribute('allow', 'autoplay; fullscreen');
-        iframe.setAttribute('allowfullscreen', 'true');
-        iframe.setAttribute('playsinline', 'true');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.position = 'absolute';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.border = 'none';
-        iframe.id = 'bilibili-iframe';
-        containerEl.appendChild(iframe);
-
-        this.player = iframe;
+        const iframe = this.mountEmbedIframe(container, {
+            src: embedSrc,
+            id: 'bilibili-iframe',
+            allow: 'autoplay; fullscreen',
+            allowFullscreen: true,
+            playsInline: true
+        });
+        if (!iframe) return null;
 
         // Update title
-        document.title = 'Bilibili Video - PWA Player';
-        navigator.mediaSession.metadata = new MediaMetadata({
+        this.applyEmbedNowPlaying({
             title: `Bilibili: ${videoId}`,
             artist: 'Bilibili',
-            album: 'Bilibili'
+            album: 'Bilibili',
+            url: this.getVideoUrl(videoId),
+            documentTitle: 'Bilibili Video - PWA Player'
         });
-
-        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
-        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
-        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
-        if (titleEl) titleEl.textContent = `Bilibili: ${videoId}`;
-        if (artistEl) artistEl.textContent = 'Bilibili';
-        if (urlEl) urlEl.textContent = this.getVideoUrl(videoId);
-
-        // Note: Bilibili iframe doesn't provide API for progress/controls
-        // User needs to use Bilibili's own controls
-
-        // Set play button state
-        const playBtn = document.getElementById("playBtn");
-        const npPlayBtn = document.getElementById("npPlayBtn");
-        if (playBtn) setIcon(playBtn, "pause");
-        if (npPlayBtn) setIcon(npPlayBtn, "pause");
-        navigator.mediaSession.playbackState = 'playing';
 
         if (options.onReady) options.onReady();
 
         return this.player;
-    }
-
-    destroyPlayerInternal() {
-        if (this.player) {
-            // Just remove the iframe
-            if (this.player.parentNode) {
-                this.player.parentNode.removeChild(this.player);
-            }
-        }
-    }
-
-    play() {
-        // Bilibili iframe doesn't support external play control
-        console.log('Bilibili: Use iframe controls to play');
-    }
-
-    pause() {
-        // Bilibili iframe doesn't support external pause control
-        console.log('Bilibili: Use iframe controls to pause');
-    }
-
-    togglePlayPause() {
-        // Bilibili iframe doesn't support external toggle
-        console.log('Bilibili: Use iframe controls to toggle play/pause');
-    }
-
-    stop() {
-        this.destroyPlayer();
-    }
-
-    seekToPercent(percent) {
-        // Bilibili iframe doesn't support external seek
-        console.log('Bilibili: Use iframe controls to seek');
-    }
-
-    seekToTime(seconds) {
-        // Bilibili iframe doesn't support external seek
-        console.log('Bilibili: Use iframe controls to seek');
-    }
-
-    setVolume(percent) {
-        // Bilibili iframe doesn't support external volume
-        localStorage.setItem('volume', percent.toString());
-        console.log('Bilibili: Use iframe controls to adjust volume');
-    }
-
-    getCurrentTime() {
-        return 0; // Not available via iframe
-    }
-
-    getDuration() {
-        return 0; // Not available via iframe
     }
 
     getTitle() {
@@ -210,10 +123,6 @@ class BilibiliPlatform extends BasePlatform {
             return `https://www.bilibili.com/video/${videoId}`;
         }
         return `https://www.bilibili.com/video/${videoId}`;
-    }
-
-    isPlaying() {
-        return true; // Assume playing after create
     }
 
     // Override handleVideoEnded since we can't control the player

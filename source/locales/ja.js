@@ -112,6 +112,12 @@ const JA_TRANSLATIONS = {
     // IPTV
     iptvChannels: "IPTVチャンネル",
     searchChannels: "チャンネルを検索...",
+    channelsPerPage: "1ページあたりのチャンネル数",
+    channelsPerPageHint: "1ページに表示するIPTVチャンネル数。既定値は50。0にするとページ分割せずすべて表示します。",
+    pageOf: "{current} / {total} ページ",
+    iptvCatalogueUnavailable: "内蔵チャンネル一覧（pwaplayer.wasm）を読み込めませんでした。独自のチャンネルのみ表示しています。",
+    previousPage: "前のページ",
+    nextPage: "次のページ",
     iptvCorsHint: "IPアドレスは常にCORSバイパスが必要。HTTP URLは多くの場合CORSが必要。HTTPSは通常CORS不要。チャンネルが再生されない場合はCORSバイパスを有効にしてください。",
     import: "インポート",
     export: "エクスポート",

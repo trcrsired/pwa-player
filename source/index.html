@@ -234,6 +234,11 @@
                     <span id="iptvChannelCount"></span>
                 </div>
                 <input type="search" id="iptvSearch" class="search-input" placeholder="Search channels..." data-i18n-placeholder="searchChannels" />
+                <div id="iptvPagination" class="iptv-pagination hidden">
+                    <button id="iptvPrevPage" class="btn btn-small" data-icon="chevronLeft" data-i18n-title="previousPage"></button>
+                    <span id="iptvPageInfo" class="iptv-page-info"></span>
+                    <button id="iptvNextPage" class="btn btn-small" data-icon="chevronRight" data-i18n-title="nextPage"></button>
+                </div>
                 <ul id="iptvList" class="list"></ul>
             </main>
         </div>
@@ -402,6 +407,13 @@
                     <span data-i18n="shortcutLoopEnabled">J/K/L - A-B Loop</span>
                 </label>
 
+                <h3 data-i18n="iptvChannels">IPTV Channels</h3>
+                <label class="setting-label">
+                    <span data-i18n="channelsPerPage">Channels per page</span>
+                    <input type="number" id="iptvChannelsPerPage" class="setting-input-small" min="0" max="100000" step="1" value="50">
+                </label>
+                <p class="setting-hint" data-i18n="channelsPerPageHint">How many IPTV channels to list per page. Default 50. Set to 0 to disable paging and list every channel at once.</p>
+
                 <h3 data-i18n="network">Network</h3>
                 <label class="setting-label">
                     <span data-i18n="corsBypassServer">CORS Bypass Server</span>
@@ -544,6 +556,7 @@
             <button class="rail-btn" data-sidepanel="settingsView" data-icon="gear" data-i18n-title="settings"></button>
         </nav>
 
+        <script src="util.js"></script>
         <script src="icons.js"></script>
         <script src="dialog.js"></script>
         <script src="indexeddb.js"></script>
@@ -551,6 +564,7 @@
         <script src="locales/zhcn.js"></script>
         <script src="locales/ja.js"></script>
         <script src="locale.js"></script>
+        <script src="wasm.js"></script>
         <script src="nowplaying.js"></script>
         <script src="playlist.js"></script>
         <script src="storage.js"></script>

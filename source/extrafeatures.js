@@ -96,7 +96,6 @@ screenCaptureBtn.addEventListener("click", async () => {
 
         // Ask about the mic BEFORE the recorder is created — MediaRecorder
         // only captures tracks that are already in the stream
-        const t = (key) => window.i18n ? window.i18n.t(key) : key;
         if (await glassConfirm(t("enableMicrophonePrompt") || "Enable microphone for this recording?")) {
             try {
                 micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -324,8 +323,6 @@ function fallbackDownload(blob, filename) {
 
 // Start recording the <video> element
 function startVideoRecording() {
-    const t = (key) => window.i18n ? window.i18n.t(key) : key;
-
     // Check if embedded player (YouTube/Vimeo/etc) is active
     if (typeof isEmbeddedPlayerActive === 'function' && isEmbeddedPlayerActive()) {
         alert(t('useScreenRecordForEmbedded') || "Use Screen Capture for embedded content (YouTube, Vimeo, etc.).");
@@ -400,7 +397,6 @@ function stopVideoRecording() {
     // Clear recording start time
     videoRecordingStartTime = null;
 
-    const t = (key) => window.i18n ? window.i18n.t(key) : key;
     if (mediaRecorder && mediaRecorder.state === "recording") {
         mediaRecorder.requestData();
         mediaRecorder.stop();
@@ -411,7 +407,6 @@ function stopVideoRecording() {
 
 // Toggle button
 mediaRecordBtn.addEventListener("click", () => {
-    const t = (key) => window.i18n ? window.i18n.t(key) : key;
     if (!mediaRecorder) {
         startVideoRecording();
         return;
@@ -436,8 +431,6 @@ mediaRecordBtn.addEventListener("click", () => {
 const screenshotBtn = document.getElementById("screenshotBtn");
 
 screenshotBtn.addEventListener("click", async () => {
-    const t = (key) => window.i18n ? window.i18n.t(key) : key;
-
     // Check if image viewer is active
     if (typeof window.isImageViewerActive === 'function' && window.isImageViewerActive()) {
         const imageEl = document.getElementById('imageDisplay');

@@ -2,7 +2,7 @@
 // Apple Music Platform
 // ===============================
 
-class AppleMusicPlatform extends BasePlatform {
+class AppleMusicPlatform extends PassiveEmbedPlatform {
     static get name() {
         return 'applemusic';
     }
@@ -58,14 +58,6 @@ class AppleMusicPlatform extends BasePlatform {
 
     createPlayer(videoId, container, options = {}) {
 
-        const containerEl = typeof container === 'string'
-            ? document.getElementById(container)
-            : container;
-
-        if (!containerEl) return null;
-
-        containerEl.innerHTML = '';
-
         let embedSrc;
         let displayName;
 
@@ -86,60 +78,25 @@ class AppleMusicPlatform extends BasePlatform {
             this.currentVideoId = videoId;
         }
 
-        const iframe = document.createElement('iframe');
-        iframe.src = embedSrc;
-        iframe.setAttribute('allow', 'autoplay; encrypted-media');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.position = 'absolute';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.border = 'none';
-        iframe.id = 'applemusic-iframe';
-        containerEl.appendChild(iframe);
+        const iframe = this.mountEmbedIframe(container, {
+            src: embedSrc,
+            id: 'applemusic-iframe',
+            allow: 'autoplay; encrypted-media'
+        });
+        if (!iframe) return null;
 
-        this.player = iframe;
-
-        document.title = `${displayName} - PWA Player`;
-        navigator.mediaSession.metadata = new MediaMetadata({
+        this.applyEmbedNowPlaying({
             title: displayName,
             artist: 'Apple Music',
-            album: 'Apple Music'
+            album: 'Apple Music',
+            url: this.getVideoUrl(videoId)
         });
-
-        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
-        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
-        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
-        if (titleEl) titleEl.textContent = displayName;
-        if (artistEl) artistEl.textContent = 'Apple Music';
-        if (urlEl) urlEl.textContent = this.getVideoUrl(videoId);
-
-        const playBtn = document.getElementById("playBtn");
-        const npPlayBtn = document.getElementById("npPlayBtn");
-        if (playBtn) setIcon(playBtn, "pause");
-        if (npPlayBtn) setIcon(npPlayBtn, "pause");
-        navigator.mediaSession.playbackState = 'playing';
 
         if (options.onReady) options.onReady();
 
         return this.player;
     }
 
-    destroyPlayerInternal() {
-        if (this.player && this.player.parentNode) {
-            this.player.parentNode.removeChild(this.player);
-        }
-    }
-
-    play() { }
-    pause() { }
-    togglePlayPause() { }
-    stop() { this.destroyPlayer(); }
-    seekToPercent(percent) { }
-    seekToTime(seconds) { }
-    setVolume(percent) { localStorage.setItem('volume', percent.toString()); }
-    getCurrentTime() { return 0; }
-    getDuration() { return 0; }
     getTitle() { return `Apple Music: ${this.currentVideoId}`; }
 
     getVideoUrl(videoId) {
@@ -154,7 +111,6 @@ class AppleMusicPlatform extends BasePlatform {
         return `https://music.apple.com/us/album/${videoId}`;
     }
 
-    isPlaying() { return true; }
 }
 
 registerPlatform(AppleMusicPlatform);

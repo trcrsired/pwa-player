@@ -450,7 +450,6 @@ async function handleNextWithLoopCheck() {
         return;
     }
     if (pos.index >= pos.total) {
-        const t = (key) => window.i18n ? window.i18n.t(key) : key;
         if (await glassConfirm(t('loopToFirstImage', 'Jump back to first image?'))) {
             jumpToImageIndex(0);
         }

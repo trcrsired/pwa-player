@@ -12,6 +12,82 @@ class BasePlatform {
         this.currentVideoId = null;
     }
 
+
+    /* ---- shared embed plumbing ---------------------------------------
+     * Every iframe based adapter (SoundCloud, Apple Music, NetEase, Kick,
+     * Bilibili, TikTok, Vimeo) used to repeat the same ~40 lines: resolve the
+     * container, mount a styled iframe, then push the now-playing state to the
+     * document title, MediaSession and the side panel. Those three helpers
+     * keep a single copy of that logic.
+     */
+
+    // Mount the player iframe. Returns the iframe, or null if the container is
+    // missing (callers then bail out with `if (!iframe) return null`).
+    mountEmbedIframe(container, { src, id, allow = 'autoplay', allowFullscreen = false, playsInline = false, styles = null }) {
+        const containerEl = typeof container === 'string'
+            ? document.getElementById(container)
+            : container;
+        if (!containerEl) return null;
+
+        containerEl.innerHTML = '';
+
+        const iframe = document.createElement('iframe');
+        iframe.src = src;
+        if (allow) iframe.setAttribute('allow', allow);
+        if (allowFullscreen) iframe.setAttribute('allowfullscreen', 'true');
+        if (playsInline) iframe.setAttribute('playsinline', 'true');
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.position = 'absolute';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.border = 'none';
+        if (styles) {
+            for (const [key, value] of Object.entries(styles)) {
+                iframe.style[key] = value;
+            }
+        }
+        if (id) iframe.id = id;
+        containerEl.appendChild(iframe);
+
+        this.player = iframe;
+        return iframe;
+    }
+
+    // Push the current embed into the title bar, MediaSession and side panel.
+    applyEmbedNowPlaying({ title, artist, album, url, documentTitle }) {
+        document.title = documentTitle || `${title} - PWA Player`;
+
+        if (navigator.mediaSession && typeof MediaMetadata === 'function') {
+            navigator.mediaSession.metadata = new MediaMetadata({ title, artist, album });
+        }
+
+        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
+        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
+        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
+        if (titleEl) titleEl.textContent = title;
+        if (artistEl) artistEl.textContent = artist;
+        if (urlEl) urlEl.textContent = url || "";
+
+        if (typeof setIcon === 'function') {
+            const playBtn = document.getElementById("playBtn");
+            const npPlayBtn = document.getElementById("npPlayBtn");
+            if (playBtn) setIcon(playBtn, "pause");
+            if (npPlayBtn) setIcon(npPlayBtn, "pause");
+        }
+
+        if (navigator.mediaSession) {
+            navigator.mediaSession.playbackState = 'playing';
+        }
+    }
+
+    // Detach the mounted iframe.
+    removeEmbedIframe() {
+        if (this.player && this.player.parentNode) {
+            this.player.parentNode.removeChild(this.player);
+        }
+    }
+
     // Platform identification
     static get name() {
         throw new Error('Platform must implement static get name');
@@ -213,6 +289,27 @@ class BasePlatform {
     }
 }
 
+
+// Base for embeds whose iframe exposes no control API: the user drives playback
+// inside the iframe, so every transport method is a no-op and only the
+// thumbnail/link metadata differs between platforms.
+class PassiveEmbedPlatform extends BasePlatform {
+    destroyPlayerInternal() {
+        this.removeEmbedIframe();
+    }
+
+    play() { }
+    pause() { }
+    togglePlayPause() { }
+    stop() { this.destroyPlayer(); }
+    seekToPercent(percent) { }
+    seekToTime(seconds) { }
+    setVolume(percent) { localStorage.setItem('volume', percent.toString()); }
+    getCurrentTime() { return 0; }
+    getDuration() { return 0; }
+    isPlaying() { return true; }
+}
+
 // Platform registry
 const platformRegistry = new Map();
 
@@ -278,6 +375,7 @@ function formatEmbedTime(seconds) {
 
 // Export for use in other modules
 window.BasePlatform = BasePlatform;
+window.PassiveEmbedPlatform = PassiveEmbedPlatform;
 window.registerPlatform = registerPlatform;
 window.getPlatformForUrl = getPlatformForUrl;
 window.getPlatformInstance = getPlatformInstance;

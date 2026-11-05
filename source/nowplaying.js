@@ -9,7 +9,26 @@ const PLAY_MODES = ["once", "repeat", "repeat-one", "shuffle"];
 // Default mode is Shuffle
 let playMode = "shuffle";
 
+// Shuffle a copy of `arr`.
+// The permutation comes from pwaplayer.wasm (::std::shuffle over fast_io's
+// entropy engine). Until the module is ready — or if WebAssembly is missing —
+// the classic Fisher–Yates loop is used, which keeps startup instant.
 function shuffleArray(arr) {
+    const n = arr.length;
+    if (n < 2) return arr.slice();
+
+    const permutation = typeof pwaShufflePermutation === "function"
+        ? pwaShufflePermutation(n)
+        : null;
+
+    if (permutation && permutation.length === n) {
+        const shuffled = new Array(n);
+        for (let i = 0; i < n; ++i) {
+            shuffled[i] = arr[permutation[i]];
+        }
+        return shuffled;
+    }
+
     const a = arr.slice();
     for (let i = a.length; i--;) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -413,8 +432,6 @@ async function confirmRemoveFromNowPlaying(index) {
 }
 
 function showNowPlayingItemMenu(index, button) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     const queue = getActiveQueue();
     const entry = queue[index];
     const isUrl = entry && entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'));
@@ -510,54 +527,29 @@ function showNowPlayingItemMenu(index, button) {
     });
 }
 
-// Share an entry using Web Share API
+// Share an entry using the Web Share API (util.js falls back to the clipboard).
 async function shareEntry(entry) {
     if (!entry) return;
 
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+    const title = entry.name || entry.path;
+    const baseText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
 
-    // Check if it's a URL (internet resource)
+    // Internet resources: share name + URL as text only, so the PWA Player URL
+    // appended by buildShareText() is not duplicated through a url parameter.
     if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
-        // Build share text: name + URL + optionally PWA Player URL (all in text, no separate url param)
-        let shareText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
-        if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-            const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-            shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
-        }
-
-        // Share (all in text - don't use url param to avoid duplication)
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: entry.name || entry.path,
-                    text: shareText
-                });
-            } catch (e) {
-                if (e.name !== 'AbortError') {
-                    console.warn('Share failed:', e);
-                }
-            }
-        } else {
-            // Fallback: copy to clipboard
-            try {
-                await navigator.clipboard.writeText(shareText);
-                alert(t('urlCopied', 'URL copied to clipboard'));
-            } catch (e) {
-                console.warn('Copy failed:', e);
-            }
-        }
+        await shareOrCopy({
+            title,
+            text: baseText,
+            copiedMessage: t('urlCopied', 'URL copied to clipboard')
+        });
         return;
     }
 
-    // Build base share text for local files: name (if available) + path
-    let baseText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
-
-    // For local files, try to share the file
+    // Local files: share the file itself when the browser can, else the path.
     if (navigator.share && navigator.canShare) {
         try {
             const resolved = await storage_resolvePath(entry.path);
             let file = null;
-
             if (resolved instanceof FileSystemFileHandle) {
                 file = await resolved.getFile();
             } else if (resolved instanceof File) {
@@ -565,67 +557,25 @@ async function shareEntry(entry) {
             }
 
             if (file) {
-                // Build share text with optional PWA Player URL
-                let shareText = baseText;
-                if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                    const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
-                }
-
-                const shareData = {
-                    title: entry.name || entry.path,
-                    text: shareText,
-                    files: [file]
-                };
-
+                const shareData = { title, text: buildShareText(baseText), files: [file] };
                 if (navigator.canShare(shareData)) {
                     await navigator.share(shareData);
                 } else {
                     alert(t('shareNotSupported', 'Sharing this file type is not supported'));
                 }
-            } else {
-                // Can't resolve to file, share path as text
-                let shareText = baseText;
-                if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                    const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
-                }
-                await navigator.share({
-                    title: entry.name || entry.path,
-                    text: shareText
-                });
+                return;
             }
         } catch (e) {
-            if (e.name !== 'AbortError') {
-                console.warn('Share failed:', e);
-                // Fallback: copy to clipboard
-                try {
-                    let shareText = baseText;
-                    if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                        const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                        shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
-                    }
-                    await navigator.clipboard.writeText(shareText);
-                    alert(t('pathCopied', 'Path copied to clipboard'));
-                } catch (e2) {
-                    console.warn('Copy failed:', e2);
-                }
-            }
-        }
-    } else {
-        // Web Share not available, copy to clipboard
-        try {
-            let shareText = baseText;
-            if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
-            }
-            await navigator.clipboard.writeText(shareText);
-            alert(t('pathCopied', 'Path copied to clipboard'));
-        } catch (e) {
-            console.warn('Copy failed:', e);
+            if (e && e.name === 'AbortError') return;
+            console.warn('Share failed:', e);
         }
     }
+
+    await shareOrCopy({
+        title,
+        text: baseText,
+        copiedMessage: t('pathCopied', 'Path copied to clipboard')
+    });
 }
 
 function renderNowPlayingQueue() {

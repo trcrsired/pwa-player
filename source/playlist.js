@@ -71,16 +71,6 @@ function importPlaylists() {
         const file = e.target.files[0];
         if (!file) return;
 
-        const t = (key, params) => {
-            let text = window.i18n ? window.i18n.t(key) : key;
-            if (params && typeof params === 'object') {
-                for (const [k, v] of Object.entries(params)) {
-                    text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
-                }
-            }
-            return text;
-        };
-
         try {
             const text = await file.text();
             const imported = JSON.parse(text);
@@ -236,7 +226,6 @@ async function storage_resolvePath(pointer) {
 // Prompt the user to pick a saved playlist and append the entry to it.
 // excludeName hides the playlist the entry already belongs to.
 async function addEntryToPlaylistPrompt(entry, excludeName) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     if (entry && entry.isTemporary) {
         alert(t('cannotAddTemporaryToPlaylist', 'Temporary entries cannot be added to playlists. Import the directory to storage first.'));
         return;
@@ -267,8 +256,6 @@ async function addEntryToPlaylistPrompt(entry, excludeName) {
 }
 
 async function showPlaylistItemMenu(playlistName, index, button) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     // Fetch entry first to check if it's a URL
     const playlists = await playlists_load();
     const list = playlists[playlistName];
@@ -491,8 +478,6 @@ async function playlist_renderTree() {
 }
 
 function showPlaylistHeaderMenu(playlistName, button) {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
-
     const defaultPlaylist = localStorage.getItem("defaultPlaylist") || "";
     const isDefault = playlistName === defaultPlaylist;
 
@@ -697,7 +682,6 @@ document.getElementById("playlistBackBtn").addEventListener("click", () => {
 
 // New playlist button
 document.getElementById("newPlaylistBtn").addEventListener("click", async () => {
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
     const name = await glassPrompt(t('newPlaylistName', "Enter new playlist name:"));
 
     if (!name) return;
@@ -734,120 +718,53 @@ document.getElementById("exportPlaylistBtn").addEventListener("click", () => {
 // Initial render when script loads
 playlist_renderTree();
 
-// Share a playlist entry using Web Share API
+// Share a playlist entry (util.js handles the Web Share API, the PWA Player URL
+// and the clipboard fallback).
 async function sharePlaylistEntry(entry) {
     if (!entry) return;
 
-    const t = (key, params) => window.i18n ? window.i18n.t(key, params) : key;
+    const title = entry.name || entry.path;
+    const baseText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
 
-    // Check if it's a URL (internet resource)
+    // Internet resources: name + URL as text only (no url parameter, so the
+    // PWA Player URL appended by buildShareText() is not duplicated).
     if (entry.path && (entry.path.startsWith('http://') || entry.path.startsWith('https://'))) {
-        // Build share text: name + URL + optionally PWA Player URL (all in text, no separate url param)
-        let shareText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
-        if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-            const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-            shareText = `${shareText}\n\nPWA Player: ${pwaUrl}`;
-        }
-
-        // Share (all in text - don't use url param to avoid duplication)
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: entry.name || entry.path,
-                    text: shareText
-                });
-            } catch (e) {
-                if (e.name !== 'AbortError') {
-                    console.warn('Share failed:', e);
-                }
-            }
-        } else {
-            // Fallback: copy to clipboard
-            try {
-                await navigator.clipboard.writeText(shareText);
-                alert(t('urlCopied', 'URL copied to clipboard'));
-            } catch (e) {
-                console.warn('Copy failed:', e);
-            }
-        }
+        await shareOrCopy({
+            title,
+            text: baseText,
+            copiedMessage: t('urlCopied', 'URL copied to clipboard')
+        });
         return;
     }
 
-    // Build base share text for local files: name (if available) + path
-    let baseText = entry.name ? `${entry.name}\n${entry.path}` : entry.path;
-
-    // For local files, try to share the file
+    // Local files: share the file itself when the browser can, else the path.
     if (navigator.share && navigator.canShare) {
         try {
             const resolved = await storage_resolvePath(entry.path);
             let file = null;
-
             if (resolved instanceof FileSystemFileHandle) {
                 file = await resolved.getFile();
             } else if (resolved instanceof File) {
                 file = resolved;
             }
-
             if (file) {
-                // Build share text with optional PWA Player URL
-                let shareText = baseText;
-                if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                    const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
-                }
-
-                const shareData = {
-                    title: entry.name || entry.path,
-                    text: shareText,
-                    files: [file]
-                };
-
+                const shareData = { title, text: buildShareText(baseText), files: [file] };
                 if (navigator.canShare(shareData)) {
                     await navigator.share(shareData);
                 } else {
                     alert(t('shareNotSupported', 'Sharing this file type is not supported'));
                 }
-            } else {
-                // Can't resolve to file, share path as text
-                let shareText = baseText;
-                if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                    const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                    shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
-                }
-                await navigator.share({
-                    title: entry.name || entry.path,
-                    text: shareText
-                });
+                return;
             }
         } catch (e) {
-            if (e.name !== 'AbortError') {
-                console.warn('Share failed:', e);
-                // Fallback: copy to clipboard
-                try {
-                    let shareText = baseText;
-                    if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                        const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                        shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
-                    }
-                    await navigator.clipboard.writeText(shareText);
-                    alert(t('pathCopied', 'Path copied to clipboard'));
-                } catch (e2) {
-                    console.warn('Copy failed:', e2);
-                }
-            }
-        }
-    } else {
-        // Web Share not available, copy to clipboard
-        try {
-            let shareText = baseText;
-            if (typeof isSharePwaPlayerUrlEnabled === 'function' && isSharePwaPlayerUrlEnabled()) {
-                const pwaUrl = typeof getPwaPlayerUrl === 'function' ? getPwaPlayerUrl() : window.location.href;
-                shareText = `${baseText}\n\nPWA Player: ${pwaUrl}`;
-            }
-            await navigator.clipboard.writeText(shareText);
-            alert(t('pathCopied', 'Path copied to clipboard'));
-        } catch (e) {
-            console.warn('Copy failed:', e);
+            if (e && e.name === 'AbortError') return;
+            console.warn('Share failed:', e);
         }
     }
+
+    await shareOrCopy({
+        title,
+        text: baseText,
+        copiedMessage: t('pathCopied', 'Path copied to clipboard')
+    });
 }

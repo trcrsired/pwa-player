@@ -2,7 +2,7 @@
 // Netease Cloud Music Platform (网易云音乐)
 // ===============================
 
-class NeteaseMusicPlatform extends BasePlatform {
+class NeteaseMusicPlatform extends PassiveEmbedPlatform {
     static get name() {
         return 'neteasemusic';
     }
@@ -73,14 +73,6 @@ class NeteaseMusicPlatform extends BasePlatform {
     createPlayer(videoId, container, options = {}) {
         this.currentVideoId = videoId;
 
-        const containerEl = typeof container === 'string'
-            ? document.getElementById(container)
-            : container;
-
-        if (!containerEl) return null;
-
-        containerEl.innerHTML = '';
-
         let embedSrc;
         let displayName;
 
@@ -108,61 +100,26 @@ class NeteaseMusicPlatform extends BasePlatform {
             displayName = `网易云音乐: ${videoId}`;
         }
 
-        const iframe = document.createElement('iframe');
-        iframe.src = embedSrc;
-        iframe.setAttribute('allow', 'autoplay');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.position = 'absolute';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.border = 'none';
-        iframe.style.minHeight = '380px';
-        iframe.id = 'neteasemusic-iframe';
-        containerEl.appendChild(iframe);
+        const iframe = this.mountEmbedIframe(container, {
+            src: embedSrc,
+            id: 'neteasemusic-iframe',
+            allow: 'autoplay',
+            styles: { minHeight: '380px' }
+        });
+        if (!iframe) return null;
 
-        this.player = iframe;
-
-        document.title = `${displayName} - PWA Player`;
-        navigator.mediaSession.metadata = new MediaMetadata({
+        this.applyEmbedNowPlaying({
             title: displayName,
             artist: '网易云音乐',
-            album: '网易云音乐'
+            album: '网易云音乐',
+            url: this.getVideoUrl(videoId)
         });
-
-        const titleEl = document.querySelector("#nowPlayingInfo .track-title");
-        const artistEl = document.querySelector("#nowPlayingInfo .track-artist");
-        const urlEl = document.querySelector("#nowPlayingInfo .track-url");
-        if (titleEl) titleEl.textContent = displayName;
-        if (artistEl) artistEl.textContent = '网易云音乐';
-        if (urlEl) urlEl.textContent = this.getVideoUrl(videoId);
-
-        const playBtn = document.getElementById("playBtn");
-        const npPlayBtn = document.getElementById("npPlayBtn");
-        if (playBtn) setIcon(playBtn, "pause");
-        if (npPlayBtn) setIcon(npPlayBtn, "pause");
-        navigator.mediaSession.playbackState = 'playing';
 
         if (options.onReady) options.onReady();
 
         return this.player;
     }
 
-    destroyPlayerInternal() {
-        if (this.player && this.player.parentNode) {
-            this.player.parentNode.removeChild(this.player);
-        }
-    }
-
-    play() { }
-    pause() { }
-    togglePlayPause() { }
-    stop() { this.destroyPlayer(); }
-    seekToPercent(percent) { }
-    seekToTime(seconds) { }
-    setVolume(percent) { localStorage.setItem('volume', percent.toString()); }
-    getCurrentTime() { return 0; }
-    getDuration() { return 0; }
     getTitle() { return `网易云音乐: ${this.currentVideoId}`; }
 
     getVideoUrl(videoId) {
@@ -174,7 +131,6 @@ class NeteaseMusicPlatform extends BasePlatform {
         return `https://music.163.com/#/song?id=${videoId}`;
     }
 
-    isPlaying() { return true; }
 }
 
 registerPlatform(NeteaseMusicPlatform);
