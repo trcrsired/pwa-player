@@ -6,6 +6,13 @@
 //   JS Map.get(key)                                     ~10 ns  (no copies)
 //   wasm call incl. fast_io u8str_swiss_map lookup      ~45 ns  (measured with
 //     a pwa_locale_* build of the module, since removed: it was dead weight)
+//
+// Interpolation cannot be rescued by wasm either: a formatter there has to pay
+// ~100 ns to encode the request and ~175 ns to decode the result before fast_io
+// touches it (~320 ns floor), against ~90-115 ns for splitting the translation
+// once and concatenating in JS. The "does it even have a placeholder" test is a
+// single in-process indexOf, so asking C++ for that answer would cost more than
+// the whole JS path.
 //   TextEncoder.encode(key)        [allocates per call] ~1300 ns
 //   TextEncoder.encodeInto(key)    [into wasm memory]   ~150 ns
 //   TextDecoder.decode(value)      [UTF-8 -> JS string] ~230 ns
@@ -47,7 +54,15 @@ const interp = {
     "replaceAll x2": () => twoVars.replaceAll("{current}", "2").replaceAll("{total}", "5"),
     "replace(str) x2": () => twoVars.replace("{current}", "2").replace("{total}", "5"),
     "new RegExp x2": () => twoVars.replace(new RegExp("\\{current\\}", "g"), "2").replace(new RegExp("\\{total\\}", "g"), "5"),
-    "shipped loop (indexOf/slice)": () => {
+    "pre-split parts+keys (shipped)": () => {
+        const preParts = ["Page ", " / ", ""];
+        const preKeys = ["current", "total"];
+        const p = { current: "2", total: "5" };
+        let out = preParts[0];
+        for (let i = 0; i < preKeys.length; i++) out += p[preKeys[i]] + preParts[i + 1];
+        return out;
+    },
+    "scanning loop (indexOf/slice)": () => {
         let text = twoVars;
         for (const k of ["current", "total"]) {
             const placeholder = `{${k}}`;

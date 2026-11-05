@@ -20,6 +20,13 @@ let currentTranslations = null;   // key -> string
 let currentLoad = null;            // in-flight locale request
 let loadToken = 0;                 // only the newest request may publish a table
 
+// Translations containing {placeholders} are split once into literal parts plus
+// parameter names: ~90 ns per call instead of ~170 ns for rescanning the string
+// every time, with no eval/CSP cost and no wasm round trip (see
+// build/bench_locale.js for why the wasm route cannot win: the unavoidable
+// encode+decode of the result alone costs ~270 ns).
+const templateCache = new Map();
+
 // The active language is the saved preference, or English. The browser's own
 // language is deliberately ignored: the UI starts in English unless the user
 // picked something else in Settings.
@@ -133,6 +140,28 @@ function getAvailableLanguages() {
     }));
 }
 
+// Splits "Page {current} / {total}" into { parts: ["Page ", " / ", ""],
+// keys: ["current", "total"] }. Returns null when there is nothing to replace.
+function compileTemplate(text) {
+    const parts = [];
+    const keys = [];
+    let at = 0;
+    for (;;) {
+        const open = text.indexOf("{", at);
+        if (open === -1) break;
+        const close = text.indexOf("}", open + 1);
+        if (close === -1) break;
+        parts.push(text.slice(at, open));
+        keys.push(text.slice(open + 1, close));
+        at = close + 1;
+    }
+    if (keys.length === 0) return null;
+    parts.push(text.slice(at));
+    const compiled = { parts, keys };
+    templateCache.set(text, compiled);
+    return compiled;
+}
+
 // Get translation for a key with optional parameter replacement.
 // Usage: t('key', { count: 5 }) replaces {count} in the translation string.
 function t(key, params) {
@@ -140,25 +169,19 @@ function t(key, params) {
     if (currentTranslations !== null) {
         text = currentTranslations[key] || key;
     }
-    if (params && typeof params === 'object' && text.indexOf("{") !== -1) {
-        // Plain string replace, not RegExp and not split/join: t() runs for every
-        // label on every render, and {current}/{total} costs ~460 ns with
-        // split/join, ~540 ns with a fresh RegExp, ~200 ns here (build/bench_locale.js).
-        for (const k in params) {
-            const placeholder = `{${k}}`;
-            let at = text.indexOf(placeholder);
-            if (at === -1) continue;
-            let out = "";
-            let rest = text;
-            do {
-                out += rest.slice(0, at) + params[k];
-                rest = rest.slice(at + placeholder.length);
-                at = rest.indexOf(placeholder);
-            } while (at !== -1);
-            text = out + rest;
-        }
+    if (!params || typeof params !== "object" || text.indexOf("{") === -1) {
+        return text;   // the common case: one map lookup and nothing else
     }
-    return text;
+    const compiled = templateCache.get(text) || compileTemplate(text);
+    if (!compiled) return text;
+    const { parts, keys } = compiled;
+    let out = parts[0];
+    for (let i = 0; i < keys.length; i++) {
+        const value = params[keys[i]];
+        // A missing parameter keeps its placeholder, as before.
+        out += (value === undefined ? `{${keys[i]}}` : value) + parts[i + 1];
+    }
+    return out;
 }
 
 // Apply translations to DOM elements with data-i18n attributes

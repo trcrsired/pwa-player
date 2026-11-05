@@ -81,11 +81,15 @@ them like the manifest.
 - **English is the default, always**: the active language is the saved preference
   or `en`. `navigator.language` is deliberately ignored (it used to pick the UI
   language, which surprised users whose browser was not in English).
-- `t(key, params)` replaces `{name}` placeholders with plain `indexOf`/`slice`
-  concatenation, handles repeated placeholders, and is a no-op returning the
-  literal when there are no params (~4 ns). With two placeholders it is ~235 ns
-  against ~480 ns for `split/join` and ~540 ns for a fresh `RegExp` per param
-  (`build/bench_locale.js`).
+- `t(key, params)` returns the literal immediately when there are no params, and
+  when there are it uses a cached pre-split template (`compileTemplate()` →
+  literal parts + parameter names), so a two-placeholder string costs ~114 ns
+  instead of ~235 ns for rescanning or ~540 ns for a `RegExp` per parameter
+  (`build/bench_locale.js`). A missing parameter keeps its placeholder.
+- **A wasm formatter cannot beat that**: encoding the request and decoding the
+  result already costs ~320 ns before fast_io does any work, and asking C++
+  "does this string even have a placeholder?" costs more than the in-process
+  `indexOf("{")` that answers it for free.
 - Editing a translation is a data change: **no rebuild of anything**, and no wasm
   recompile.
 - **Translations stay in JavaScript.** A `::fast_io::u8str_swiss_map` in wasm was
