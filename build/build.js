@@ -78,8 +78,8 @@ async function processFile(srcPath, docsPath) {
         return;
     }
 
-    // manifest.json → minify JSON
-    if (ext === ".json" && path.basename(srcPath) === "manifest.json") {
+    // JSON (manifest, locales) → minify
+    if (ext === ".json") {
         const result = JSON.stringify(JSON.parse(content));
         ensureDir(path.dirname(docsPath));
         fs.writeFileSync(docsPath, result, "utf8");

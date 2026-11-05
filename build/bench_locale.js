@@ -9,44 +9,17 @@
 //   TextEncoder.encode(key)        [allocates per call] ~1300 ns
 //   TextEncoder.encodeInto(key)    [into wasm memory]   ~150 ns
 //   TextDecoder.decode(value)      [UTF-8 -> JS string] ~230 ns
-// so a per-string wasm API is ~350 ns against ~10 ns. Hence LOCALE_IN_WASM=false
-// in source/locale.js; the wasm path only pays off if a whole page is rendered
-// in C++ and the translations never cross the boundary individually.
+// so a per-string wasm API is ~350 ns against ~10 ns: the wasm locale exports
+// were removed again. That path only pays off if a whole page is rendered in C++
+// and the translations never cross the boundary individually.
 "use strict";
 const fs = require("fs");
 const ROOT = process.argv[2] || ".";
 const WASM = `${ROOT}/docs/pwaplayer.wasm`;
-const TOML = fs.readFileSync(`${ROOT}/docs/locales/en.toml`, "utf8");
+const TABLE = JSON.parse(fs.readFileSync(`${ROOT}/docs/locales/en.json`, "utf8"));
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();
-
-function parseJS(text) {
-    const out = new Map();
-    for (const line of text.split("\n")) {
-        const s = line.search(/[^\s]/);
-        if (s === -1 || line[s] === "#") continue;
-        const eq = line.indexOf("=", s);
-        if (eq === -1) continue;
-        const key = line.slice(s, eq).trim();
-        if (!/^[A-Za-z0-9_]+$/.test(key)) continue;
-        let i = eq + 1;
-        while (line[i] === " " || line[i] === "\t") i++;
-        if (line[i] !== '"') continue;
-        i++;
-        let v = "";
-        while (i < line.length && line[i] !== '"') {
-            let c = line[i++];
-            if (c === "\\") {
-                const e = line[i++];
-                c = e === "n" ? "\n" : e === "t" ? "\t" : e === "r" ? "\r" : e;
-            }
-            v += c;
-        }
-        out.set(key, v);
-    }
-    return out;
-}
 
 const KEY = "nowPlaying";
 const bytes = new TextEncoder().encode(KEY);
@@ -63,8 +36,8 @@ const bench = (label, fn) => {
     console.log(`  ${label.padEnd(50)} ${ns.toFixed(0).padStart(6)} ns/call`);
 };
 
-const value = parseJS(TOML).get(KEY);
-if (!value) throw new Error("missing key in " + TOML);
+const value = TABLE[KEY];
+if (!value) throw new Error("missing key in locales/en.json");
 
 bench("t() as shipped (Map.get + no params)", () => value);
 bench("t() with 1 param, old RegExp interpolation", () => value.replace(new RegExp("\\{count\\}", "g"), "5"));

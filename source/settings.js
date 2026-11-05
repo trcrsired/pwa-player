@@ -1333,7 +1333,11 @@ async function applyProfileData(profileData) {
 
     // Reload settings UI elements
     const languageSelect = document.getElementById("languageSelect");
-    if (languageSelect) languageSelect.value = savedLang;
+    if (languageSelect) {
+        languageSelect.value = window.i18n && typeof window.i18n.getCurrentLang === 'function'
+            ? window.i18n.getCurrentLang()
+            : savedLang;
+    }
 
     const startupViewSelect = document.getElementById("startupViewSelect");
     if (startupViewSelect) startupViewSelect.value = localStorage.getItem("startupView") || "player";

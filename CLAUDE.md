@@ -67,13 +67,17 @@ PWA Player is a vanilla JavaScript Progressive Web App — an offline-capable me
 
 ### Locales
 
-`source/locales/` contains `en.toml`, `zhcn.toml` and `ja.toml`. The format is one
-`key = "value"` per line with `#` comments and `\"` `\\` `\n` `\t` `\r` escapes —
-a TOML subset, not full TOML. `parseLocaleText()` in `locale.js` is the only
-parser.
+`source/locales/` contains `en.json`, `zhcn.json` and `ja.json` — one flat
+`key: "value"` object each. Plain JSON on purpose: `response.json()` is a native
+parser, so there is no format code of ours to maintain, and the build minifies
+them like the manifest.
 
-- **Only the active language is fetched** (`locales/<lang>.toml`, cache-first from
+- **Only the active language is fetched** (`locales/<lang>.json`, cache-first from
   the Service Worker). The other two are never downloaded or parsed.
+- Loading is async, so `startLoad()` stamps every request with a token and only
+  the newest one may install its table. Without that, a slow auto-detected
+  request can land after the user already picked a language and silently flip
+  the UI back — the settings select and the actual table must never disagree.
 - `t(key, params)` replaces `{name}` placeholders without building a `RegExp`
   (that allocation was the hottest part of translation) and returns the literal
   directly when there are no params.

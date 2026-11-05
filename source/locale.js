@@ -1,12 +1,13 @@
 // Localization system (non-module for global access).
 //
-// Translations live in `locales/<lang>.toml` (one `key = "value"` per line) and
+// Translations live in `locales/<lang>.json` (one flat key -> string object) and
 // are fetched on demand, so the two languages the user does not use are never
-// downloaded, parsed or kept in memory. The file is parsed into a plain JS Map:
-// keeping the table in wasm was implemented and measured at ~350 ns per lookup
+// downloaded, parsed or kept in memory. JSON on purpose: `response.json()` is a
+// native parser, so there is no format code of ours to get wrong or maintain.
+// Keeping the table in wasm was implemented and measured at ~350 ns per lookup
 // against ~11 ns here (the UTF-8 encode/decode across the boundary dominates),
-// see build/bench_locale.js. Translations are pure data, so nothing here needs
-// a rebuild of anything when a string changes.
+// see build/bench_locale.js. Translations are pure data: changing a string needs
+// no rebuild of anything.
 
 const LANGUAGES = {
     'en': { name: 'English' },
@@ -16,41 +17,8 @@ const LANGUAGES = {
 
 let currentLang = 'en';
 let currentTranslations = null;   // key -> string
-
 let currentLoad = null;            // in-flight locale request
-
-/* ---- parsing --------------------------------------------------------- */
-
-// Minimal parser for the locale file format: `key = "value"` lines, `#` comments,
-// and \" \\ \n \t \r escapes. Mirrors locale_parse() in cpp/pwaplayer.cpp.
-function parseLocaleText(text) {
-    const out = Object.create(null);
-    const lines = text.split('\n');
-    for (let line of lines) {
-        const start = line.search(/[^\s]/);
-        if (start === -1) continue;
-        if (line[start] === '#') continue;
-        const eq = line.indexOf('=', start);
-        if (eq === -1) continue;
-        const key = line.slice(start, eq).trim();
-        if (!/^[A-Za-z0-9_]+$/.test(key)) continue;
-        let i = eq + 1;
-        while (i < line.length && (line[i] === ' ' || line[i] === '\t')) i++;
-        if (line[i] !== '"') continue;
-        i++;
-        let value = '';
-        while (i < line.length && line[i] !== '"') {
-            let ch = line[i++];
-            if (ch === '\\' && i < line.length) {
-                const esc = line[i++];
-                ch = esc === 'n' ? '\n' : esc === 't' ? '\t' : esc === 'r' ? '\r' : esc;
-            }
-            value += ch;
-        }
-        out[key] = value;
-    }
-    return out;
-}
+let loadToken = 0;                 // only the newest request may publish a table
 
 // Detects the language to use: saved preference, else the browser's.
 function detectLanguage() {
@@ -62,14 +30,11 @@ function detectLanguage() {
     return 'en';
 }
 
-// Fetches + installs one locale. Resolves to true when the table is usable.
-async function loadLocale(lang) {
-    const res = await fetch(`locales/${lang}.toml`, { cache: 'no-cache' });
+// Fetches one locale file and returns its table (does not install it).
+async function fetchLocale(lang) {
+    const res = await fetch(`locales/${lang}.json`, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    const text = await res.text();
-
-    currentTranslations = parseLocaleText(text);
-    return Object.keys(currentTranslations).length > 0;
+    return res.json();
 }
 
 /* ---- public API ------------------------------------------------------ */
@@ -98,11 +63,23 @@ function initLocale() {
     return currentLang;
 }
 
+// Loads `lang` and installs it only if it is still the language that is being
+// asked for. Without the token a slow first request (auto-detected language)
+// could land after the user already switched, leaving the UI in the old
+// language while the settings select showed the new one.
 function startLoad(lang) {
-    currentLoad = loadLocale(lang).catch((err) => {
-        console.warn(`Failed to load locale "${lang}":`, err);
-        return false;
-    });
+    const token = ++loadToken;
+    currentLoad = fetchLocale(lang)
+        .then((table) => {
+            if (token !== loadToken || lang !== currentLang) return false;
+            if (!table || Object.keys(table).length === 0) return false;
+            currentTranslations = table;
+            return true;
+        })
+        .catch((err) => {
+            console.warn(`Failed to load locale "${lang}":`, err);
+            return false;
+        });
     return currentLoad;
 }
 
@@ -119,6 +96,8 @@ function populateLanguageSelect() {
         if (code === currentLang) option.selected = true;
         select.appendChild(option);
     });
+    // Keep the widget on the language that is actually loaded.
+    select.value = currentLang;
 }
 
 function getCurrentLang() {
@@ -138,6 +117,8 @@ function setLanguage(lang) {
 
     currentLang = lang;
     localStorage.setItem('language', lang);
+    const select = document.getElementById('languageSelect');
+    if (select) select.value = lang;
     startLoad(lang).then((ok) => {
         if (!ok) return;
         applyTranslations();

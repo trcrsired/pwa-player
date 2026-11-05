@@ -119,7 +119,7 @@
         chevronUp: "▲", chevronDown: "▼", chevronRight: "▶", chevronLeft: "◀",
         plus: "➕", import: "📥", export: "📤", trash: "🗑️",
         duplicate: "📋", pencil: "✏️", reset: "⟲", refresh: "🔄",
-        lock: "🔒", lockOpen: "🔓", waveform: "〰️", musicList: "🎵",
+        lock: "🔒", lockOpen: "🔓", waveform: "▶️", musicList: "🎵",
         star: "⭐", check: "✔️", error: "⚠️", close: "✖️",
     };
 

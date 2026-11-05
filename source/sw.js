@@ -1,4 +1,4 @@
-const PWAPLAYER_VERSION = "487";
+const PWAPLAYER_VERSION = "488";
 const CACHE_NAME = `pwa-player-cache-v${PWAPLAYER_VERSION}`;
 const urlsToCache = [
   "./",
@@ -25,9 +25,9 @@ const urlsToCache = [
   "./locale.js",
   "./wasm.js",
   "./pwaplayer.wasm",
-  "./locales/en.toml",
-  "./locales/zhcn.toml",
-  "./locales/ja.toml",
+  "./locales/en.json",
+  "./locales/zhcn.json",
+  "./locales/ja.json",
   // Platform support for embedded players
   "./platforms/base.js",
   "./platforms/youtube.js",
