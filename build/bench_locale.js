@@ -40,8 +40,33 @@ const value = TABLE[KEY];
 if (!value) throw new Error("missing key in locales/en.json");
 
 bench("t() as shipped (Map.get + no params)", () => value);
-bench("t() with 1 param, old RegExp interpolation", () => value.replace(new RegExp("\\{count\\}", "g"), "5"));
-bench("t() with 1 param, split/join interpolation", () => value.split("{count}").join("5"));
+// Interpolation variants, on a string with two placeholders (see pageOf).
+const twoVars = "Page {current} / {total}";
+const interp = {
+    "split/join x2": () => twoVars.split("{current}").join("2").split("{total}").join("5"),
+    "replaceAll x2": () => twoVars.replaceAll("{current}", "2").replaceAll("{total}", "5"),
+    "replace(str) x2": () => twoVars.replace("{current}", "2").replace("{total}", "5"),
+    "new RegExp x2": () => twoVars.replace(new RegExp("\\{current\\}", "g"), "2").replace(new RegExp("\\{total\\}", "g"), "5"),
+    "shipped loop (indexOf/slice)": () => {
+        let text = twoVars;
+        for (const k of ["current", "total"]) {
+            const placeholder = `{${k}}`;
+            let at = text.indexOf(placeholder);
+            if (at === -1) continue;
+            let out = "";
+            let rest = text;
+            do {
+                out += rest.slice(0, at) + (k === "current" ? "2" : "5");
+                rest = rest.slice(at + placeholder.length);
+                at = rest.indexOf(placeholder);
+            } while (at !== -1);
+            text = out + rest;
+        }
+        return text;
+    },
+};
+for (const [label, fn] of Object.entries(interp)) bench(`interpolation: ${label}`, fn);
+bench("t() with no params (fast path)", () => value);
 console.log("  --- the parts a wasm t() would have to pay on every call:");
 bench("TextEncoder.encode(key)   [allocates]", () => new TextEncoder().encode(KEY));
 bench("TextEncoder.encodeInto(key) [reused view]", () => String(new TextEncoder().encodeInto(KEY, scratch).written));

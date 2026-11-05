@@ -20,14 +20,12 @@ let currentTranslations = null;   // key -> string
 let currentLoad = null;            // in-flight locale request
 let loadToken = 0;                 // only the newest request may publish a table
 
-// Detects the language to use: saved preference, else the browser's.
+// The active language is the saved preference, or English. The browser's own
+// language is deliberately ignored: the UI starts in English unless the user
+// picked something else in Settings.
 function detectLanguage() {
     const saved = localStorage.getItem('language');
-    if (saved && LANGUAGES[saved]) return saved;
-    const primary = (navigator.language || 'en').split('-')[0];
-    if (primary === 'zh') return 'zhcn';
-    if (LANGUAGES[primary]) return primary;
-    return 'en';
+    return saved && LANGUAGES[saved] ? saved : 'en';
 }
 
 // Fetches one locale file and returns its table (does not install it).
@@ -143,11 +141,21 @@ function t(key, params) {
         text = currentTranslations[key] || key;
     }
     if (params && typeof params === 'object' && text.indexOf("{") !== -1) {
-        // No RegExp here: t() runs for every label on every render and building
-        // a RegExp per placeholder was the hottest part of translation (177 ns
-        // per call, vs 10 ns for the map lookup itself).
+        // Plain string replace, not RegExp and not split/join: t() runs for every
+        // label on every render, and {current}/{total} costs ~460 ns with
+        // split/join, ~540 ns with a fresh RegExp, ~200 ns here (build/bench_locale.js).
         for (const k in params) {
-            text = text.split(`{${k}}`).join(params[k]);
+            const placeholder = `{${k}}`;
+            let at = text.indexOf(placeholder);
+            if (at === -1) continue;
+            let out = "";
+            let rest = text;
+            do {
+                out += rest.slice(0, at) + params[k];
+                rest = rest.slice(at + placeholder.length);
+                at = rest.indexOf(placeholder);
+            } while (at !== -1);
+            text = out + rest;
         }
     }
     return text;

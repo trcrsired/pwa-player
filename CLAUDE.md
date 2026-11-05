@@ -78,9 +78,14 @@ them like the manifest.
   the newest one may install its table. Without that, a slow auto-detected
   request can land after the user already picked a language and silently flip
   the UI back — the settings select and the actual table must never disagree.
-- `t(key, params)` replaces `{name}` placeholders without building a `RegExp`
-  (that allocation was the hottest part of translation) and returns the literal
-  directly when there are no params.
+- **English is the default, always**: the active language is the saved preference
+  or `en`. `navigator.language` is deliberately ignored (it used to pick the UI
+  language, which surprised users whose browser was not in English).
+- `t(key, params)` replaces `{name}` placeholders with plain `indexOf`/`slice`
+  concatenation, handles repeated placeholders, and is a no-op returning the
+  literal when there are no params (~4 ns). With two placeholders it is ~235 ns
+  against ~480 ns for `split/join` and ~540 ns for a fresh `RegExp` per param
+  (`build/bench_locale.js`).
 - Editing a translation is a data change: **no rebuild of anything**, and no wasm
   recompile.
 - **Translations stay in JavaScript.** A `::fast_io::u8str_swiss_map` in wasm was
