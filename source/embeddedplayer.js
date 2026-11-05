@@ -102,9 +102,9 @@ function playEmbeddedUrl(url, metadata = {}) {
     videoPlayer.classList.add('hidden');
     embeddedPlayer.classList.remove('hidden');
 
-    // Match normal playback: every new source starts unrotated
-    if (typeof setVideoRotation === 'function') {
-        setVideoRotation(0);
+    // Same as normal playback: keep the direction the user last chose
+    if (typeof restoreVideoRotation === 'function') {
+        restoreVideoRotation();
     }
 
     // Create new platform instance

@@ -887,7 +887,8 @@ async function play_source_internal(blobURL, mediametadata, sourceobject, playli
 
     video.srcObject = null;
     video.src = videoSrc;
-    setVideoRotation(0);
+    // Keep the direction the user last picked rather than starting upright
+    restoreVideoRotation();
     hasActiveSource = true;
     hideControls();
 
@@ -1109,7 +1110,8 @@ function tryPlayUrl(url, title, corsBypass, maxRetries, sourceNum, totalSources)
 
     video.srcObject = null;
     video.src = videoSrc;
-    setVideoRotation(0);
+    // Keep the direction the user last picked rather than starting upright
+    restoreVideoRotation();
     hasActiveSource = true;
     hideControls();
 
@@ -2011,10 +2013,35 @@ function volumeToggleBtnClick()
 volumeToggleBtn.addEventListener("click", volumeToggleBtnClick);
 npVolumeToggleBtn.addEventListener("click", volumeToggleBtnClick);
 
-let videoRotationDeg = 0;
+// The rotate-view button is a view preference, not a per-file property: the
+// last direction is remembered and reused for every source and page load.
+const VIDEO_ROTATION_STORAGE_KEY = "videoRotationDeg";
+
+function normalizeVideoRotation(deg) {
+  const rounded = Math.round((Number(deg) || 0) / 90) * 90;
+  return ((rounded % 360) + 360) % 360;
+}
+
+function getSavedVideoRotation() {
+  try {
+    const saved = parseInt(localStorage.getItem(VIDEO_ROTATION_STORAGE_KEY), 10);
+    return normalizeVideoRotation(saved);
+  } catch (e) {
+    return 0;
+  }
+}
+
+function saveVideoRotation(deg) {
+  try {
+    localStorage.setItem(VIDEO_ROTATION_STORAGE_KEY, String(deg));
+  } catch (e) {}
+}
+
+let videoRotationDeg = getSavedVideoRotation();
 
 function setVideoRotation(deg) {
-  videoRotationDeg = ((deg % 360) + 360) % 360;
+  videoRotationDeg = normalizeVideoRotation(deg);
+  saveVideoRotation(videoRotationDeg);
   const applyRotClasses = (el) => {
     if (!el) return;
     el.classList.toggle("rot90", videoRotationDeg === 90);
@@ -2028,7 +2055,16 @@ function setVideoRotation(deg) {
   // iframe content is painted first and then transformed by CSS, so this
   // works for third-party embeds we cannot script into.
   refreshEmbeddedRotation();
+  // Cues follow the video through the same transform, so their offset has to
+  // be recomputed against the new orientation (and dropped when rotated).
+  updateSubtitlePosition(!controls.classList.contains("hidden"));
 }
+
+// Re-apply the remembered direction instead of resetting to upright
+function restoreVideoRotation() {
+  setVideoRotation(getSavedVideoRotation());
+}
+window.restoreVideoRotation = restoreVideoRotation;
 
 // Rotation for embeds lives on #embeddedPlayer, whose transform reaches the
 // iframe inside it. An iframe that fullscreens itself (platform FS button /
@@ -2584,6 +2620,13 @@ document.addEventListener("keyup", (e) => {
 
 let hideTimeout;
 
+// Is the picture rotated by the rotate-view button?
+function isVideoRotated() {
+  return video.classList.contains("rot90") ||
+         video.classList.contains("rot180") ||
+         video.classList.contains("rot270");
+}
+
 // Adjust subtitle position to avoid overlap with controls
 function updateSubtitlePosition(controlsVisible) {
   const tracks = video.textTracks;
@@ -2591,6 +2634,14 @@ function updateSubtitlePosition(controlsVisible) {
   // If an overlay view is active, treat as controls not visible (bottom position)
   const activeView = getActiveView();
   if (activeView) {
+    controlsVisible = false;
+  }
+
+  // Lifting cues exists only to clear the dock that sits under them. Once the
+  // view is rotated the cues turn with the video while the dock stays upright,
+  // so "up" is no longer toward the controls and moving them would just push
+  // them somewhere meaningless. Keep the default cue position instead.
+  if (isVideoRotated()) {
     controlsVisible = false;
   }
 
